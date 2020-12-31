@@ -1,0 +1,61 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SonicVisualSplit", "SonicVisualSplit\SonicVisualSplit.csproj", "{59838496-8594-449C-A96A-4215EAAA562C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SonicVisualSplitBase", "SonicVisualSplitBase\SonicVisualSplitBase.vcxproj", "{4A540A61-F51A-42FE-830F-DD699125DA47}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SonicVisualSplitWrapper", "SonicVisualSplitWrapper\SonicVisualSplitWrapper.vcxproj", "{49345046-CD0D-4888-B480-56DA1DBBE910}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{59838496-8594-449C-A96A-4215EAAA562C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Debug|x64.ActiveCfg = Debug|x64
+		{59838496-8594-449C-A96A-4215EAAA562C}.Debug|x64.Build.0 = Debug|x64
+		{59838496-8594-449C-A96A-4215EAAA562C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Debug|x86.Build.0 = Debug|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Release|x64.ActiveCfg = Release|x64
+		{59838496-8594-449C-A96A-4215EAAA562C}.Release|x64.Build.0 = Release|x64
+		{59838496-8594-449C-A96A-4215EAAA562C}.Release|x86.ActiveCfg = Release|Any CPU
+		{59838496-8594-449C-A96A-4215EAAA562C}.Release|x86.Build.0 = Release|Any CPU
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Debug|x64.ActiveCfg = Debug|x64
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Debug|x64.Build.0 = Debug|x64
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Debug|x86.ActiveCfg = Debug|Win32
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Debug|x86.Build.0 = Debug|Win32
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Release|Any CPU.ActiveCfg = Release|Win32
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Release|x64.ActiveCfg = Release|x64
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Release|x64.Build.0 = Release|x64
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Release|x86.ActiveCfg = Release|Win32
+		{4A540A61-F51A-42FE-830F-DD699125DA47}.Release|x86.Build.0 = Release|Win32
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Debug|x64.ActiveCfg = Debug|x64
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Debug|x64.Build.0 = Debug|x64
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Debug|x86.ActiveCfg = Debug|Win32
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Debug|x86.Build.0 = Debug|Win32
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|Any CPU.ActiveCfg = Release|Win32
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|x64.ActiveCfg = Release|x64
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|x64.Build.0 = Release|x64
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|x86.ActiveCfg = Release|Win32
+		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {52F0E665-FC67-442C-9E83-BF53B1132A08}
+	EndGlobalSection
+EndGlobal

@@ -9,18 +9,25 @@ class DigitsRecognizer {
 public:
 	static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory);
 
+	// Find locations of all digits, "SCORE" and "TIME" labels.
 	std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
 	bool recalculatedDigitsPlacement();
 
 	static void resetDigitsPlacement();
 
+	// We search for symbols in our code
+	static const char SCORE = 'S';
+	static const char TIME = 'T';
+
 private:
 	DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory);
 
+	std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
+
 	std::vector<std::pair<cv::Rect2f, char>> removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations);
 
-	std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, std::filesystem::path templatesDirectory, bool bruteForceScale);
+	bool haveToRecalculateDigitsPlacement();
 
 	std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
 
@@ -38,18 +45,14 @@ private:
 
 	bool recalculateDigitsPlacement;
 
-	static DigitsRecognizer* instance;
+	inline static DigitsRecognizer* instance = nullptr;
 
 	// CONSTANTS
-	// Similarity coefficient of the best match (more is better)
+	// Minimum similarity of a match (zero is a perfect match)
 	static constexpr double MIN_SIMILARITY = -0.05;
 
 	// minimum similarity in relation to the best found similarity
 	static constexpr double SIMILARITY_COEFFICIENT = 2.25;
-
-	// We search for symbols in our code
-	static const char SCORE = 'S';
-	static const char TIME = 'T';
 };
 
 }  // namespace SonicVisualSplitBase

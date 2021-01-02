@@ -5,41 +5,42 @@
 
 namespace SonicVisualSplitBase {
 
+DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory) {
+	if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory) {
+		delete instance;
+		instance = new DigitsRecognizer(gameName, templatesDirectory);
+	}
+	return *instance;
+}
+
+
 // Find locations of all digits, "SCORE" and "TIME" labels.
-std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, const std::filesystem::path& templatesDirectory, const std::string& gameName, bool checkForScoreScreen) {
+std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
 	cv::UMat originalFrame = frame;
-	if (bestScale != -1) {  // already calculated
+	if (!haveToRecalculateDigitsPlacement()) {  // already calculated the scale and digits ROI
 		cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
+		if (!checkForScoreScreen)  // if we look for digits only, we can speed everything up
+			frame = frame(digitsRoi);
+	}
+	else { // we need to find the TIME label to calculate the digits ROI
+		checkForScoreScreen = true;
 	}
 
 	std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;   // {location, digit, similarity coefficient}
 	// roi stands for region of interest
 	bool isSonicOne = (gameName == "Sonic 1");
-	////////////////////////////////////
-	digitsRoi = {0, 0, 0, 0};
+	
+	std::vector<char> symbolsToSearch;
+	if (checkForScoreScreen) {
+		symbolsToSearch.push_back(TIME);
+		symbolsToSearch.push_back(SCORE);
+	}
+	for (int i = 0; i <= 9; i++)
+		symbolsToSearch.push_back('0' + i);
 
-	for (int i = 0; i <= 11; i++) {
-		char symbol;
-		if (i == 0)
-			symbol = TIME;
-		else if (i == 1)
-			symbol = SCORE;
-		else
-			symbol = '0' + (i - 2);
-
-		recalculateDigitsPlacement = (bestScale == -1);  // see findSymbolLocations
-		std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, templatesDirectory, recalculateDigitsPlacement);
-
-		if (symbol == TIME && matches.empty()) {
-			if (!recalculateDigitsPlacement) {  // Maybe the old scale is invalid - have to find a scale again
-				recalculateDigitsPlacement = true;
-				frame = originalFrame;
-				matches = findSymbolLocations(frame, symbol, templatesDirectory, recalculateDigitsPlacement);
-			}
-			if (matches.empty())   // still cannot find the "TIME" label
-				return {};
-			assert(bestScale != -1);
-		}
+	for (char symbol : symbolsToSearch) {
+		recalculateDigitsPlacement = haveToRecalculateDigitsPlacement();
+		std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
 		for (auto [location, similarity] : matches) {
 			if (isSonicOne && symbol == '1') {
@@ -48,6 +49,11 @@ std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame,
 			// we've changed the ROI to speed up the search. Now we have to compensate for that.
 			location += cv::Point2f(digitsRoi.x / bestScale, digitsRoi.y / bestScale);
 			digitLocations.push_back({location, symbol, similarity});
+		}
+
+		if (symbol == TIME && matches.empty()) {
+			if (matches.empty())   // cannot find the "TIME" label - but it should be there!
+				return {};
 		}
 
 		if (symbol == TIME) {
@@ -88,35 +94,28 @@ std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame,
 	return removeOverlappingLocations(digitLocations);
 }
 
-std::vector<std::pair<cv::Rect2f, char>> removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations) {
-	// Sort the matches by similarity in descending order, and remove the overlapping ones.
-	std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
-	std::sort(digitLocations.begin(), digitLocations.end(), [](const auto& lhs, const auto& rhs) {
-		return std::get<2>(lhs) > std::get<2>(rhs);
-	});
-	for (const auto& [location, symbol, similarity] : digitLocations) {
-		bool intersectsWithOthers = false;
-
-		for (auto& digit : resultDigitLocations) {
-			const cv::Rect2f& other = digit.first;
-			if (!(location & other).empty()) {
-				intersectsWithOthers = true;
-				break;
-			}
-		}
-
-		if (!intersectsWithOthers)
-			resultDigitLocations.push_back({location, symbol});
-	}
-
-	return resultDigitLocations;
+bool DigitsRecognizer::recalculatedDigitsPlacement() {
+	return recalculateDigitsPlacement;
 }
+
+
+void DigitsRecognizer::resetDigitsPlacement() {
+	if (instance) {
+		instance->bestScale = -1;
+		instance->digitsRoi = {0, 0, 0, 0};
+	}
+}
+
+
+
+DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)
+	: gameName(gameName), templatesDirectory(templatesDirectory) {}
 
 // Returns all found positions of a digit. If recalculateDigitsPlacement is set to true, goes through different scales of the original frame (see the link below).
 // Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv
-std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, std::filesystem::path templatesDirectory, bool recalculateDigitsPlacement) {
-	auto [templateImage, templateMask, opaquePixels] = loadImageAndMaskFromFile(templatesDirectory / (symbol + std::string(".png")));
+std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
+	auto [templateImage, templateMask, opaquePixels] = loadImageAndMaskFromFile(symbol);
 	
 	// if we already found the scale, we don't go through different scales
 	double minScale, maxScale;
@@ -204,10 +203,42 @@ std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, c
 		return {};
 }
 
-// Separate the image and its alpha channel.
+
+std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations) {
+	// Sort the matches by similarity in descending order, and remove the overlapping ones.
+	std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
+
+	std::sort(digitLocations.begin(), digitLocations.end(), [](const auto& lhs, const auto& rhs) {
+		return std::get<2>(lhs) > std::get<2>(rhs);
+		});
+	for (const auto& [location, symbol, similarity] : digitLocations) {
+		bool intersectsWithOthers = false;
+
+		for (auto& digit : resultDigitLocations) {
+			const cv::Rect2f& other = digit.first;
+			if (!(location & other).empty()) {
+				intersectsWithOthers = true;
+				break;
+			}
+		}
+
+		if (!intersectsWithOthers)
+			resultDigitLocations.push_back({location, symbol});
+	}
+
+	return resultDigitLocations;
+}
+
+
+bool DigitsRecognizer::haveToRecalculateDigitsPlacement() {
+	return bestScale == -1 || digitsRoi.empty();
+}
+
+// Separates the image and its alpha channel.
 // Returns a tuple of {image, binary alpha mask, count of opaque pixels}
-std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(std::filesystem::path templatePath) {
+std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(char symbol) {
 	// the path can contain unicode, so we read the file by ourselves
+	std::filesystem::path templatePath = templatesDirectory / (symbol + std::string(".png"));
 	std::ifstream fin(templatePath, std::ios::binary);
 	std::vector<uint8_t> templateBuffer((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
 	fin.close();
@@ -215,25 +246,17 @@ std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(std::filesystem::pa
 	cv::UMat templateWithAlpha;
 	cv::imdecode(templateBuffer, cv::IMREAD_UNCHANGED).copyTo(templateWithAlpha);
 	cv::resize(templateWithAlpha, templateWithAlpha, cv::Size(), 2, 2, cv::INTER_NEAREST);
-	// we upscale the template twice, as then matching it works better
+	// we upscale the template twice, as then matching works better
 
 	cv::UMat templateImage;
 	cv::cvtColor(templateWithAlpha, templateImage, cv::COLOR_BGRA2GRAY);
 
 	std::vector<cv::UMat> templateChannels(4);
 	cv::split(templateWithAlpha, templateChannels);
-	cv::UMat templateMask = templateChannels[3];
+	cv::UMat templateMask = templateChannels[3];  // get the alpha channel
 	int opaquePixels = cv::countNonZero(templateMask);
 
 	return {templateImage, templateMask, opaquePixels};
-}
-
-void resetDigitsPlacement() {
-	bestScale = -1;
-}
-
-bool recalculatedDigitsPlacement() {
-	return recalculateDigitsPlacement;
 }
 
 }

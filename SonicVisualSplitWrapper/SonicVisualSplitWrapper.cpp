@@ -8,13 +8,14 @@ using System::Drawing::Imaging::BitmapData;
 
 namespace SonicVisualSplitWrapper {
 
-// Converting non-managed types to managed ones
-AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean visualize) {
+// Converting non-managed types to managed ones to call the native version of the function
+AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9,
+										  Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError) {
 	msclr::interop::marshal_context context;
 	std::string gameNameConverted = context.marshal_as<std::string>(gameName);
 	std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
-	const SonicVisualSplitBase::FrameAnalyzer frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
-	SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(false, visualize);
+	SonicVisualSplitBase::FrameAnalyzer& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
+	SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(checkForScoreScreen, visualize, recalculateOnError);
 
 	AnalysisResult^ resultConverted = gcnew AnalysisResult();
 	resultConverted->FoundAnyDigits = result.foundAnyDigits;

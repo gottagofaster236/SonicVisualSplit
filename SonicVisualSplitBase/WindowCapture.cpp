@@ -5,12 +5,16 @@ namespace SonicVisualSplitBase {
 
 // WindowCapture is based on https://github.com/sturkmen72/opencv_samples/blob/master/Screen-Capturing.cpp
 WindowCapture::WindowCapture(HWND hwindow) {
+    // DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
+    // This function call raises the system requirements to Windows 10 Anniversary Update (2016), unfortunately.
+    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
     hwnd = hwindow;
     hwindowDC = GetDC(hwnd);
     hwindowCompatibleDC = CreateCompatibleDC(hwindowDC);
     SetStretchBltMode(hwindowCompatibleDC, COLORONCOLOR);
 
-    EnsureWindowReadyForCapture();
+    ensureWindowReadyForCapture();
     RECT windowSize;
     GetClientRect(hwnd, &windowSize);
     width = windowSize.right;
@@ -45,7 +49,7 @@ WindowCapture::~WindowCapture() {
 
 
 void WindowCapture::getScreenshot() {
-    EnsureWindowReadyForCapture();
+    ensureWindowReadyForCapture();
     // copy from the window device context to the bitmap device context
     BitBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, SRCCOPY);
     GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, image.data, (BITMAPINFO*) &bmpInfo, DIB_RGB_COLORS);  // copy from hwindowCompatibleDC to hbwindow
@@ -66,7 +70,7 @@ bool SetMinimizeMaximizeAnimation(bool enabled) {
 }
 
 // Make sure the window isn't minimized; check the size and position of the window
-void WindowCapture::EnsureWindowReadyForCapture() {
+void WindowCapture::ensureWindowReadyForCapture() {
     bool redrawWindow = false;
     if (IsIconic(hwnd)) {
         delete fakeMinimize;
@@ -80,9 +84,10 @@ void WindowCapture::EnsureWindowReadyForCapture() {
     int height = oldWindowPos.bottom - oldWindowPos.top;
     RECT windowPos = oldWindowPos;
     // check the size of the window (i.e. stream preview isn't too small)
-    if (height < 720) {
-        height = 720;
-        windowPos.right = windowPos.left + height;
+    int minHeight = 720;
+    if (height < minHeight) {
+        height = minHeight;
+        windowPos.bottom = windowPos.top + height;
     }
     // mare sure the window is not off-screen
     HMONITOR hMonitor = MonitorFromRect(&windowPos, MONITOR_DEFAULTTONEAREST);
@@ -106,6 +111,7 @@ void WindowCapture::EnsureWindowReadyForCapture() {
         RedrawWindow(hwnd, 0, 0, RDW_INVALIDATE | RDW_UPDATENOW);
     }
 }
+
 
 // FakeMinimize.
 // We cannot make a screenshot of a minimized window, because of WinAPI limitations.

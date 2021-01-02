@@ -34,7 +34,7 @@ public:
 private:
 	FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
 
-	void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkedForScoreScreen, bool visualize);
+	void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize);
 
 	void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);
 
@@ -45,7 +45,7 @@ private:
 	bool isStretchedTo16By9;
 	AnalysisResult result;
 
-	static FrameAnalyzer* instance;
+	inline static FrameAnalyzer* instance = nullptr;
 };
 
 }  // namespace SonicVisualSplitBase

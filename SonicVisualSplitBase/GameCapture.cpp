@@ -29,6 +29,7 @@ cv::UMat getGameFrame() {
         return streamPreview;
     cv::Mat screenshot;
     cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
+    cv::imwrite("C:/tmp/screen.png", screenshot);
 
     // in OBS, the stream preview has a light-gray border around it.
     // It is adjacent to the sides of the screen, so we start from the right side. (Left side may not work if we took the screenshot during OBS redraw).
@@ -63,7 +64,7 @@ cv::UMat getGameFrame() {
     }
     screenshot(streamRectangle).copyTo(streamPreview);
     if (lastGameFrameWidth != streamPreview.cols || lastGameFrameHeight != streamPreview.rows) {
-        resetDigitsPlacement();
+        DigitsRecognizer::resetDigitsPlacement();
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
     }
@@ -75,13 +76,14 @@ bool updateOBSHwnd() {
         // checking that the size of the window hasn't changed
         RECT windowSize;
         GetClientRect(obsHwnd, &windowSize);
+
         int width = windowSize.right;
         int height = windowSize.bottom;
         if (width == obsCapture->width && height == obsCapture->height)
             return true;
     }
     // reset the scale for the DigitRecognizer, as the video stream changed
-    resetDigitsPlacement();
+    DigitsRecognizer::resetDigitsPlacement();
 
     obsHwnd = nullptr;
     DWORD processId = getOBSProcessId();

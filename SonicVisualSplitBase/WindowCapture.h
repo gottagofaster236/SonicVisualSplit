@@ -19,7 +19,7 @@ public:
     int width, height;
 
 private:
-    void EnsureWindowReadyForCapture();
+    void ensureWindowReadyForCapture();
 
     HWND hwnd;
     HDC hwindowDC, hwindowCompatibleDC;

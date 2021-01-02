@@ -32,13 +32,13 @@
     <ClInclude Include="DigitsRecognizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameCapture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="WindowCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FrameAnalyzer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

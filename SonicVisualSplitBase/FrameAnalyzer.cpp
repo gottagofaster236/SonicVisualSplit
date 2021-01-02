@@ -8,32 +8,28 @@
 namespace SonicVisualSplitBase {
 
 // TODO
-// make an "if" if stream preview size changes (not only the window itself)
-// test stuff like closing, minimizing the window several times, etc
-// check whether atexit works with winforms
-
-// ===================
-// options screen:
-// Live preview
-// Video settings:
-// composite / rgb
-// 4:3 / 16:9
-// reset defaults
-// ===================
 // think about saving frames... okay analyzeresult contains "long captureTime" (ms from epoch); 
-// if the time increases by more than the time passed (+1?), ignore that!!!!!!
-// check how atexit is called
+// if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
+// fix atexit
 // fullscreen window is not positioned right. maybe look for client area, and which shift is proposed to it?
 // if the time got down without the "could not recognize", ignore that
 // double-check score (both the presense and the time). Split if they both match (presense and time)
 // do something with split undos. On each split, calculate the sum of times!
 // for the future: think about the end of a run; maybe detect "sega"? scaled down mb.
-
 // Test EVERY option (including 16:9)
 // set bestScale to -1 when the source is changed
 // sometimes it fails???
 
-const FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9) {
+// ===================
+// options screen:
+// Live preview
+// Video settings:
+// composite / rf or rgb
+// 4:3 or 16:9 stretched
+// ===================
+
+
+FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9) {
 	if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory || instance->isStretchedTo16By9 != isStretchedTo16By9) {
 		delete instance;
 		instance = new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9);
@@ -41,8 +37,10 @@ const FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, con
 	return *instance;
 }
 
+
 FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9)
 	: gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9) {}
+
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
@@ -68,57 +66,67 @@ AnalysisResult FrameAnalyzer::analyzeFrame(bool checkForScoreScreen, bool visual
 		return result;
 	}
 
-	std::vector<std::pair<cv::Rect2f, char>> allSymbols = findAllSymbolsLocations(frame, templatesDirectory, gameName, true);
+	DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory);
+	std::vector<std::pair<cv::Rect2f, char>> allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
 	checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
 	if (result.foundAnyDigits) {
 		return result;
 	}
-	else {
-		// we can still try to fix it - maybe video source properties changed!
-		if (!recalculatedDigitsPlacement()) {
-			allSymbols = findAllSymbolsLocations(frame, templatesDirectory, gameName, true);
+	else if (recalculateOnError) {
+		// we can still try to fix it - maybe video source properties have changed!
+		if (!digitsRecognizer.recalculatedDigitsPlacement()) {
+			digitsRecognizer.resetDigitsPlacement();
+			allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
 			checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
 		}
 		if (!result.foundAnyDigits && visualize)
 			visualizeResult(allSymbols);
-		return result;
 	}
+	return result;
 }
 
 
-void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkedForScoreScreen, bool visualize) {
+void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize) {
 	result.foundAnyDigits = false;
+
 	std::map<char, std::vector<cv::Rect2f>> positionsOfSymbol;
-	for (auto& [position, symbol] : allSymbols) {
-		if (symbol == SCORE || symbol == TIME) {
-			positionsOfSymbol[symbol].push_back(position);
-		}
-	}
 
-	// score is divisible by 10, so there must be a zero on the screen
-	if (positionsOfSymbol[SCORE].empty() || positionsOfSymbol[TIME].empty()) {
-		result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
-		return;
-	}
-	std::vector<cv::Rect2f>& timeRects = positionsOfSymbol[TIME];
-	cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
-		return rect1.y < rect2.y;
-	});
-
-	if (timeRects.size() >= 2) {
-		// make sure that the other recognized TIME rectangles are valid
-		for (int i = timeRects.size() - 1; i >= 0; i--) {
-			if (timeRects[i] == timeRect)
-				continue;
-			if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 2 * originalFrame.rows / 3) {
-				timeRects.erase(timeRects.begin() + i);
+	if (checkForScoreScreen) {
+		for (auto& [position, symbol] : allSymbols) {
+			if (symbol == DigitsRecognizer::SCORE || symbol == DigitsRecognizer::TIME) {
+				positionsOfSymbol[symbol].push_back(position);
 			}
 		}
+
+		// score is divisible by 10, so there must be a zero on the screen
+		if (positionsOfSymbol[DigitsRecognizer::SCORE].empty() || positionsOfSymbol[DigitsRecognizer::TIME].empty()) {
+			result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+			return;
+		}
+		std::vector<cv::Rect2f>& timeRects = positionsOfSymbol[DigitsRecognizer::TIME];
+		cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
+			return rect1.y < rect2.y;
+			});
+
+		if (timeRects.size() >= 2) {
+			// make sure that the other recognized TIME rectangles are valid
+			for (int i = timeRects.size() - 1; i >= 0; i--) {
+				if (timeRects[i] == timeRect)
+					continue;
+				if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 2 * originalFrame.rows / 3) {
+					timeRects.erase(timeRects.begin() + i);
+				}
+			}
+		}
+
+		// There's always a "TIME" label on top of the screen
+		// But there's a second one during the score countdown screen ("TIME BONUS")
+		result.isScoreScreen = (timeRects.size() >= 2);
 	}
 
 	std::vector<std::pair<cv::Rect2f, char>> timeDigits;
 	for (auto& [position, symbol] : allSymbols) {
-		if (symbol != TIME && symbol != SCORE)
+		if (symbol != DigitsRecognizer::TIME && symbol != DigitsRecognizer::SCORE)
 			timeDigits.push_back({position, symbol});
 	}
 	sort(timeDigits.begin(), timeDigits.end(), [](const auto& lhs, const auto& rhs) {
@@ -157,13 +165,9 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
 	result.foundAnyDigits = true;
 	result.errorReason = ErrorReasonEnum::NO_ERROR;
 
-	// There's always a "TIME" label on top of the screen
-	// But there's a second one during the score countdown screen ("TIME BONUS")
-	result.isScoreScreen = (timeRects.size() >= 2);
-
 	if (visualize) {
 		auto recognizedSymbols = timeDigits;
-		char additionalSymbols[] = {SCORE, TIME};
+		char additionalSymbols[] = {DigitsRecognizer::SCORE, DigitsRecognizer::TIME};
 		for (char c : additionalSymbols) {
 			for (const cv::Rect2f& position : positionsOfSymbol[c]) {
 				recognizedSymbols.push_back({position, c});
@@ -196,7 +200,6 @@ bool FrameAnalyzer::checkIfFrameIsBlack(cv::UMat frame) {
 	int medianPosition = pixels.size() / 2;
 	std::nth_element(pixels.begin(), pixels.begin() + medianPosition, pixels.end());
 	int median = pixels[medianPosition];
-	//std::cout << "median: " << median << std::endl;
 	return median <= 10;
 }
 

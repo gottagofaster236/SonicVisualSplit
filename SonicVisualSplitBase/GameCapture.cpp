@@ -29,7 +29,6 @@ cv::UMat getGameFrame() {
         return streamPreview;
     cv::Mat screenshot;
     cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
-    cv::imwrite("C:/tmp/screen.png", screenshot);
 
     // in OBS, the stream preview has a light-gray border around it.
     // It is adjacent to the sides of the screen, so we start from the right side. (Left side may not work if we took the screenshot during OBS redraw).

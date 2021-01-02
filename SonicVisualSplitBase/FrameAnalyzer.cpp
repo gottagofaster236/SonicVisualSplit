@@ -186,9 +186,9 @@ void FrameAnalyzer::visualizeResult(const std::vector<std::pair<cv::Rect2f, char
 
 
 bool FrameAnalyzer::checkIfFrameIsBlack(cv::UMat frame) {
-	// calculating the median value out of 10'000 pixels, and checking if it's dark enough
+	// calculating the median value out of 1000 pixels, and checking if it's dark enough
 	cv::Mat frameRead = frame.getMat(cv::ACCESS_READ);
-	const int pixelsPerDimension = 100;
+	const int pixelsPerDimension = 30;
 	int stepX = std::max(frame.cols / pixelsPerDimension, 1);
 	int stepY = std::max(frame.rows / pixelsPerDimension, 1);
 	std::vector<uint8_t> pixels;

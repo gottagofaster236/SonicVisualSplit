@@ -45,6 +45,9 @@ private:
 
 	bool recalculateDigitsPlacement;
 
+	// map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}
+	std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
+
 	inline static DigitsRecognizer* instance = nullptr;
 
 	// CONSTANTS

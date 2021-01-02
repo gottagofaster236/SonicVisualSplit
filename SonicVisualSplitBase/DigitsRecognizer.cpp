@@ -16,6 +16,7 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 
 // Find locations of all digits, "SCORE" and "TIME" labels.
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
+	std::cout << "best scale: " << bestScale << std::endl;
 	cv::UMat originalFrame = frame;
 	if (!haveToRecalculateDigitsPlacement()) {  // already calculated the scale and digits ROI
 		cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
@@ -39,8 +40,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 		symbolsToSearch.push_back('0' + i);
 
 	for (char symbol : symbolsToSearch) {
-		std::cout << "symbol to check: " << symbol << std::endl;
-		recalculateDigitsPlacement = haveToRecalculateDigitsPlacement();
+		recalculateDigitsPlacement = (symbol == symbolsToSearch[0] && haveToRecalculateDigitsPlacement());
 		std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
 		for (auto [location, similarity] : matches) {
@@ -50,11 +50,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 			// we've changed the ROI to speed up the search. Now we have to compensate for that.
 			location += cv::Point2f(digitsRoi.x / bestScale, digitsRoi.y / bestScale);
 			digitLocations.push_back({location, symbol, similarity});
-		}
-
-		if (matches.empty()) {
-			std::cout << "no matches for " << symbol << std::endl;
-			cv::imwrite("C:/tmp/couldnt_find_matches_here.png", frame);
 		}
 
 		if (symbol == TIME && matches.empty()) {
@@ -84,9 +79,11 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 					timeRect = location;
 			}
 			int roiLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
-			int roiRight = frame.cols;
+			int roiRight = (int) ((timeRect.x + timeRect.width * 3.5) * bestScale);
 			int roiTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
 			int roiBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
+			roiLeft = std::max(roiLeft, 0);
+			roiRight = std::min(roiRight, frame.cols);
 			roiTop = std::max(roiTop, 0);
 			roiBottom = std::min(roiBottom, frame.rows);
 			digitsRoi = {roiLeft, roiTop, roiRight - roiLeft, roiBottom - roiTop};
@@ -116,12 +113,19 @@ void DigitsRecognizer::resetDigitsPlacement() {
 
 
 DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)
-	: gameName(gameName), templatesDirectory(templatesDirectory) {}
+								   : gameName(gameName), templatesDirectory(templatesDirectory) {
+	std::vector<char> symbolsToLoad = {TIME, SCORE};
+	for (char digit = '0'; digit <= '9'; digit++)
+		symbolsToLoad.push_back(digit);
+	for (char symbol : symbolsToLoad) {
+		templates[symbol] = loadImageAndMaskFromFile(symbol);
+	}
+}
 
 // Returns all found positions of a digit. If recalculateDigitsPlacement is set to true, goes through different scales of the original frame (see the link below).
 // Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv
 std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
-	auto [templateImage, templateMask, opaquePixels] = loadImageAndMaskFromFile(symbol);
+	auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
 	
 	// if we already found the scale, we don't go through different scales
 	double minScale, maxScale;

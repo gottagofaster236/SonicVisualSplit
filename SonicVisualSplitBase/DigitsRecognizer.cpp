@@ -39,6 +39,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 		symbolsToSearch.push_back('0' + i);
 
 	for (char symbol : symbolsToSearch) {
+		std::cout << "symbol to check: " << symbol << std::endl;
 		recalculateDigitsPlacement = haveToRecalculateDigitsPlacement();
 		std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
@@ -51,9 +52,14 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 			digitLocations.push_back({location, symbol, similarity});
 		}
 
+		if (matches.empty()) {
+			std::cout << "no matches for " << symbol << std::endl;
+			cv::imwrite("C:/tmp/couldnt_find_matches_here.png", frame);
+		}
+
 		if (symbol == TIME && matches.empty()) {
-			if (matches.empty())   // cannot find the "TIME" label - but it should be there!
-				return {};
+			// cannot find the "TIME" label - but it should be there!
+			return {};
 		}
 
 		if (symbol == TIME) {

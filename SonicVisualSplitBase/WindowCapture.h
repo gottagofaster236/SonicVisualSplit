@@ -9,50 +9,50 @@ class FakeMinimize;
 
 class WindowCapture {
 public:
-    WindowCapture(HWND hwindow);
+	WindowCapture(HWND hwindow);
 
-    ~WindowCapture();
+	~WindowCapture();
 
-    void getScreenshot();
+	void getScreenshot();
 
-    cv::Mat image;
-    int width, height;
+	cv::Mat image;
+	int width, height;
 
 private:
-    void ensureWindowReadyForCapture();
+	void ensureWindowReadyForCapture();
 
-    HWND hwnd;
-    HDC hwindowDC, hwindowCompatibleDC;
-    HBITMAP hbwindow;
-    BITMAPINFOHEADER bmpInfo;
-    FakeMinimize* fakeMinimize = nullptr;
+	HWND hwnd;
+	HDC hwindowDC, hwindowCompatibleDC;
+	HBITMAP hbwindow;
+	BITMAPINFOHEADER bmpInfo;
+	FakeMinimize* fakeMinimize = nullptr;
 };
 
 class FakeMinimize {
 public:
-    FakeMinimize(HWND hwnd);
+	FakeMinimize(HWND hwnd);
 
-    ~FakeMinimize();
+	~FakeMinimize();
 
 private:
-    void addRestoreHook();
+	void addRestoreHook();
 
-    static DWORD WINAPI addRestoreHookProc(LPVOID lpParameter);
+	static DWORD WINAPI addRestoreHookProc(LPVOID lpParameter);
 
-    static void CALLBACK onForegroundWindowChanged(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
-        DWORD dwEventThread, DWORD dwmsEventTime);
+	static void CALLBACK onForegroundWindowChanged(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
+												   DWORD dwEventThread, DWORD dwmsEventTime);
 
-    static void restoreWindow(std::pair<HWND, POINT> windowAndOriginalPosition);
+	static void restoreWindow(std::pair<HWND, POINT> windowAndOriginalPosition);
 
-    static void restoreRemainingWindows();
+	static void restoreRemainingWindows();
 
-    static void registerAtExit();
+	static void registerAtExit();
 
-    HWND hwnd;
-    HANDLE messageLoopThread = nullptr;
-    inline static std::map<HWND, POINT> originalWindowPositions;
-    inline static std::mutex originalWindowPositionsMutex;
-    inline static std::mutex threadTerminationMutex;
+	HWND hwnd;
+	HANDLE messageLoopThread = nullptr;
+	inline static std::map<HWND, POINT> originalWindowPositions;
+	inline static std::mutex originalWindowPositionsMutex;
+	inline static std::mutex threadTerminationMutex;
 };
 
 }  // namespace SonicVisualSplitBase

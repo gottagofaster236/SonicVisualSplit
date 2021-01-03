@@ -74,7 +74,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(bool checkForScoreScreen, bool visual
 	}
 	else if (recalculateOnError) {
 		// we can still try to fix it - maybe video source properties have changed!
-		if (!digitsRecognizer.recalculatedDigitsPlacement()) {
+		if (!digitsRecognizer.recalculatedDigitsPlacementLastTime()) {
 			digitsRecognizer.resetDigitsPlacement();
 			allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
 			checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
@@ -106,7 +106,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
 		std::vector<cv::Rect2f>& timeRects = positionsOfSymbol[DigitsRecognizer::TIME];
 		cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
 			return rect1.y < rect2.y;
-			});
+												});
 
 		if (timeRects.size() >= 2) {
 			// make sure that the other recognized TIME rectangles are valid
@@ -131,7 +131,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
 	}
 	sort(timeDigits.begin(), timeDigits.end(), [](const auto& lhs, const auto& rhs) {
 		return lhs.first.x < rhs.first.x;
-	});
+		 });
 
 	int requiredDigitsCount;
 	if (gameName == "Sonic CD" || gameName == "Knuckles' Chaotix")

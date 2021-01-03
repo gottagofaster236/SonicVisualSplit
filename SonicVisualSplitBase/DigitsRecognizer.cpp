@@ -32,7 +32,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 	std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;   // {location, digit, similarity coefficient}
 	// roi stands for region of interest
 	bool isSonicOne = (gameName == "Sonic 1");
-	
+
 	std::vector<char> symbolsToSearch;
 	if (checkForScoreScreen) {
 		symbolsToSearch.push_back(TIME);
@@ -47,7 +47,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
 		for (auto [location, similarity] : matches) {
 			if (isSonicOne && symbol == '1') {
-				similarity *= 5;  // dirty hack. "1" is the smallest symbol, and we can confuse it with the right-side of "9", for example
+				similarity *= 5;  // hack. "1" is the smallest symbol, and we can confuse it with the right-side of "9", for example
 			}
 			// we've changed the ROI to speed up the search. Now we have to compensate for that.
 			location += cv::Point2f(digitsRoi.x / bestScale, digitsRoi.y / bestScale);
@@ -98,11 +98,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 }
 
 
-bool DigitsRecognizer::recalculatedDigitsPlacement() {
-	return recalculateDigitsPlacement;
-}
-
-
 void DigitsRecognizer::resetDigitsPlacement() {
 	if (instance) {
 		instance->bestScale = -1;
@@ -111,9 +106,13 @@ void DigitsRecognizer::resetDigitsPlacement() {
 }
 
 
+bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
+	return recalculateDigitsPlacement;
+}
+
 
 DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)
-								   : gameName(gameName), templatesDirectory(templatesDirectory) {
+	: gameName(gameName), templatesDirectory(templatesDirectory) {
 	std::vector<char> symbolsToLoad = {TIME, SCORE};
 	for (char digit = '0'; digit <= '9'; digit++)
 		symbolsToLoad.push_back(digit);
@@ -126,7 +125,7 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 // Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv
 std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
 	auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
-	
+
 	// if we already found the scale, we don't go through different scales
 	double minScale, maxScale;
 
@@ -179,7 +178,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
 		for (const cv::Point& match : matchPoints) {
 			int x = match.x, y = match.y;
-			// If the method of tempalate matching is square difference (TM_SQDIFF), then less is better.
+			// If the method of template matching is square difference (TM_SQDIFF), then less is better.
 			// We want less to be worse, so that we make it negative.
 			double similarity = -matchResultRead.at<float>(y, x) / opaquePixels;
 
@@ -191,8 +190,8 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 			else
 				actualScale = scale;
 
-			cv::Rect2f matchRect(x / actualScale, y / actualScale, 
-								(templateImage.cols - 2) / actualScale, (templateImage.rows - 2) / actualScale);
+			cv::Rect2f matchRect(x / actualScale, y / actualScale,
+								 (templateImage.cols - 2) / actualScale, (templateImage.rows - 2) / actualScale);
 			// -2 so that they don't overlap in case of a small error
 			matches.push_back({matchRect, similarity});
 		}
@@ -203,11 +202,11 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 	// sort the matches in descending order and remove the matches with low similarity
 	sort(matches.begin(), matches.end(), [](const auto& lhs, const auto& rhs) {
 		return lhs.second > rhs.second;
-	});
+		 });
 	while (!matches.empty() && matches.back().second < minSimilarity)
 		matches.pop_back();
 
-	if (matches.size() < 1000) 
+	if (matches.size() < 1000)
 		return matches;
 	else  // There cannot be that many matches on a correct image. (It's probably a single color image).
 		return {};
@@ -220,7 +219,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
 
 	std::sort(digitLocations.begin(), digitLocations.end(), [](const auto& lhs, const auto& rhs) {
 		return std::get<2>(lhs) > std::get<2>(rhs);
-		});
+			  });
 	for (const auto& [location, symbol, similarity] : digitLocations) {
 		bool intersectsWithOthers = false;
 

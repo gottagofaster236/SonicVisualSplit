@@ -4,10 +4,12 @@
 #include <opencv2/opencv.hpp>
 
 namespace SonicVisualSplitBase {
+namespace GameCapture {
 
-// Gets the stream preview from the opened OBS window
-cv::UMat getGameFrame();
+cv::Mat getObsScreenshot();
 
-// void saveFrameToBuffer(); IDK
+// returns the stream preview
+cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot);
 
-} // namespace SonicVisualSplitBase
+}  // namespace GameCapture
+}  // namespace SonicVisualSplitBase

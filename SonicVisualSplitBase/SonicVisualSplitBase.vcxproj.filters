@@ -41,5 +41,8 @@
     <ClInclude Include="GameCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FrameStorage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

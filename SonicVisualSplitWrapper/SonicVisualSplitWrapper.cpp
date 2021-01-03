@@ -33,7 +33,7 @@ AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDir
 		uint8_t* dst = (uint8_t*) bitmapData->Scan0.ToPointer();
 		int srcStep = (int) mat.step;
 		int dstStep = bitmapData->Stride;
-		
+
 		for (int y = 0; y < mat.rows; y++) {
 			long offsetSrc = (y * srcStep);
 			long offsetDst = (y * dstStep);

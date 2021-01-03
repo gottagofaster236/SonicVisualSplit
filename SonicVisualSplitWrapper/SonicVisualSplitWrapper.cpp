@@ -1,10 +1,12 @@
 ﻿#include "SonicVisualSplitWrapper.h"
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
+#include "../SonicVisualSplitBase/FrameStorage.h"
 #include <msclr/marshal_cppstd.h>
 #include <algorithm>
 using System::Drawing::Imaging::PixelFormat;
 using System::Drawing::Imaging::ImageLockMode;
 using System::Drawing::Imaging::BitmapData;
+using namespace SonicVisualSplitBase;
 
 namespace SonicVisualSplitWrapper {
 
@@ -14,7 +16,7 @@ AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDir
     msclr::interop::marshal_context context;
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
-    SonicVisualSplitBase::FrameAnalyzer& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
+    SonicVisualSplitBase::FrameAnalyzer& frameAnalyzer = FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
     SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
@@ -48,6 +50,25 @@ AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDir
         resultConverted->VisualizedFrame = nullptr;
     }
     return resultConverted;
+}
+
+
+void BaseWrapper::StartSavingFrames() {
+    FrameStorage::startSavingFrames();
+}
+
+
+List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
+    std::vector<long long> savedFramesTimes = FrameStorage::getSavedFramesTimes();
+    List<Int64>^ converted = gcnew List<Int64>(savedFramesTimes.size());
+    for (int i = 0; i < savedFramesTimes.size(); i++) {
+        converted[i] = savedFramesTimes[i];
+    }
+}
+
+
+void BaseWrapper::DeleteSavedFramesBefore(Int64 frameTime) {
+    FrameStorage::deleteSavedFramesBefore(frameTime);
 }
 
 }

@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SonicVisualSplitWrapper;
+using System.IO;
 
 namespace SonicVisualSplit
 {
@@ -19,7 +21,7 @@ namespace SonicVisualSplit
                 {
                     try
                     {
-                        var (result, runTime) = DigitsRecognizer.Test();
+                        var (result, runTime) = Test();
                         Invoke((MethodInvoker)delegate
                         {
                             cameraPictureBox.Image = result.VisualizedFrame;
@@ -42,6 +44,15 @@ namespace SonicVisualSplit
                     }
                 }
             });
+        }
+
+        public static (AnalysisResult, long) Test()
+        {
+            string templatesDirectory = Path.GetFullPath("../../../../Templates/Sonic 1@Composite");
+            Stopwatch stopWatch = Stopwatch.StartNew();
+            var result = BaseWrapper.AnalyzeFrame("Sonic 1", templatesDirectory, false, false, true, true);
+            stopWatch.Stop();
+            return (result, stopWatch.ElapsedMilliseconds);
         }
     }
 }

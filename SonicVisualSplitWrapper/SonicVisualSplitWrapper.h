@@ -25,6 +25,12 @@ public ref class BaseWrapper {
 public:
     static AnalysisResult^ AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9,
                                         Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError);
+
+    static void StartSavingFrames();
+
+    static List<Int64>^ GetSavedFramesTimes();
+
+    static void DeleteSavedFramesBefore(Int64 frameTime);
 };
 
 }  // namespace SonicVisualSplitWrapper

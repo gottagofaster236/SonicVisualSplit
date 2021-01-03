@@ -64,6 +64,7 @@ List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
     for (int i = 0; i < savedFramesTimes.size(); i++) {
         converted[i] = savedFramesTimes[i];
     }
+    return converted;
 }
 
 

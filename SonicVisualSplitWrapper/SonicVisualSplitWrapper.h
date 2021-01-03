@@ -24,7 +24,7 @@ public:
 public ref class BaseWrapper {
 public:
     static AnalysisResult^ AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9,
-                                        Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError);
+                                        Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError);
 };
 
 }  // namespace SonicVisualSplitWrapper

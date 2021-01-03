@@ -10,12 +10,12 @@ namespace SonicVisualSplitWrapper {
 
 // Converting non-managed types to managed ones to call the native version of the function
 AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9,
-                                          Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError) {
+                                          Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError) {
     msclr::interop::marshal_context context;
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
     SonicVisualSplitBase::FrameAnalyzer& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
-    SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(checkForScoreScreen, visualize, recalculateOnError);
+    SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
     resultConverted->FoundAnyDigits = result.foundAnyDigits;

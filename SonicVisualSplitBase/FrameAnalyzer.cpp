@@ -1,6 +1,6 @@
 ﻿#include "FrameAnalyzer.h"
 #include "DigitsRecognizer.h"
-#include "GameCapture.h"
+#include "FrameStorage.h"
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <algorithm>
@@ -10,7 +10,7 @@ namespace SonicVisualSplitBase {
 // TODO
 // think about saving frames... okay analyzeresult contains "long captureTime" (ms from epoch); 
 // if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
-// fix atexit
+// ATEXIT: restore OBS, stop all threads!!
 // fullscreen window is not positioned right. maybe look for client area, and which shift is proposed to it?
 // if the time got down without the "could not recognize", ignore that
 // double-check score (both the presense and the time). Split if they both match (presense and time)
@@ -43,11 +43,11 @@ FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem:
 
 
 
-AnalysisResult FrameAnalyzer::analyzeFrame(bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
+AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
     result = AnalysisResult();
     result.foundAnyDigits = false;
 
-    cv::UMat originalFrame = getGameFrame();
+    cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
     if (originalFrame.cols == 0 || originalFrame.rows == 0) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;

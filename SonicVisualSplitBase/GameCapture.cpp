@@ -24,28 +24,21 @@ cv::Mat getObsScreenshot() {
     if (!updateOBSHwnd())
         return screenshot;  // return an empty image in case of error
     obsCapture->getScreenshot();
-    if (obsCapture->image.rows == 0 || obsCapture->image.cols == 0)
+    if (obsCapture->image.empty())
         return screenshot;
     cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
+    return screenshot;
 }
 
 
 // Gets the stream preview from the opened OBS window
-cv::UMat getGameFrame() {
-    cv::UMat streamPreview;
-    if (!updateOBSHwnd()) {
-        return streamPreview;  // return an empty image in case of error
-    }
-    obsCapture->getScreenshot();
-    if (obsCapture->image.rows == 0 || obsCapture->image.cols == 0)
-        return streamPreview;
-    cv::Mat screenshot;
-    cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
-
+cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
     // in OBS, the stream preview has a light-gray border around it.
     // It is adjacent to the sides of the screen, so we start from the right side. (Left side may not work if we took the screenshot during OBS redraw).
-
-    // Find the light-gray border rectangle
+    cv::UMat streamPreview;
+    if (screenshot.empty())
+        return streamPreview;  // return an empty image in case of error
+    
     int borderRight = screenshot.cols - 1;
     cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);
     int borderTop = screenshot.rows / 2;
@@ -149,7 +142,7 @@ BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
 }  // namespace GameCapture
 }  // namespace SonicVisualSplitBase
 
-int main() {
+/*int main() {
     for (int i = 0; i < 3; i++) {
         using milli = std::chrono::milliseconds;
         auto start = std::chrono::high_resolution_clock::now();
@@ -172,4 +165,4 @@ int main() {
     }
 
     system("pause");
-}
+}*/

@@ -29,7 +29,7 @@ class FrameAnalyzer {
 public:
     static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
 
-    AnalysisResult analyzeFrame(bool checkForScoreScreen, bool visualize, bool recalculateOnError);
+    AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);

@@ -12,40 +12,40 @@
 namespace SonicVisualSplitBase {
 
 enum class ErrorReasonEnum {
-	VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_ERROR
+    VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_ERROR
 };
 
 struct AnalysisResult {
-	bool foundAnyDigits = false;
-	std::string timeDigits;  // e. g. if the time is 1'08"23 then the string will be "10823"
-	bool isScoreScreen = false;  // needed to understand if we finished the level
-	bool isBlackScreen = false;  // e.g. transition screen
-	cv::Mat visualizedFrame;
-	ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
+    bool foundAnyDigits = false;
+    std::string timeDigits;  // e. g. if the time is 1'08"23 then the string will be "10823"
+    bool isScoreScreen = false;  // needed to understand if we finished the level
+    bool isBlackScreen = false;  // e.g. transition screen
+    cv::Mat visualizedFrame;
+    ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
 };
 
 
 class FrameAnalyzer {
 public:
-	static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
+    static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
 
-	AnalysisResult analyzeFrame(bool checkForScoreScreen, bool visualize, bool recalculateOnError);
+    AnalysisResult analyzeFrame(bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
 private:
-	FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
+    FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
 
-	void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize);
+    void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize);
 
-	void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);
+    void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);
 
-	static bool checkIfFrameIsBlack(cv::UMat frame);
+    static bool checkIfFrameIsBlack(cv::UMat frame);
 
-	std::string gameName;
-	std::filesystem::path templatesDirectory;
-	bool isStretchedTo16By9;
-	AnalysisResult result;
+    std::string gameName;
+    std::filesystem::path templatesDirectory;
+    bool isStretchedTo16By9;
+    AnalysisResult result;
 
-	inline static FrameAnalyzer* instance = nullptr;
+    inline static FrameAnalyzer* instance = nullptr;
 };
 
 }  // namespace SonicVisualSplitBase

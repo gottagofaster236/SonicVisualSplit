@@ -16,9 +16,8 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 
 // Find locations of all digits, "SCORE" and "TIME" labels.
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
-	std::cout << "best scale: " << bestScale << std::endl;
 	cv::UMat originalFrame = frame;
-	if (!haveToRecalculateDigitsPlacement()) {  // already calculated the scale and digits ROI
+	if (bestScale != -1 && !digitsRoi.empty()) {
 		cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
 		if (!checkForScoreScreen)  // if we look for digits only, we can speed everything up
 			frame = frame(digitsRoi);
@@ -26,6 +25,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 	else { // we need to find the TIME label to calculate the digits ROI
 		checkForScoreScreen = true;
 	}
+
+	if (checkForScoreScreen)
+		digitsRoi = {0, 0, 0, 0};  // we're gonna recalculate it
 
 	std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;   // {location, digit, similarity coefficient}
 	// roi stands for region of interest
@@ -40,7 +42,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 		symbolsToSearch.push_back('0' + i);
 
 	for (char symbol : symbolsToSearch) {
-		recalculateDigitsPlacement = (symbol == symbolsToSearch[0] && haveToRecalculateDigitsPlacement());
+		recalculateDigitsPlacement = (bestScale == -1);
 		std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
 		for (auto [location, similarity] : matches) {
@@ -52,10 +54,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 			digitLocations.push_back({location, symbol, similarity});
 		}
 
-		if (symbol == TIME && matches.empty()) {
-			// cannot find the "TIME" label - but it should be there!
+		if (symbol == TIME && matches.empty())  // cannot find the "TIME" label - but it should be there!
 			return {};
-		}
 
 		if (symbol == TIME) {
 			// We scan the whole screen for the "TIME" label.
@@ -239,10 +239,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
 	return resultDigitLocations;
 }
 
-
-bool DigitsRecognizer::haveToRecalculateDigitsPlacement() {
-	return bestScale == -1 || digitsRoi.empty();
-}
 
 // Separates the image and its alpha channel.
 // Returns a tuple of {image, binary alpha mask, count of opaque pixels}

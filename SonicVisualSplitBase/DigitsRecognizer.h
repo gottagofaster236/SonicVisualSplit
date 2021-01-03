@@ -27,8 +27,6 @@ private:
 
 	std::vector<std::pair<cv::Rect2f, char>> removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations);
 
-	bool haveToRecalculateDigitsPlacement();
-
 	std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
 
 	std::string gameName;

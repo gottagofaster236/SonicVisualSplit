@@ -19,6 +19,7 @@ namespace SonicVisualSplitBase {
 // Test EVERY option (including 16:9)
 // set bestScale to -1 when the source is changed
 // sometimes it fails???
+// auto reset option (which can be turned off for sonic 3 and stuff)
 
 // ===================
 // options screen:

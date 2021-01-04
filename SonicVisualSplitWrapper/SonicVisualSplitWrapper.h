@@ -21,11 +21,20 @@ public:
     ErrorReasonEnum ErrorReason;
 };
 
+public ref class FrameAnalyzer {
+public:
+    FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9);
+
+    AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError);
+
+private:
+    String^ gameName;
+    String^ templatesDirectory;
+    Boolean isStretchedTo16By9;
+};
+
 public ref class BaseWrapper {
 public:
-    static AnalysisResult^ AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9,
-                                        Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError);
-
     static void StartSavingFrames();
 
     static List<Int64>^ GetSavedFramesTimes();

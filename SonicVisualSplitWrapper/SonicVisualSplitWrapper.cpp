@@ -10,13 +10,16 @@ using namespace SonicVisualSplitBase;
 
 namespace SonicVisualSplitWrapper {
 
+FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9)
+    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9) {}
+
+
 // Converting non-managed types to managed ones to call the native version of the function
-AnalysisResult^ BaseWrapper::AnalyzeFrame(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9,
-                                          Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError) {
+AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError) {
     msclr::interop::marshal_context context;
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
-    SonicVisualSplitBase::FrameAnalyzer& frameAnalyzer = FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
+    auto& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted, isStretchedTo16By9);
     SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
@@ -61,8 +64,8 @@ void BaseWrapper::StartSavingFrames() {
 List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
     std::vector<long long> savedFramesTimes = FrameStorage::getSavedFramesTimes();
     List<Int64>^ converted = gcnew List<Int64>(savedFramesTimes.size());
-    for (int i = 0; i < savedFramesTimes.size(); i++) {
-        converted[i] = savedFramesTimes[i];
+    for (long long frameTime : savedFramesTimes) {
+        converted->Add(frameTime);
     }
     return converted;
 }

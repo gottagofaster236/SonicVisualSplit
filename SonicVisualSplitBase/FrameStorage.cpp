@@ -22,8 +22,8 @@ void startSavingFrames() {
                 std::lock_guard<std::mutex> guard(savedFramesMutex);
                 savedFrames[currentMilliseconds] = screenshot;
             }
-            auto nextIteration = startTime + milliseconds(16);
-            std::this_thread::sleep_for(nextIteration - system_clock::now());
+            auto nextIteration = startTime + milliseconds(16);  // 60 fps
+            std::this_thread::sleep_until(nextIteration);
         }
     }).detach();
 }

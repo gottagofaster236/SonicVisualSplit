@@ -9,6 +9,7 @@ namespace SonicVisualSplit
     {
         public bool RGB { get; set; }
         public bool Stretched { get; set; }
+        public bool SettingsLoaded { get; set; }
 
         public event EventHandler SettingChanged;
 
@@ -18,6 +19,7 @@ namespace SonicVisualSplit
 
             RGB = false;
             Stretched = false;
+            SettingsLoaded = false;
 
             compositeButton.DataBindings.Add("Checked", this, "RGB", false, DataSourceUpdateMode.OnPropertyChanged).BindingComplete += OnSettingChanged;
             rgbButton.DataBindings.Add("Checked", this, "RGB", true, DataSourceUpdateMode.OnPropertyChanged).BindingComplete += OnSettingChanged;
@@ -50,6 +52,7 @@ namespace SonicVisualSplit
         {
             RGB = SettingsHelper.ParseBool(settings["RGB"]);
             Stretched = SettingsHelper.ParseBool(settings["Stretched"]);
+            SettingsLoaded = true;
         }
     }
 }

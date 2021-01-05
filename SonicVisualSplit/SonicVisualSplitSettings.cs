@@ -2,10 +2,11 @@
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
+using SonicVisualSplitWrapper;
 
 namespace SonicVisualSplit
 {
-    public partial class SonicVisualSplitSettings : UserControl
+    public partial class SonicVisualSplitSettings : UserControl, IFrameConsumer
     {
         public bool RGB { get; set; }
         public bool Stretched { get; set; }
@@ -16,43 +17,61 @@ namespace SonicVisualSplit
         public SonicVisualSplitSettings()
         {
             InitializeComponent();
-
             RGB = false;
             Stretched = false;
             SettingsLoaded = false;
-
-            compositeButton.DataBindings.Add("Checked", this, "RGB", false, DataSourceUpdateMode.OnPropertyChanged).BindingComplete += OnSettingChanged;
-            rgbButton.DataBindings.Add("Checked", this, "RGB", true, DataSourceUpdateMode.OnPropertyChanged).BindingComplete += OnSettingChanged;
-            fourByThreeButton.DataBindings.Add("Checked", this, "Stretched", false, DataSourceUpdateMode.OnPropertyChanged).BindingComplete += OnSettingChanged;
-            sixteenByNineButton.DataBindings.Add("Checked", this, "Stretched", true, DataSourceUpdateMode.OnPropertyChanged).BindingComplete += OnSettingChanged;
-        }
-
-        private void OnSettingChanged(object sender, BindingCompleteEventArgs e)
-        {
-            SettingChanged?.Invoke(this, e);
         }
 
         public LayoutMode Mode { get; internal set; }
 
-        internal XmlNode GetSettings(XmlDocument document)
+        public XmlNode GetSettings(XmlDocument document)
         {
             var parent = document.CreateElement("Settings");
             CreateSettingsNode(document, parent);
             return parent;
         }
 
-        private int CreateSettingsNode(XmlDocument document, XmlElement parent)
+        public int CreateSettingsNode(XmlDocument document, XmlElement parent)
         {
             return SettingsHelper.CreateSetting(document, parent, "Version", "0.1") ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched);
         }
 
-        internal void SetSettings(XmlNode settings)
+        public void SetSettings(XmlNode settings)
         {
             RGB = SettingsHelper.ParseBool(settings["RGB"]);
+            compositeButton.Checked = !RGB;
+            rgbButton.Checked = RGB;
+
             Stretched = SettingsHelper.ParseBool(settings["Stretched"]);
+            fourByThreeButton.Checked = !Stretched;
+            sixteenByNineButton.Checked = Stretched;
+
             SettingsLoaded = true;
+        }
+
+        private void OnVideoConnectorChanged(object sender, EventArgs e)
+        {
+            RGB = rgbButton.Checked;
+            OnSettingChanged();
+        }
+
+        private void OnAspectRatioChanged(object sender, EventArgs e)
+        {
+            Stretched = sixteenByNineButton.Checked;
+            OnSettingChanged();
+        }
+
+        private void OnSettingChanged()
+        {
+            SettingChanged?.Invoke(this, null);
+        }
+
+        public void OnFrameAnalyzed(AnalysisResult result)
+        {
+            Console.WriteLine("Frame analyzed!");
+            gameCapturePreview.Image = result.VisualizedFrame;
         }
     }
 }

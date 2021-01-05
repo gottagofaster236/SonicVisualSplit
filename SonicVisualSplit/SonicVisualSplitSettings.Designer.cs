@@ -1,0 +1,234 @@
+﻿
+namespace SonicVisualSplit
+{
+    partial class SonicVisualSplitSettings
+    {
+        /// <summary> 
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Component Designer generated code
+
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.gameCapturePreview = new System.Windows.Forms.PictureBox();
+            this.livePreviewLabel = new System.Windows.Forms.Label();
+            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
+            this.copyrightLabel = new System.Windows.Forms.Label();
+            this.linkLabel2 = new System.Windows.Forms.LinkLabel();
+            this.settingsLabel = new System.Windows.Forms.Label();
+            this.compositeOrRgb = new System.Windows.Forms.Panel();
+            this.rgbButton = new System.Windows.Forms.RadioButton();
+            this.compositeButton = new System.Windows.Forms.RadioButton();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.sixteenByNineButton = new System.Windows.Forms.RadioButton();
+            this.fourByThreeButton = new System.Windows.Forms.RadioButton();
+            this.gamesComboBox = new System.Windows.Forms.ComboBox();
+            this.selectGameLabel = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).BeginInit();
+            this.compositeOrRgb.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // gameCapturePreview
+            // 
+            this.gameCapturePreview.Location = new System.Drawing.Point(16, 85);
+            this.gameCapturePreview.Name = "gameCapturePreview";
+            this.gameCapturePreview.Size = new System.Drawing.Size(592, 356);
+            this.gameCapturePreview.TabIndex = 1;
+            this.gameCapturePreview.TabStop = false;
+            // 
+            // livePreviewLabel
+            // 
+            this.livePreviewLabel.AutoSize = true;
+            this.livePreviewLabel.Location = new System.Drawing.Point(13, 62);
+            this.livePreviewLabel.Name = "livePreviewLabel";
+            this.livePreviewLabel.Size = new System.Drawing.Size(0, 17);
+            this.livePreviewLabel.TabIndex = 2;
+            // 
+            // linkLabel1
+            // 
+            this.linkLabel1.AutoSize = true;
+            this.linkLabel1.Location = new System.Drawing.Point(16, 43);
+            this.linkLabel1.Name = "linkLabel1";
+            this.linkLabel1.Size = new System.Drawing.Size(0, 17);
+            this.linkLabel1.TabIndex = 3;
+            // 
+            // copyrightLabel
+            // 
+            this.copyrightLabel.AutoSize = true;
+            this.copyrightLabel.Location = new System.Drawing.Point(13, 26);
+            this.copyrightLabel.Name = "copyrightLabel";
+            this.copyrightLabel.Size = new System.Drawing.Size(259, 17);
+            this.copyrightLabel.TabIndex = 4;
+            this.copyrightLabel.Text = "SonicVisualSplit by gottagofaster, 2021.";
+            // 
+            // linkLabel2
+            // 
+            this.linkLabel2.AutoSize = true;
+            this.linkLabel2.LinkArea = new System.Windows.Forms.LinkArea(69, 11);
+            this.linkLabel2.Location = new System.Drawing.Point(16, 59);
+            this.linkLabel2.Name = "linkLabel2";
+            this.linkLabel2.Size = new System.Drawing.Size(501, 20);
+            this.linkLabel2.TabIndex = 5;
+            this.linkLabel2.TabStop = true;
+            this.linkLabel2.Text = "Game live preview: (if it\'s not showing, launch OBS. More details on the webpage)" +
+    ".\r\n";
+            this.linkLabel2.UseCompatibleTextRendering = true;
+            // 
+            // settingsLabel
+            // 
+            this.settingsLabel.AutoSize = true;
+            this.settingsLabel.Location = new System.Drawing.Point(16, 529);
+            this.settingsLabel.Name = "settingsLabel";
+            this.settingsLabel.Size = new System.Drawing.Size(136, 17);
+            this.settingsLabel.TabIndex = 6;
+            this.settingsLabel.Text = "Video input settings:";
+            // 
+            // compositeOrRgb
+            // 
+            this.compositeOrRgb.Controls.Add(this.rgbButton);
+            this.compositeOrRgb.Controls.Add(this.compositeButton);
+            this.compositeOrRgb.Location = new System.Drawing.Point(158, 524);
+            this.compositeOrRgb.Name = "compositeOrRgb";
+            this.compositeOrRgb.Size = new System.Drawing.Size(126, 56);
+            this.compositeOrRgb.TabIndex = 7;
+            // 
+            // rgbButton
+            // 
+            this.rgbButton.AutoSize = true;
+            this.rgbButton.Location = new System.Drawing.Point(4, 31);
+            this.rgbButton.Name = "rgbButton";
+            this.rgbButton.Size = new System.Drawing.Size(59, 21);
+            this.rgbButton.TabIndex = 1;
+            this.rgbButton.Text = "RGB";
+            this.rgbButton.UseVisualStyleBackColor = true;
+            // 
+            // compositeButton
+            // 
+            this.compositeButton.AutoSize = true;
+            this.compositeButton.Checked = true;
+            this.compositeButton.Location = new System.Drawing.Point(3, 3);
+            this.compositeButton.Name = "compositeButton";
+            this.compositeButton.Size = new System.Drawing.Size(117, 21);
+            this.compositeButton.TabIndex = 0;
+            this.compositeButton.TabStop = true;
+            this.compositeButton.Text = "Composite/RF";
+            this.compositeButton.UseVisualStyleBackColor = true;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.sixteenByNineButton);
+            this.panel1.Controls.Add(this.fourByThreeButton);
+            this.panel1.Location = new System.Drawing.Point(313, 524);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(177, 56);
+            this.panel1.TabIndex = 8;
+            // 
+            // sixteenByNineButton
+            // 
+            this.sixteenByNineButton.AutoSize = true;
+            this.sixteenByNineButton.Location = new System.Drawing.Point(4, 31);
+            this.sixteenByNineButton.Name = "sixteenByNineButton";
+            this.sixteenByNineButton.Size = new System.Drawing.Size(138, 21);
+            this.sixteenByNineButton.TabIndex = 1;
+            this.sixteenByNineButton.Text = "Stretched to 16:9";
+            this.sixteenByNineButton.UseVisualStyleBackColor = true;
+            // 
+            // fourByThreeButton
+            // 
+            this.fourByThreeButton.AutoSize = true;
+            this.fourByThreeButton.Checked = true;
+            this.fourByThreeButton.Location = new System.Drawing.Point(3, 3);
+            this.fourByThreeButton.Name = "fourByThreeButton";
+            this.fourByThreeButton.Size = new System.Drawing.Size(106, 21);
+            this.fourByThreeButton.TabIndex = 0;
+            this.fourByThreeButton.TabStop = true;
+            this.fourByThreeButton.Text = "4:3 (normal)";
+            this.fourByThreeButton.UseVisualStyleBackColor = true;
+            // 
+            // gamesComboBox
+            // 
+            this.gamesComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.gamesComboBox.FormattingEnabled = true;
+            this.gamesComboBox.Items.AddRange(new object[] {
+            "Sonic 1",
+            "Sonic 2",
+            "Sonic 3 & Knuckles",
+            "Sonic CD",
+            "Knuckles Chaotix"});
+            this.gamesComboBox.Location = new System.Drawing.Point(115, 465);
+            this.gamesComboBox.Name = "gamesComboBox";
+            this.gamesComboBox.Size = new System.Drawing.Size(121, 24);
+            this.gamesComboBox.TabIndex = 9;
+            // 
+            // selectGameLabel
+            // 
+            this.selectGameLabel.AutoSize = true;
+            this.selectGameLabel.Location = new System.Drawing.Point(19, 468);
+            this.selectGameLabel.Name = "selectGameLabel";
+            this.selectGameLabel.Size = new System.Drawing.Size(90, 17);
+            this.selectGameLabel.TabIndex = 10;
+            this.selectGameLabel.Text = "Select game:";
+            // 
+            // SonicVisualSplitSettings
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.selectGameLabel);
+            this.Controls.Add(this.gamesComboBox);
+            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.compositeOrRgb);
+            this.Controls.Add(this.settingsLabel);
+            this.Controls.Add(this.linkLabel2);
+            this.Controls.Add(this.copyrightLabel);
+            this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.livePreviewLabel);
+            this.Controls.Add(this.gameCapturePreview);
+            this.Name = "SonicVisualSplitSettings";
+            this.Size = new System.Drawing.Size(637, 598);
+            ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).EndInit();
+            this.compositeOrRgb.ResumeLayout(false);
+            this.compositeOrRgb.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
+
+        #endregion
+        private System.Windows.Forms.PictureBox gameCapturePreview;
+        private System.Windows.Forms.Label livePreviewLabel;
+        private System.Windows.Forms.LinkLabel linkLabel1;
+        private System.Windows.Forms.Label copyrightLabel;
+        private System.Windows.Forms.LinkLabel linkLabel2;
+        private System.Windows.Forms.Label settingsLabel;
+        private System.Windows.Forms.Panel compositeOrRgb;
+        private System.Windows.Forms.RadioButton rgbButton;
+        private System.Windows.Forms.RadioButton compositeButton;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.RadioButton sixteenByNineButton;
+        private System.Windows.Forms.RadioButton fourByThreeButton;
+        private System.Windows.Forms.ComboBox gamesComboBox;
+        private System.Windows.Forms.Label selectGameLabel;
+    }
+}

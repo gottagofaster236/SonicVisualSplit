@@ -8,15 +8,17 @@ namespace SonicVisualSplit
 {
     class SonicVisualSplitFactory : IComponentFactory
     {
-        public string ComponentName => "SonicVisualSplits";
+        public string ComponentName => "SonicVisualSplitter";
 
         public string Description => "Auto-Splitter for people who play Sonic on console.";
 
         public ComponentCategory Category => ComponentCategory.Information;
 
-        public IComponent Create(LiveSplitState state) => new PBChanceComponent(state);
+        public IComponent Create(LiveSplitState state) => new SonicVisualSplitComponent(state);
 
         public string UpdateName => ComponentName;
+
+        public string XMLURL => "http://livesplit.org/update/Components/update.SonicVisualSplit.xml";
 
         public string UpdateURL => "http://livesplit.org/update/";
 

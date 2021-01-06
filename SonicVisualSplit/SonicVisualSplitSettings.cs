@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
@@ -21,6 +22,54 @@ namespace SonicVisualSplit
             Stretched = false;
             SettingsLoaded = false;
         }
+
+        protected override void OnParentChanged(EventArgs e)
+        {
+            Parent.VisibleChanged += OnVisibilityChanged;
+            if (Parent.Visible)
+                OnVisibilityChanged(null, null);
+        }
+
+        private void OnVisibilityChanged(object sender, EventArgs e)
+        {
+            Debug.WriteLine("Hello! parent visible: " + Parent.Visible);
+            if (Parent.Visible)
+            {
+                AutoSplitter.AddFrameConsumer(this);
+            }
+            else
+            {
+                AutoSplitter.RemoveFrameConsumer(this);
+            }
+        }
+
+        ~SonicVisualSplitSettings()
+        {
+            AutoSplitter.RemoveFrameConsumer(this);
+        }
+
+        public void OnFrameAnalyzed(AnalysisResult result)
+        {
+            Debug.WriteLine($"Frame arrived! parent visible: {Parent.Visible}");
+            gameCapturePreview.Image = result.VisualizedFrame;
+        }
+
+        /*bool IsVisible()
+        {
+            bool visible = true;
+            Control curNode = this;
+            while (curNode != null)
+            {
+                if (!curNode.Visible)
+                {
+                    visible = false;
+                    break;
+                }
+                curNode = curNode.Parent;
+            }
+            return visible;
+        }*/
+
 
         public LayoutMode Mode { get; internal set; }
 
@@ -66,12 +115,6 @@ namespace SonicVisualSplit
         private void OnSettingChanged()
         {
             SettingChanged?.Invoke(this, null);
-        }
-
-        public void OnFrameAnalyzed(AnalysisResult result)
-        {
-            Console.WriteLine("Frame analyzed!");
-            gameCapturePreview.Image = result.VisualizedFrame;
         }
     }
 }

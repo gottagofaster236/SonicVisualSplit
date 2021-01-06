@@ -10,14 +10,18 @@ using System.Threading.Tasks;
 namespace SonicVisualSplit
 {
     using SonicVisualSplitWrapper;
+    using System.Diagnostics;
     using System.IO;
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using System.Threading;
 
     class AutoSplitter
     {
         private LiveSplitState state;
         private SonicVisualSplitSettings settings;
-        private static List<IFrameConsumer> frameConsumers = new List<IFrameConsumer>();
-        private static System.Timers.Timer frameAnalyzeTimer;
+        private static ISet<IFrameConsumer> frameConsumers = new HashSet<IFrameConsumer>();
+        private static CancellationTokenSource frameAnalyzerTaskToken;
 
         public AutoSplitter(LiveSplitState state, SonicVisualSplitSettings settings)
         {
@@ -27,26 +31,24 @@ namespace SonicVisualSplit
 
         public static void StartAnalyzingFrames()
         {
-            #if true
-            AllocConsole();
-            #endif
-            Console.WriteLine("test print!");
-
             BaseWrapper.StartSavingFrames();
-            frameAnalyzeTimer = new System.Timers.Timer();
-            frameAnalyzeTimer.Interval = 500;
-            frameAnalyzeTimer.Elapsed += (sender, eventArgs) =>
+            if (frameAnalyzerTaskToken != null)
+                frameAnalyzerTaskToken.Cancel();
+            frameAnalyzerTaskToken = new CancellationTokenSource();
+            CancellationToken cancellationToken = frameAnalyzerTaskToken.Token;
+
+            Task.Run(() =>
             {
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
+                    DateTime start = DateTime.Now;
+                    DateTime nextIteration = start + TimeSpan.FromMilliseconds(500);
                     AnalyzeFrame();
+                    TimeSpan waitTime = nextIteration - DateTime.Now;
+                    if (waitTime > TimeSpan.Zero)
+                        Thread.Sleep(waitTime);
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: " + e);
-                }
-            };
-            frameAnalyzeTimer.Start();
+            }, cancellationToken);
         }
 
         public static void StopAnalyzingFrames()
@@ -54,15 +56,16 @@ namespace SonicVisualSplit
             throw new NotImplementedException();
         }
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         private static void AnalyzeFrame()
         {
             List<long> frameTimes = BaseWrapper.GetSavedFramesTimes();
             if (frameTimes.Count == 0)
                 return;
             long frameTime = frameTimes.Last();
-            Console.WriteLine("Frame time: " + frameTime);
+            Debug.WriteLine("Frame time: " + frameTime);
 
-            string templatesDirectory = Path.GetFullPath("../../../../Templates/Sonic 1@Composite");
+            string templatesDirectory = Path.GetFullPath("C:\\Users\\lievl\\source\\repos\\gottagofaster236\\SonicVisualSplitWIP\\Templates\\Sonic 1@Composite");
             FrameAnalyzer analyzer = new FrameAnalyzer("Sonic 1", templatesDirectory, false);
 
             bool visualize = frameConsumers.Any();

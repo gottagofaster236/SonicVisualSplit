@@ -10,7 +10,8 @@ namespace SonicVisualSplitBase {
 // TODO
 // think about saving frames... okay analyzeresult contains "long captureTime" (ms from epoch); 
 // if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
-// ATEXIT: restore OBS, stop all threads!!
+// ATEXIT: restore OBS, stop all threads.
+// restoring obs doesn't work correctly (activate window sucks!)
 // fullscreen window is not positioned right. maybe look for client area, and which shift is proposed to it?
 // if the time got down without the "could not recognize", ignore that
 // double-check score (both the presense and the time). Split if they both match (presense and time)
@@ -132,7 +133,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
     }
     sort(timeDigits.begin(), timeDigits.end(), [](const auto& lhs, const auto& rhs) {
         return lhs.first.x < rhs.first.x;
-         });
+    });
 
     int requiredDigitsCount;
     if (gameName == "Sonic CD" || gameName == "Knuckles' Chaotix")

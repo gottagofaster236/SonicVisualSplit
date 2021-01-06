@@ -8,7 +8,7 @@
 namespace SonicVisualSplitBase {
 
 // TODO
-// think about saving frames... okay analyzeresult contains "long captureTime" (ms from epoch); 
+// FIX FRAME ARRIVED!!!!
 // if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
 // ATEXIT: restore OBS, stop all threads.
 // restoring obs doesn't work correctly (activate window sucks!)

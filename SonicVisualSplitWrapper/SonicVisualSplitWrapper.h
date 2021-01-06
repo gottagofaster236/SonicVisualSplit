@@ -7,7 +7,7 @@ using System::Collections::Generic::List;
 using System::Drawing::Rectangle;
 using System::Drawing::Bitmap;
 
-public enum ErrorReasonEnum {
+public enum class ErrorReasonEnum {
     VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_ERROR
 };
 

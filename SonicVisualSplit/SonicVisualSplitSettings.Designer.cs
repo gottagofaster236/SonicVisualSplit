@@ -215,6 +215,7 @@ namespace SonicVisualSplit
             this.recognitionResultsLabel.Size = new System.Drawing.Size(204, 17);
             this.recognitionResultsLabel.TabIndex = 14;
             this.recognitionResultsLabel.Text = "Recognition results will go here";
+            this.recognitionResultsLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.OnRecognitionResultsLabelLinkClicked);
             // 
             // SonicVisualSplitSettings
             // 
@@ -233,7 +234,7 @@ namespace SonicVisualSplit
             this.Controls.Add(this.gameCapturePreview);
             this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Name = "SonicVisualSplitSettings";
-            this.Size = new System.Drawing.Size(632, 618);
+            this.Size = new System.Drawing.Size(632, 644);
             ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).EndInit();
             this.videoConnectorGroup.ResumeLayout(false);
             this.videoConnectorGroup.PerformLayout();

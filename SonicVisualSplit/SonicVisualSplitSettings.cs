@@ -52,8 +52,46 @@ namespace SonicVisualSplit
 
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
-            gameCapturePreview.Image = result.VisualizedFrame;
+            Invoke((MethodInvoker)delegate
+            {
+                gameCapturePreview.Image = result.VisualizedFrame;
+
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                {
+                    recognitionResultsLabel.Text = "You have to open OBS with the game. Read more at this link";
+                    recognitionResultsLabel.LinkArea = new LinkArea(49, 9);
+                }
+                else
+                {
+                    recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
+                }
+
+                if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                {
+                    recognitionResultsLabel.Text = "Can't recognize the time.";
+                }
+                else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
+                {
+                    if (result.IsBlackScreen)
+                    {
+                        recognitionResultsLabel.Text = "Black transition screen.";
+                    }
+                    else
+                    {
+                        recognitionResultsLabel.Text = $"Recognized time digits: {result.TimeDigits}.";
+                        if (result.IsScoreScreen)
+                            recognitionResultsLabel.Text += " Score screen (level completed).";
+                    }
+                }
+            });
+            
             return Parent != null && Parent.Visible;
+        }
+
+        private void OnRecognitionResultsLabelLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            var startInfo = new ProcessStartInfo("http://www.google.com");
+            Process.Start(startInfo);
         }
 
 

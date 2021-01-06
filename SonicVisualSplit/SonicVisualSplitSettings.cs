@@ -25,14 +25,16 @@ namespace SonicVisualSplit
 
         protected override void OnParentChanged(EventArgs e)
         {
-            Parent.VisibleChanged += OnVisibilityChanged;
-            if (Parent.Visible)
-                OnVisibilityChanged(null, null);
+            if (Parent != null)
+            {
+                Parent.VisibleChanged += OnVisibilityChanged;
+                if (Parent.Visible)
+                    OnVisibilityChanged();
+            }
         }
 
-        private void OnVisibilityChanged(object sender, EventArgs e)
+        private void OnVisibilityChanged(object sender = null, EventArgs e = null)
         {
-            Debug.WriteLine("Hello! parent visible: " + Parent.Visible);
             if (Parent.Visible)
             {
                 AutoSplitter.AddFrameConsumer(this);
@@ -48,27 +50,11 @@ namespace SonicVisualSplit
             AutoSplitter.RemoveFrameConsumer(this);
         }
 
-        public void OnFrameAnalyzed(AnalysisResult result)
+        public bool OnFrameAnalyzed(AnalysisResult result)
         {
-            Debug.WriteLine($"Frame arrived! parent visible: {Parent.Visible}");
             gameCapturePreview.Image = result.VisualizedFrame;
+            return Parent != null && Parent.Visible;
         }
-
-        /*bool IsVisible()
-        {
-            bool visible = true;
-            Control curNode = this;
-            while (curNode != null)
-            {
-                if (!curNode.Visible)
-                {
-                    visible = false;
-                    break;
-                }
-                curNode = curNode.Parent;
-            }
-            return visible;
-        }*/
 
 
         public LayoutMode Mode { get; internal set; }

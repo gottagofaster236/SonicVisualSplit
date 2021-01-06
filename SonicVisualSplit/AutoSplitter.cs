@@ -72,9 +72,16 @@ namespace SonicVisualSplit
             AnalysisResult result = analyzer.AnalyzeFrame(frameTime, false, visualize, true);
             BaseWrapper.DeleteSavedFramesBefore(frameTime);
 
+            List<IFrameConsumer> toRemove = new List<IFrameConsumer>();
             foreach (var frameConsumer in frameConsumers)
             {
-                frameConsumer.OnFrameAnalyzed(result);
+                if (!frameConsumer.OnFrameAnalyzed(result))
+                    toRemove.Add(frameConsumer);
+            }
+
+            foreach (var frameConsumerToRemove in toRemove)
+            {
+                frameConsumers.Remove(frameConsumerToRemove);
             }
         }
 
@@ -87,17 +94,12 @@ namespace SonicVisualSplit
         {
             frameConsumers.Remove(frameConsumer);
         }
-
-
-        // Open up console for debugging
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool AllocConsole();
     }
 
 
     interface IFrameConsumer
     {
-        void OnFrameAnalyzed(AnalysisResult result);
+        // Callback to do something with a frame. Return value: true if the consumer wants to continue to receive frames.
+        bool OnFrameAnalyzed(AnalysisResult result);
     }
 }

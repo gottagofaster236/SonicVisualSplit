@@ -9,7 +9,7 @@ class FakeMinimize;
 
 class WindowCapture {
 public:
-    WindowCapture(HWND hwindow);
+    WindowCapture(HWND hwnd);
 
     ~WindowCapture();
 
@@ -22,6 +22,7 @@ private:
     void ensureWindowReadyForCapture();
 
     HWND hwnd;
+    DWORD processId;
     HDC hwindowDC, hwindowCompatibleDC;
     HBITMAP hbwindow;
     BITMAPINFOHEADER bmpInfo;
@@ -39,7 +40,7 @@ private:
 
     static DWORD WINAPI addRestoreHookProc(LPVOID lpParameter);
 
-    static void CALLBACK onForegroundWindowChanged(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
+    static void CALLBACK onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
                                                    DWORD dwEventThread, DWORD dwmsEventTime);
 
     static void restoreWindow(std::pair<HWND, POINT> windowAndOriginalPosition);

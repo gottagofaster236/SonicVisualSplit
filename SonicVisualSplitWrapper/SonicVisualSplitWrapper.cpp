@@ -3,6 +3,7 @@
 #include "../SonicVisualSplitBase/FrameStorage.h"
 #include <msclr/marshal_cppstd.h>
 #include <algorithm>
+#undef NO_ERROR  // defined in WinError.h
 using System::Drawing::Imaging::PixelFormat;
 using System::Drawing::Imaging::ImageLockMode;
 using System::Drawing::Imaging::BitmapData;
@@ -53,6 +54,11 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
         resultConverted->VisualizedFrame = nullptr;
     }
     return resultConverted;
+}
+
+
+Boolean AnalysisResult::IsSuccessful() {
+    return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
 
 

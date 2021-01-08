@@ -131,9 +131,8 @@
     <PostBuildEvent>set LivesplitLocation=C:\Program Files\LiveSplit\
 REM set LivesplitLocation=$(SolutionDir)\..\..\LiveSplit\LiveSplit\bin\Debug\
 
-if "$(Configuration)" == "Debug"  (
-  xcopy "$(TargetDir)" "%25LivesplitLocation%25Components" /Y
-  xcopy "$(SolutionDir)x64\$(Configuration)" "%25LivesplitLocation%25Components" /Y
-)</PostBuildEvent>
+xcopy "$(TargetDir)" "%25LivesplitLocation%25Components" /Y
+xcopy "$(SolutionDir)x64\$(Configuration)" "%25LivesplitLocation%25Components" /Y
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

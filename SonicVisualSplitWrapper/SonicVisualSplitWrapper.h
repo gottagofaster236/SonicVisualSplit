@@ -19,6 +19,8 @@ public:
     Boolean IsBlackScreen;
     Bitmap^ VisualizedFrame;
     ErrorReasonEnum ErrorReason;
+
+    Boolean IsSuccessful();
 };
 
 public ref class FrameAnalyzer {

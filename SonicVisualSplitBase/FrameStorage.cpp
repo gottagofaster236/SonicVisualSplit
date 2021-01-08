@@ -8,13 +8,17 @@ namespace FrameStorage {
 
 std::map<long long, cv::Mat> savedFrames;
 std::mutex savedFramesMutex;
-
+std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
 void startSavingFrames() {
     using namespace std::chrono;
 
-    std::thread([]() {
-        while (true) {
+    stopSavingFrames();
+    framesThreadCancelledFlag = new std::atomic_bool(true);
+    std::atomic_bool* framesThreadCancelledCopy = framesThreadCancelledFlag;
+
+    std::thread([framesThreadCancelledCopy]() {
+        while (*framesThreadCancelledCopy) {
             auto startTime = system_clock::now();
             long long currentMilliseconds = duration_cast<milliseconds>(startTime.time_since_epoch()).count();
             cv::Mat screenshot = GameCapture::getObsScreenshot();
@@ -25,9 +29,19 @@ void startSavingFrames() {
             auto nextIteration = startTime + milliseconds(16);  // 60 fps
             std::this_thread::sleep_until(nextIteration);
         }
+        delete framesThreadCancelledCopy;
     }).detach();
 }
 
+
+void stopSavingFrames() {
+    if (framesThreadCancelledFlag) {
+        *framesThreadCancelledFlag = false;
+        framesThreadCancelledFlag = nullptr;
+    }
+    // make sure the frame thread stops writing to savedFrames
+    std::lock_guard<std::mutex> guard(savedFramesMutex);
+}
 
 std::vector<long long> getSavedFramesTimes() {
     std::vector<long long> savedFramesTimes;

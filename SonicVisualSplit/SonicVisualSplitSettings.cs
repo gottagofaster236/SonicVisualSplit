@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
@@ -52,40 +53,58 @@ namespace SonicVisualSplit
 
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
+            Debug.WriteLine("Frame arrived!");
+            if (Parent == null && !Parent.Visible)
+                return false;
             Invoke((MethodInvoker)delegate
             {
                 gameCapturePreview.Image = result.VisualizedFrame;
+                string resultText = null;
+                LinkArea linkArea;
+                Color textColor;
 
                 if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
-                    recognitionResultsLabel.Text = "You have to open OBS with the game. Read more at this link";
-                    recognitionResultsLabel.LinkArea = new LinkArea(49, 9);
+                    resultText = "You have to open OBS with the game. Read more at this link";
                 }
-                else
+                else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
                 {
-                    recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
-                }
-
-                if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
-                {
-                    recognitionResultsLabel.Text = "Can't recognize the time.";
+                    resultText = "Can't recognize the time.";
                 }
                 else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
                 {
                     if (result.IsBlackScreen)
                     {
-                        recognitionResultsLabel.Text = "Black transition screen.";
+                        resultText = "Black transition screen.";
                     }
                     else
                     {
-                        recognitionResultsLabel.Text = $"Recognized time digits: {result.TimeDigits}.";
+                        resultText = $"Recognized time digits: {result.TimeDigits}.";
                         if (result.IsScoreScreen)
-                            recognitionResultsLabel.Text += " Score screen (level completed).";
+                            resultText += " Score screen (level completed).";
                     }
+                }
+
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                    linkArea = new LinkArea(49, 9);
+                else
+                    linkArea = new LinkArea(0, 0);
+
+                if (result.IsSuccessful())
+                    textColor = Color.Green;
+                else
+                    textColor = Color.Black;
+
+                if (recognitionResultsLabel.Text != resultText)
+                {
+                    // Frequent updates break the LinkLabel. So we check if we actually have to update.
+                    recognitionResultsLabel.Text = resultText;
+                    recognitionResultsLabel.LinkArea = linkArea;
+                    recognitionResultsLabel.ForeColor = textColor;
                 }
             });
             
-            return Parent != null && Parent.Visible;
+            return true;
         }
 
         private void OnRecognitionResultsLabelLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

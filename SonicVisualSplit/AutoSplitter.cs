@@ -22,6 +22,7 @@ namespace SonicVisualSplit
         private SonicVisualSplitSettings settings;
         private static ISet<IFrameConsumer> frameConsumers = new HashSet<IFrameConsumer>();
         private static CancellationTokenSource frameAnalyzerTaskToken;
+        private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(500);
 
         public AutoSplitter(LiveSplitState state, SonicVisualSplitSettings settings)
         {
@@ -42,7 +43,7 @@ namespace SonicVisualSplit
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     DateTime start = DateTime.Now;
-                    DateTime nextIteration = start + TimeSpan.FromMilliseconds(500);
+                    DateTime nextIteration = start + ANALYZE_FRAME_PERIOD;
                     AnalyzeFrame();
                     TimeSpan waitTime = nextIteration - DateTime.Now;
                     if (waitTime > TimeSpan.Zero)

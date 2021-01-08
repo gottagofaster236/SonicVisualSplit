@@ -8,7 +8,8 @@
 namespace SonicVisualSplitBase {
 
 // TODO
-// FIX FRAME ARRIVED!!!!
+// FIX FRAME ARRIVED!!!! (it sometimes stops executing, idk)
+// Why does WindowCapture move the window when restored?? try at 100% scaling
 // if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
 // ATEXIT: restore OBS, stop all threads.
 // restoring obs doesn't work correctly (activate window sucks!)
@@ -108,7 +109,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         std::vector<cv::Rect2f>& timeRects = positionsOfSymbol[DigitsRecognizer::TIME];
         cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
             return rect1.y < rect2.y;
-                                                });
+        });
 
         if (timeRects.size() >= 2) {
             // make sure that the other recognized TIME rectangles are valid
@@ -182,7 +183,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
 
 void FrameAnalyzer::visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols) {
     for (auto& [position, symbol] : symbols) {
-        cv::rectangle(result.visualizedFrame, position, cv::Scalar(0, 0, 255));
+        cv::rectangle(result.visualizedFrame, position, cv::Scalar(0, 0, 255), 1);
     }
 }
 

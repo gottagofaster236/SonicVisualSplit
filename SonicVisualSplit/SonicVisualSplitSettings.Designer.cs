@@ -113,7 +113,7 @@ namespace SonicVisualSplit
             // selectGameLabel
             // 
             this.selectGameLabel.AutoSize = true;
-            this.selectGameLabel.Location = new System.Drawing.Point(16, 509);
+            this.selectGameLabel.Location = new System.Drawing.Point(16, 510);
             this.selectGameLabel.Name = "selectGameLabel";
             this.selectGameLabel.Size = new System.Drawing.Size(90, 17);
             this.selectGameLabel.TabIndex = 10;
@@ -189,9 +189,9 @@ namespace SonicVisualSplit
             this.aspectRatioBox.Controls.Add(this.fourByThreeButton);
             this.aspectRatioBox.Controls.Add(this.sixteenByNineButton);
             this.aspectRatioBox.Location = new System.Drawing.Point(340, 564);
-            this.aspectRatioBox.Margin = new System.Windows.Forms.Padding(4);
+            this.aspectRatioBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.aspectRatioBox.Name = "aspectRatioBox";
-            this.aspectRatioBox.Padding = new System.Windows.Forms.Padding(4);
+            this.aspectRatioBox.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.aspectRatioBox.Size = new System.Drawing.Size(172, 75);
             this.aspectRatioBox.TabIndex = 12;
             this.aspectRatioBox.TabStop = false;
@@ -209,10 +209,11 @@ namespace SonicVisualSplit
             // recognitionResultsLabel
             // 
             this.recognitionResultsLabel.AutoSize = true;
+            this.recognitionResultsLabel.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.recognitionResultsLabel.LinkArea = new System.Windows.Forms.LinkArea(0, 0);
-            this.recognitionResultsLabel.Location = new System.Drawing.Point(16, 467);
+            this.recognitionResultsLabel.Location = new System.Drawing.Point(16, 466);
             this.recognitionResultsLabel.Name = "recognitionResultsLabel";
-            this.recognitionResultsLabel.Size = new System.Drawing.Size(204, 17);
+            this.recognitionResultsLabel.Size = new System.Drawing.Size(248, 23);
             this.recognitionResultsLabel.TabIndex = 14;
             this.recognitionResultsLabel.Text = "Recognition results will go here";
             this.recognitionResultsLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.OnRecognitionResultsLabelLinkClicked);

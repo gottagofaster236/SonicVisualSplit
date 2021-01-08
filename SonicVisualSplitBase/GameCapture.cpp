@@ -106,14 +106,13 @@ DWORD getOBSProcessId() {
     entry.dwSize = sizeof(PROCESSENTRY32);
 
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-
-    if (Process32First(snapshot, &entry) == TRUE) {
-        while (Process32Next(snapshot, &entry) == TRUE) {
-            if (lstrcmp(entry.szExeFile, TEXT("obs64.exe")) == 0 || lstrcmp(entry.szExeFile, TEXT("obs32.exe")) == 0) {
-                return entry.th32ProcessID;
-            }
+    Process32First(snapshot, &entry);
+    do {
+        if (lstrcmp(entry.szExeFile, TEXT("obs64.exe")) == 0 || lstrcmp(entry.szExeFile, TEXT("obs32.exe")) == 0) {
+            CloseHandle(snapshot);
+            return entry.th32ProcessID;
         }
-    }
+    } while (Process32Next(snapshot, &entry));
 
     CloseHandle(snapshot);
     return 0;
@@ -142,8 +141,14 @@ BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
 }  // namespace GameCapture
 }  // namespace SonicVisualSplitBase
 
-/*int main() {
-    for (int i = 0; i < 3; i++) {
+#include "FrameStorage.h"
+
+int main() {
+    SonicVisualSplitBase::FrameStorage::startSavingFrames();
+    system("pause");
+    SonicVisualSplitBase::FrameStorage::stopSavingFrames();
+
+    /*for (int i = 0; i < 3; i++) {
         using milli = std::chrono::milliseconds;
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -162,7 +167,5 @@ BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
             std::cout << "Writing to disk!" << std::endl;
             cv::imwrite("C:/tmp/obs.png", mat);
         }
-    }
-
-    system("pause");
-}*/
+    }*/
+}

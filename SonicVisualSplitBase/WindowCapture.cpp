@@ -4,12 +4,11 @@
 namespace SonicVisualSplitBase {
 
 // WindowCapture is based on https://github.com/sturkmen72/opencv_samples/blob/master/Screen-Capturing.cpp
-WindowCapture::WindowCapture(HWND hwindow) {
+WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     // DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
     // This function call raises the system requirements to Windows 10 Anniversary Update (2016), unfortunately.
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-    hwnd = hwindow;
     hwindowDC = GetDC(hwnd);
     hwindowCompatibleDC = CreateCompatibleDC(hwindowDC);
     SetStretchBltMode(hwindowCompatibleDC, COLORONCOLOR);
@@ -122,7 +121,6 @@ void WindowCapture::ensureWindowReadyForCapture() {
 
 FakeMinimize::FakeMinimize(HWND hwnd) {
     assert(IsIconic(hwnd));
-    HWND oldActive = GetForegroundWindow();
     bool oldAnimStatus = SetMinimizeMaximizeAnimation(false);
 
     // enable transparency
@@ -139,7 +137,6 @@ FakeMinimize::FakeMinimize(HWND hwnd) {
     }
     const int SCREEN_POSITION = 0;
     SetWindowPos(hwnd, GetDesktopWindow(), SCREEN_POSITION, SCREEN_POSITION, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
-    SetForegroundWindow(oldActive);
     SetMinimizeMaximizeAnimation(oldAnimStatus);
     addRestoreHook();
     registerAtExit();
@@ -155,7 +152,8 @@ void FakeMinimize::addRestoreHook() {
 }
 
 DWORD WINAPI FakeMinimize::addRestoreHookProc(LPVOID lpParameter) {
-    SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr, onForegroundWindowChanged, 0, 0, WINEVENT_OUTOFCONTEXT);
+    SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZEEND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
+    SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
     MSG msg;
     BOOL bRet;
 
@@ -172,9 +170,8 @@ DWORD WINAPI FakeMinimize::addRestoreHookProc(LPVOID lpParameter) {
     return 0;
 }
 
-void CALLBACK FakeMinimize::onForegroundWindowChanged(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
-                                                      DWORD dwEventThread, DWORD dwmsEventTime) {
-
+void CALLBACK FakeMinimize::onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
+                                                DWORD dwEventThread, DWORD dwmsEventTime) {
     POINT originalPosition;
     {
         std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
@@ -195,6 +192,7 @@ void FakeMinimize::restoreWindow(std::pair<HWND, POINT> windowAndOriginalPositio
     LONG winLong = GetWindowLong(hwnd, GWL_EXSTYLE);
     SetWindowLong(hwnd, GWL_EXSTYLE, winLong & (~WS_EX_LAYERED) & (~WS_EX_TRANSPARENT));
     SetWindowPos(hwnd, nullptr, originalPosition.x, originalPosition.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+    ShowWindowAsync(hwnd, SW_RESTORE);
 }
 
 // Restore all the windows that we've hidden

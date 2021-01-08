@@ -16,6 +16,8 @@ namespace FrameStorage {
 
 void startSavingFrames();
 
+void stopSavingFrames();
+
 std::vector<long long> getSavedFramesTimes();
 
 cv::UMat getSavedFrame(long long frameTime);

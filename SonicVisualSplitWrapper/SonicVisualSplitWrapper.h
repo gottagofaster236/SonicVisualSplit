@@ -39,9 +39,13 @@ public ref class BaseWrapper {
 public:
     static void StartSavingFrames();
 
+    static void StopSavingFrames();
+
     static List<Int64>^ GetSavedFramesTimes();
 
     static void DeleteSavedFramesBefore(Int64 frameTime);
+
+    static void DeleteAllSavedFrames();
 };
 
 }  // namespace SonicVisualSplitWrapper

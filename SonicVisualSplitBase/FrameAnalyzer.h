@@ -25,6 +25,7 @@ struct AnalysisResult {
 };
 
 
+// This class finds the digits on the game frame (and gets a few other parameters, see AnalysisResult).
 class FrameAnalyzer {
 public:
     static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);

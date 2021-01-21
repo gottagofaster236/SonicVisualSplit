@@ -8,12 +8,9 @@
 namespace SonicVisualSplitBase {
 
 // TODO
-// FIX FRAME ARRIVED!!!! (it sometimes stops executing, idk)
-// Why does WindowCapture move the window when restored?? try at 100% scaling
+// Save the frame size sometime (to understand the minimum size mb). Not urgent? IDK
 // if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
 // ATEXIT: restore OBS, stop all threads.
-// restoring obs doesn't work correctly (activate window sucks!)
-// fullscreen window is not positioned right. maybe look for client area, and which shift is proposed to it?
 // if the time got down without the "could not recognize", ignore that
 // double-check score (both the presense and the time). Split if they both match (presense and time)
 // do something with split undos. On each split, calculate the sum of times!

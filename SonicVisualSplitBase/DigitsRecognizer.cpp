@@ -121,6 +121,7 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
     }
 }
 
+
 // Returns all found positions of a digit. If recalculateDigitsPlacement is set to true, goes through different scales of the original frame (see the link below).
 // Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv
 std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {

@@ -14,7 +14,8 @@ namespace SonicVisualSplit
         public bool Stretched { get; set; }
         public bool SettingsLoaded { get; set; }
 
-        public event EventHandler SettingChanged;
+        public event EventHandler SettingsChanged;
+        private bool disposed = false;
 
         public SonicVisualSplitSettings()
         {
@@ -50,60 +51,68 @@ namespace SonicVisualSplit
         {
             AutoSplitter.RemoveFrameConsumer(this);
         }
-
+        
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
-            Debug.WriteLine("Frame arrived!");
-            if (Parent == null && !Parent.Visible)
+            if (Parent == null || !Parent.Visible)
                 return false;
-            Invoke((MethodInvoker)delegate
+            try
             {
-                gameCapturePreview.Image = result.VisualizedFrame;
-                string resultText = null;
-                LinkArea linkArea;
-                Color textColor;
+                // Calling Invoke to update the everything from UI thread.
+                BeginInvoke((MethodInvoker)delegate
+                {
+                    gameCapturePreview.Image = result.VisualizedFrame;
+                    string resultText = null;
+                    LinkArea linkArea;
+                    Color textColor;
 
-                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                {
-                    resultText = "You have to open OBS with the game. Read more at this link";
-                }
-                else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
-                {
-                    resultText = "Can't recognize the time.";
-                }
-                else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
-                {
-                    if (result.IsBlackScreen)
+                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                     {
-                        resultText = "Black transition screen.";
+                        resultText = "You have to open OBS with the game. Read more at this link";
                     }
+                    else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                    {
+                        resultText = "Can't recognize the time.";
+                    }
+                    else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
+                    {
+                        if (result.IsBlackScreen)
+                        {
+                            resultText = "Black transition screen.";
+                        }
+                        else
+                        {
+                            resultText = $"Recognized time digits: {result.TimeDigits}.";
+                            if (result.IsScoreScreen)
+                                resultText += " Score screen (level completed).";
+                        }
+                    }
+
+                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                        linkArea = new LinkArea(49, 9);
                     else
+                        linkArea = new LinkArea(0, 0);
+
+                    if (result.IsSuccessful())
+                        textColor = Color.Green;
+                    else
+                        textColor = Color.Black;
+
+                    if (recognitionResultsLabel.Text != resultText)
                     {
-                        resultText = $"Recognized time digits: {result.TimeDigits}.";
-                        if (result.IsScoreScreen)
-                            resultText += " Score screen (level completed).";
+                        // Frequent updates break the LinkLabel. So we check if we actually have to update.
+                        recognitionResultsLabel.Text = resultText;
+                        recognitionResultsLabel.LinkArea = linkArea;
+                        recognitionResultsLabel.ForeColor = textColor;
                     }
-                }
-
-                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                    linkArea = new LinkArea(49, 9);
-                else
-                    linkArea = new LinkArea(0, 0);
-
-                if (result.IsSuccessful())
-                    textColor = Color.Green;
-                else
-                    textColor = Color.Black;
-
-                if (recognitionResultsLabel.Text != resultText)
-                {
-                    // Frequent updates break the LinkLabel. So we check if we actually have to update.
-                    recognitionResultsLabel.Text = resultText;
-                    recognitionResultsLabel.LinkArea = linkArea;
-                    recognitionResultsLabel.ForeColor = textColor;
-                }
-            });
-            
+                });
+            }
+            catch (InvalidOperationException)
+            {
+                // We have a race condition (checking for parent visibility and THEN calling BeginInvoke).
+                // Thus we may sometimes call BeginInvoke after the control was destroyed.
+                return false;
+            }
             return true;
         }
 
@@ -146,18 +155,18 @@ namespace SonicVisualSplit
         private void OnVideoConnectorChanged(object sender, EventArgs e)
         {
             RGB = rgbButton.Checked;
-            OnSettingChanged();
+            OnSettingsChanged();
         }
 
         private void OnAspectRatioChanged(object sender, EventArgs e)
         {
             Stretched = sixteenByNineButton.Checked;
-            OnSettingChanged();
+            OnSettingsChanged();
         }
 
-        private void OnSettingChanged()
+        private void OnSettingsChanged()
         {
-            SettingChanged?.Invoke(this, null);
+            SettingsChanged?.Invoke(this, null);
         }
     }
 }

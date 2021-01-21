@@ -8,7 +8,7 @@ namespace SonicVisualSplit
 {
     class SonicVisualSplitFactory : IComponentFactory
     {
-        public string ComponentName => "SonicVisualSplitter";
+        public string ComponentName => "SonicVisualSplit";
 
         public string Description => "Auto-Splitter for people who play Sonic on console.";
 

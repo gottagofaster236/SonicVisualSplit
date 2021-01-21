@@ -11,8 +11,8 @@
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
 
-// This module saves frames from OBS for further usage.
-// To distinguish between the frames, we use the capture time in milliseconds from epoch.
+// This module saves frames from OBS for further usage (as we can't process all of them in real-time).
+// To distinguish between the frames, we use the time of capture (in milliseconds from epoch).
 
 void startSavingFrames();
 
@@ -23,6 +23,8 @@ std::vector<long long> getSavedFramesTimes();
 cv::UMat getSavedFrame(long long frameTime);
 
 void deleteSavedFramesBefore(long long frameTime);
+
+void deleteAllSavedFrames();
 
 }  // namespace SonicVisualSplitBase
 }  // namespace FrameStorage

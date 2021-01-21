@@ -28,7 +28,7 @@ namespace SonicVisualSplit
             State = state;
             InternalComponent = new InfoTextComponent("Hello", "World");
             Settings = new SonicVisualSplitSettings();
-            Settings.SettingChanged += OnSettingChanged;
+            Settings.SettingsChanged += OnSettingChanged;
 
             AutoSplitter.StartAnalyzingFrames();
 

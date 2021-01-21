@@ -6,6 +6,7 @@
 namespace SonicVisualSplitBase {
 namespace GameCapture {
 
+// returns the full screenshot of the OBS window
 cv::Mat getObsScreenshot();
 
 // returns the stream preview

@@ -31,9 +31,8 @@ cv::Mat getObsScreenshot() {
 }
 
 
-// Gets the stream preview from the opened OBS window
 cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
-    // in OBS, the stream preview has a light-gray border around it.
+    // In OBS, the stream preview has a light-gray border around it.
     // It is adjacent to the sides of the screen, so we start from the right side. (Left side may not work if we took the screenshot during OBS redraw).
     cv::UMat streamPreview;
     if (screenshot.empty())
@@ -75,6 +74,7 @@ cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
     return streamPreview;
 }
 
+
 bool updateOBSHwnd() {
     if (IsWindow(obsHwnd) && !IsIconic(obsHwnd)) {
         // checking that the size of the window hasn't changed
@@ -101,6 +101,7 @@ bool updateOBSHwnd() {
     return true;
 }
 
+
 DWORD getOBSProcessId() {
     PROCESSENTRY32 entry;
     entry.dwSize = sizeof(PROCESSENTRY32);
@@ -117,6 +118,7 @@ DWORD getOBSProcessId() {
     CloseHandle(snapshot);
     return 0;
 }
+
 
 BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
     if (GetWindowTextLength(hwnd) == 0) {
@@ -141,31 +143,12 @@ BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
 }  // namespace GameCapture
 }  // namespace SonicVisualSplitBase
 
+
+/* Debug code
 #include "FrameStorage.h"
 
 int main() {
     SonicVisualSplitBase::FrameStorage::startSavingFrames();
     system("pause");
     SonicVisualSplitBase::FrameStorage::stopSavingFrames();
-
-    /*for (int i = 0; i < 3; i++) {
-        using milli = std::chrono::milliseconds;
-        auto start = std::chrono::high_resolution_clock::now();
-
-        cv::UMat mat = SonicVisualSplitBase::getGameFrame();
-
-        auto finish = std::chrono::high_resolution_clock::now();
-        std::cout << "getFrameFromOBS() took "
-            << std::chrono::duration_cast<milli>(finish - start).count()
-            << " milliseconds\n";
-
-        if (mat.cols == 0) {
-            std::cout << "Cannot capture" << std::endl;
-            Sleep(1000);
-        }
-        else {
-            std::cout << "Writing to disk!" << std::endl;
-            cv::imwrite("C:/tmp/obs.png", mat);
-        }
-    }*/
-}
+}*/

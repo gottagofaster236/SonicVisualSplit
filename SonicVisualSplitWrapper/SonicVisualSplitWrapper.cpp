@@ -67,6 +67,11 @@ void BaseWrapper::StartSavingFrames() {
 }
 
 
+void BaseWrapper::StopSavingFrames() {
+    FrameStorage::stopSavingFrames();
+}
+
+
 List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
     std::vector<long long> savedFramesTimes = FrameStorage::getSavedFramesTimes();
     List<Int64>^ converted = gcnew List<Int64>(savedFramesTimes.size());
@@ -79,6 +84,10 @@ List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
 
 void BaseWrapper::DeleteSavedFramesBefore(Int64 frameTime) {
     FrameStorage::deleteSavedFramesBefore(frameTime);
+}
+
+void BaseWrapper::DeleteAllSavedFrames() {
+    FrameStorage::deleteAllSavedFrames();
 }
 
 }

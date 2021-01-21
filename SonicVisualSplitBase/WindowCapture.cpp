@@ -4,6 +4,7 @@
 namespace SonicVisualSplitBase {
 
 // WindowCapture is based on https://github.com/sturkmen72/opencv_samples/blob/master/Screen-Capturing.cpp
+
 WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     // DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
     // This function call raises the system requirements to Windows 10 Anniversary Update (2016), unfortunately.
@@ -39,6 +40,7 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     SelectObject(hwindowCompatibleDC, hbwindow);
 };
 
+
 WindowCapture::~WindowCapture() {
     DeleteObject(hbwindow);
     DeleteDC(hwindowCompatibleDC);
@@ -48,29 +50,23 @@ WindowCapture::~WindowCapture() {
 
 
 void WindowCapture::getScreenshot() {
-    ensureWindowReadyForCapture();
+    if (!ensureWindowReadyForCapture()) {
+        image = cv::Mat();  // set the result to an empty image in case of error
+        return;
+    }
     // copy from the window device context to the bitmap device context
     BitBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, SRCCOPY);
     GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, image.data, (BITMAPINFO*) &bmpInfo, DIB_RGB_COLORS);  // copy from hwindowCompatibleDC to hbwindow
 };
 
-bool SetMinimizeMaximizeAnimation(bool enabled) {
-    ANIMATIONINFO animationInfo;
-    animationInfo.cbSize = sizeof(animationInfo);
-    animationInfo.iMinAnimate = enabled;
-    SystemParametersInfo(SPI_GETANIMATION, animationInfo.cbSize, &animationInfo, 0);
-    bool old = animationInfo.iMinAnimate;
 
-    if ((bool) animationInfo.iMinAnimate != enabled) {
-        animationInfo.iMinAnimate = enabled;
-        SystemParametersInfo(SPI_SETANIMATION, animationInfo.cbSize, &animationInfo, SPIF_SENDCHANGE);
-    }
-    return old;
-}
+// Make sure the window isn't minimized; check that the window is large enough and not off-screen.
+bool WindowCapture::ensureWindowReadyForCapture() {
+    if (isWindowMaximized())
+        return true;
 
-// Make sure the window isn't minimized; check the size and position of the window
-void WindowCapture::ensureWindowReadyForCapture() {
     bool redrawWindow = false;
+
     if (IsIconic(hwnd)) {
         delete fakeMinimize;
         fakeMinimize = new FakeMinimize(hwnd);
@@ -82,26 +78,29 @@ void WindowCapture::ensureWindowReadyForCapture() {
     int width = oldWindowPos.right - oldWindowPos.left;
     int height = oldWindowPos.bottom - oldWindowPos.top;
     RECT windowPos = oldWindowPos;
-    // check the size of the window (i.e. stream preview isn't too small)
-    int minHeight = 720;
-    if (height < minHeight) {
-        height = minHeight;
-        windowPos.bottom = windowPos.top + height;
-    }
     // mare sure the window is not off-screen
     HMONITOR hMonitor = MonitorFromRect(&windowPos, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi;
     mi.cbSize = sizeof(mi);
     GetMonitorInfo(hMonitor, &mi);
     RECT rc = mi.rcMonitor;
+    // check the size of the window (i.e. stream preview isn't too small)
+    int minHeight = 720;
+    if (height < minHeight)
+        height = minHeight;
+    height = std::min<int>(height, rc.bottom - rc.top);
+
     windowPos.left = std::max(rc.left, std::min(rc.right - width, windowPos.left));
     windowPos.top = std::max(rc.top, std::min(rc.bottom - height, windowPos.top));
     windowPos.right = windowPos.left + width;
     windowPos.bottom = windowPos.top + height;
 
-
     if (oldWindowPos.left != windowPos.left || oldWindowPos.top != windowPos.top
-        || oldWindowPos.right != windowPos.right || oldWindowPos.bottom != windowPos.bottom) {
+            || oldWindowPos.right != windowPos.right || oldWindowPos.bottom != windowPos.bottom) {
+        if (isWindowBeingMoved()) {
+            // we shouldn't move a window while the user is moving it, so we're out of luck.
+            return false;
+        }
         SetWindowPos(hwnd, nullptr, windowPos.left, windowPos.top, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
         redrawWindow = true;
     }
@@ -109,47 +108,73 @@ void WindowCapture::ensureWindowReadyForCapture() {
     if (redrawWindow) {
         RedrawWindow(hwnd, 0, 0, RDW_INVALIDATE | RDW_UPDATENOW);
     }
+
+    return true;
 }
 
 
-// FakeMinimize.
-// We cannot make a screenshot of a minimized window, because of WinAPI limitations.
-// So, what we are doing, is actually restoring a window, but making it transparent and click-through.
-// The user doesn't see the window, so it's the same as if it's still minimized.
-// When the user tries to "restore" the window (it's restored already), we intercept it with a hook
-// and return the window to its original state.
+bool WindowCapture::isWindowMaximized() {
+    WINDOWPLACEMENT placement;
+    placement.length = sizeof(placement);
+    GetWindowPlacement(hwnd, &placement);
+    return placement.showCmd == SW_MAXIMIZE;
+}
 
+
+bool WindowCapture::isWindowBeingMoved() {
+    DWORD threadId = GetWindowThreadProcessId(hwnd, nullptr);
+    GUITHREADINFO gui;
+    gui.cbSize = sizeof(gui);
+    GetGUIThreadInfo(threadId, &gui);
+    return gui.flags & GUI_INMOVESIZE;
+}
+
+
+// Restore the window, but make it transparent and click-through.
 FakeMinimize::FakeMinimize(HWND hwnd) {
     assert(IsIconic(hwnd));
-    bool oldAnimStatus = SetMinimizeMaximizeAnimation(false);
+    bool oldAnimStatus = setMinimizeMaximizeAnimation(false);
 
-    // enable transparency
+    // Enable transparency and make the window click-through.
     LONG winLong = GetWindowLong(hwnd, GWL_EXSTYLE);
     SetWindowLong(hwnd, GWL_EXSTYLE, winLong | WS_EX_LAYERED | WS_EX_TRANSPARENT);
     SetLayeredWindowAttributes(hwnd, 0, 1, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_RESTORE);
-    RECT position;
-    GetWindowRect(hwnd, &position);
-    {
-        std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
-        originalWindowPositions[hwnd] = {position.left, position.top};
-    }
-    const int SCREEN_POSITION = 0;
-    SetWindowPos(hwnd, GetDesktopWindow(), SCREEN_POSITION, SCREEN_POSITION, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
-    SetMinimizeMaximizeAnimation(oldAnimStatus);
+    originalWindowPositions.saveWindowPosition(hwnd);
+    // place the window at the top-left corner
+    SetWindowPos(hwnd, GetDesktopWindow(), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+    setMinimizeMaximizeAnimation(oldAnimStatus);
     addRestoreHook();
-    registerAtExit();
 }
+
+// Turns the window minimize/maximize animation on or off. Returns the old animation status.
+bool FakeMinimize::setMinimizeMaximizeAnimation(bool enabled) {
+    ANIMATIONINFO animationInfo;
+    animationInfo.cbSize = sizeof(animationInfo);
+    animationInfo.iMinAnimate = enabled;
+    SystemParametersInfo(SPI_GETANIMATION, animationInfo.cbSize, &animationInfo, 0);
+    bool oldEnabled = animationInfo.iMinAnimate;
+
+    if ((bool) animationInfo.iMinAnimate != enabled) {
+        animationInfo.iMinAnimate = enabled;
+        SystemParametersInfo(SPI_SETANIMATION, animationInfo.cbSize, &animationInfo, SPIF_SENDCHANGE);
+    }
+    return oldEnabled;
+}
+
 
 FakeMinimize::~FakeMinimize() {
     std::lock_guard<std::mutex> guard(threadTerminationMutex);
+    // Terminating the thread, as GetMessage() is a blocking call.
     TerminateThread(messageLoopThread, 0);
 }
+
 
 void FakeMinimize::addRestoreHook() {
     messageLoopThread = CreateThread(0, 0, addRestoreHookProc, 0, 0, 0);
 }
+
 
 DWORD WINAPI FakeMinimize::addRestoreHookProc(LPVOID lpParameter) {
     SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZEEND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
@@ -170,41 +195,54 @@ DWORD WINAPI FakeMinimize::addRestoreHookProc(LPVOID lpParameter) {
     return 0;
 }
 
+
 void CALLBACK FakeMinimize::onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
                                                 DWORD dwEventThread, DWORD dwmsEventTime) {
+    if (originalWindowPositions.restoreOBSWindow(hwnd))  // it was the OBS window
+        UnhookWinEvent(hook);
+}
+
+
+void OriginalWindowPositions::saveWindowPosition(HWND hwnd) {
+    RECT position;
+    GetWindowRect(hwnd, &position);
+    {
+        std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
+        originalWindowPositions[hwnd] = {position.left, position.top};
+    }
+}
+
+
+bool OriginalWindowPositions::restoreOBSWindow(HWND hwnd) {
     POINT originalPosition;
     {
         std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
         auto findIter = originalWindowPositions.find(hwnd);
         if (findIter == originalWindowPositions.end())  // hwnd is not the OBS window
-            return;
+            return false;
         originalPosition = findIter->second;
         originalWindowPositions.erase(findIter);
     }
-    restoreWindow({hwnd, originalPosition});
-    UnhookWinEvent(hook);
-    return;
+    restoreWindow(hwnd, originalPosition);
+    return true;
 }
 
+
 // Return the window to the original position and remove transparency (as if the user restored the window)
-void FakeMinimize::restoreWindow(std::pair<HWND, POINT> windowAndOriginalPosition) {
-    const auto& [hwnd, originalPosition] = windowAndOriginalPosition;
+void OriginalWindowPositions::restoreWindow(HWND hwnd, POINT originalPosition) {
     LONG winLong = GetWindowLong(hwnd, GWL_EXSTYLE);
     SetWindowLong(hwnd, GWL_EXSTYLE, winLong & (~WS_EX_LAYERED) & (~WS_EX_TRANSPARENT));
     SetWindowPos(hwnd, nullptr, originalPosition.x, originalPosition.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
     ShowWindowAsync(hwnd, SW_RESTORE);
 }
 
-// Restore all the windows that we've hidden
-void FakeMinimize::restoreRemainingWindows() {
-    std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
-    for (const auto& windowAndOriginalPosition : originalWindowPositions) {
-        restoreWindow(windowAndOriginalPosition);
-    }
-}
 
-void FakeMinimize::registerAtExit() {
-    std::atexit(restoreRemainingWindows);
+// restore all the windows that we've hidden
+OriginalWindowPositions::~OriginalWindowPositions() {
+    std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
+    for (const auto& [hwnd, originalPosition] : originalWindowPositions) {
+        restoreWindow(hwnd, originalPosition);
+    }
 }
 
 }  // namespace SonicVisualSplitBase

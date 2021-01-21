@@ -10,6 +10,7 @@ std::map<long long, cv::Mat> savedFrames;
 std::mutex savedFramesMutex;
 std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
+
 void startSavingFrames() {
     using namespace std::chrono;
 
@@ -43,6 +44,7 @@ void stopSavingFrames() {
     std::lock_guard<std::mutex> guard(savedFramesMutex);
 }
 
+
 std::vector<long long> getSavedFramesTimes() {
     std::vector<long long> savedFramesTimes;
     {
@@ -63,11 +65,18 @@ cv::UMat getSavedFrame(long long frameTime) {
     return GameCapture::getGameFrameFromObsScreenshot(obsScreenshot);
 }
 
+
 void deleteSavedFramesBefore(long long frameTime) {
     std::lock_guard<std::mutex> guard(savedFramesMutex);
     // std::map is sorted by key (i.e. frame time)
     while (savedFrames.size() > 0 && savedFrames.begin()->first < frameTime)
         savedFrames.erase(savedFrames.begin());
+}
+
+
+void deleteAllSavedFrames() {
+    std::lock_guard<std::mutex> guard(savedFramesMutex);
+    savedFrames.clear();
 }
 
 }  // namespace SonicVisualSplitBase

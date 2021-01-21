@@ -20,6 +20,7 @@ namespace SonicVisualSplit
     {
         private LiveSplitState state;
         private SonicVisualSplitSettings settings;
+        private FrameAnalyzer frameAnalyzer;
         private static ISet<IFrameConsumer> frameConsumers = new HashSet<IFrameConsumer>();
         private static CancellationTokenSource frameAnalyzerTaskToken;
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(500);
@@ -28,13 +29,18 @@ namespace SonicVisualSplit
         {
             this.state = state;
             this.settings = settings;
+            this.settings.SettingsChanged += OnSettingsChanged;
+            OnSettingsChanged();
+        }
+
+        private void OnSettingsChanged(object sender = null, EventArgs e = null)
+        {
+            
         }
 
         public static void StartAnalyzingFrames()
         {
             BaseWrapper.StartSavingFrames();
-            if (frameAnalyzerTaskToken != null)
-                frameAnalyzerTaskToken.Cancel();
             frameAnalyzerTaskToken = new CancellationTokenSource();
             CancellationToken cancellationToken = frameAnalyzerTaskToken.Token;
 
@@ -54,7 +60,10 @@ namespace SonicVisualSplit
 
         public static void StopAnalyzingFrames()
         {
-            throw new NotImplementedException();
+            if (frameAnalyzerTaskToken != null)
+                frameAnalyzerTaskToken.Cancel();
+            BaseWrapper.StopSavingFrames();
+            BaseWrapper.DeleteAllSavedFrames();
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
@@ -73,14 +82,14 @@ namespace SonicVisualSplit
             AnalysisResult result = analyzer.AnalyzeFrame(frameTime, false, visualize, true);
             BaseWrapper.DeleteSavedFramesBefore(frameTime);
 
-            List<IFrameConsumer> toRemove = new List<IFrameConsumer>();
+            var frameConsumersToRemove = new List<IFrameConsumer>();
             foreach (var frameConsumer in frameConsumers)
             {
                 if (!frameConsumer.OnFrameAnalyzed(result))
-                    toRemove.Add(frameConsumer);
+                    frameConsumersToRemove.Add(frameConsumer);
             }
 
-            foreach (var frameConsumerToRemove in toRemove)
+            foreach (var frameConsumerToRemove in frameConsumersToRemove)
             {
                 frameConsumers.Remove(frameConsumerToRemove);
             }

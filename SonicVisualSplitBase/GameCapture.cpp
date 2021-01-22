@@ -14,6 +14,10 @@ WindowCapture* obsCapture = nullptr;
 HWND obsHwnd = nullptr;
 int lastGameFrameWidth, lastGameFrameHeight;
 
+int obsVerticalMargin;  // difference between the client rect and window rect
+const int MINIMUM_STREAM_PREVIEW_HEIGHT = 480;
+int minimumObsHeight = 720;  // the minimum acceptable height of the OBS window (initialized with 720 when not calculated)
+
 bool updateOBSHwnd();
 DWORD getOBSProcessId();
 BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam);
@@ -33,11 +37,12 @@ cv::Mat getObsScreenshot() {
 
 cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
     // In OBS, the stream preview has a light-gray border around it.
-    // It is adjacent to the sides of the screen, so we start from the right side. (Left side may not work if we took the screenshot during OBS redraw).
+    // It is adjacent to the sides of the screen. We start from the right side.
     cv::UMat streamPreview;
     if (screenshot.empty())
         return streamPreview;  // return an empty image in case of error
     
+    // Find the border rectangle
     int borderRight = screenshot.cols - 1;
     cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);
     int borderTop = screenshot.rows / 2;
@@ -70,8 +75,14 @@ cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
         DigitsRecognizer::resetDigitsPlacement();
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
+        minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
     }
     return streamPreview;
+}
+
+
+int getMinimumObsHeight() {
+    return minimumObsHeight;
 }
 
 
@@ -83,6 +94,12 @@ bool updateOBSHwnd() {
 
         int width = windowSize.right;
         int height = windowSize.bottom;
+        
+        RECT windowRect;
+        GetWindowRect(obsHwnd, &windowRect);
+        int windowHeight = windowRect.bottom - windowRect.top;
+        obsVerticalMargin = windowHeight - height;
+
         if (width == obsCapture->width && height == obsCapture->height)
             return true;
     }

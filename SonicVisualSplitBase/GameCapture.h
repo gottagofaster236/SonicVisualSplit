@@ -12,5 +12,8 @@ cv::Mat getObsScreenshot();
 // returns the stream preview
 cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot);
 
+// returns the minimum acceptable height of the OBS window (so that the stream preview isn't too small)
+int getMinimumObsHeight();
+
 }  // namespace GameCapture
 }  // namespace SonicVisualSplitBase

@@ -1,4 +1,5 @@
 #include "WindowCapture.h"
+#include "GameCapture.h"
 #include <cstdlib>
 
 namespace SonicVisualSplitBase {
@@ -85,7 +86,7 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     GetMonitorInfo(hMonitor, &mi);
     RECT rc = mi.rcMonitor;
     // check the size of the window (i.e. stream preview isn't too small)
-    int minHeight = 720;
+    int minHeight = GameCapture::getMinimumObsHeight();
     if (height < minHeight)
         height = minHeight;
     height = std::min<int>(height, rc.bottom - rc.top);

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 
 namespace SonicVisualSplitBase {
 namespace GameCapture {

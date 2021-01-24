@@ -1,7 +1,8 @@
 #pragma once
 #include <Windows.h>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #include <mutex>
+#include <map>
 
 namespace SonicVisualSplitBase {
 

@@ -1,6 +1,7 @@
 #include "GameCapture.h"
 #include "WindowCapture.h"
 #include "DigitsRecognizer.h"
+#include <opencv2/imgproc.hpp>
 #include <Windows.h>
 #include <Tlhelp32.h>
 #include <iostream>

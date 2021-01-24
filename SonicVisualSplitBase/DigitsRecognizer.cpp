@@ -1,7 +1,10 @@
 ﻿#include "DigitsRecognizer.h"
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <fstream>
 #include <cassert>
 #include <algorithm>
+
 
 namespace SonicVisualSplitBase {
 
@@ -50,7 +53,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                 similarity *= 5;  // hack. "1" is the smallest symbol, and we can confuse it with the right-side of "9", for example
             }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
-            location += cv::Point2f(digitsRoi.x / bestScale, digitsRoi.y / bestScale);
+            location += cv::Point2f((float) (digitsRoi.x / bestScale), (float) (digitsRoi.y / bestScale));
             digitLocations.push_back({location, symbol, similarity});
         }
 
@@ -191,8 +194,8 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             else
                 actualScale = scale;
 
-            cv::Rect2f matchRect(x / actualScale, y / actualScale,
-                                 (templateImage.cols - 2) / actualScale, (templateImage.rows - 2) / actualScale);
+            cv::Rect2f matchRect((float) (x / actualScale), (float) (y / actualScale),
+                                 (float) ((templateImage.cols - 2) / actualScale), (float) ((templateImage.rows - 2) / actualScale));
             // -2 so that they don't overlap in case of a small error
             matches.push_back({matchRect, similarity});
         }

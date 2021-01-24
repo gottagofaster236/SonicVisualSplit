@@ -3,7 +3,7 @@
 #ifdef __cplusplus_cli
 #pragma managed(push, off)
 #endif
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #ifdef __cplusplus_cli
 #pragma managed(pop)
 #endif

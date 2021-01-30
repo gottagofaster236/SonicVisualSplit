@@ -78,31 +78,48 @@ namespace SonicVisualSplit
             string templatesDirectory = Path.GetFullPath("C:\\Users\\lievl\\source\\repos\\gottagofaster236\\SonicVisualSplitWIP\\Templates\\Sonic 1@Composite");
             FrameAnalyzer analyzer = new FrameAnalyzer("Sonic 1", templatesDirectory, false);
 
-            bool visualize = frameConsumers.Any();
+            bool visualize;
+            lock (frameConsumers)
+            {
+                visualize = frameConsumers.Any();
+            }
             AnalysisResult result = analyzer.AnalyzeFrame(frameTime, false, visualize, true);
             BaseWrapper.DeleteSavedFramesBefore(frameTime);
+            SendFrameToConsumers(result);
+        }
 
-            var frameConsumersToRemove = new List<IFrameConsumer>();
-            foreach (var frameConsumer in frameConsumers)
+        private static void SendFrameToConsumers(AnalysisResult result)
+        {
+            lock (frameConsumers)
             {
-                if (!frameConsumer.OnFrameAnalyzed(result))
-                    frameConsumersToRemove.Add(frameConsumer);
-            }
+                var frameConsumersToRemove = new List<IFrameConsumer>();
+                foreach (var frameConsumer in frameConsumers)
+                {
+                    if (!frameConsumer.OnFrameAnalyzed(result))
+                        frameConsumersToRemove.Add(frameConsumer);
+                }
 
-            foreach (var frameConsumerToRemove in frameConsumersToRemove)
-            {
-                frameConsumers.Remove(frameConsumerToRemove);
+                foreach (var frameConsumerToRemove in frameConsumersToRemove)
+                {
+                    frameConsumers.Remove(frameConsumerToRemove);
+                }
             }
         }
 
         public static void AddFrameConsumer(IFrameConsumer frameConsumer)
         {
-            frameConsumers.Add(frameConsumer);
+            lock (frameConsumers)
+            {
+                frameConsumers.Add(frameConsumer);
+            }
         }
 
         public static void RemoveFrameConsumer(IFrameConsumer frameConsumer)
         {
-            frameConsumers.Remove(frameConsumer);
+            lock (frameConsumers)
+            {
+                frameConsumers.Remove(frameConsumer);
+            }
         }
     }
 

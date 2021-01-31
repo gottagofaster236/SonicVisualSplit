@@ -15,9 +15,10 @@ namespace SonicVisualSplit
 {
     class SonicVisualSplitComponent : IComponent
     {
-        protected InfoTextComponent InternalComponent { get; set; }
-        protected SonicVisualSplitSettings Settings { get; set; }
-        protected LiveSplitState State;
+        private InfoTextComponent internalComponent;
+        private SonicVisualSplitSettings settings;
+        private LiveSplitState state;
+        private FrameAnalyzer frameAnalyzer;
 
         string IComponent.ComponentName => "SonicVisualSplit";
 
@@ -25,12 +26,14 @@ namespace SonicVisualSplit
         
         public SonicVisualSplitComponent(LiveSplitState state)
         {
-            State = state;
-            InternalComponent = new InfoTextComponent("Hello", "World");
-            Settings = new SonicVisualSplitSettings();
-            Settings.SettingsChanged += OnSettingChanged;
+            this.state = state;
+            internalComponent = new InfoTextComponent("Hello", "World");
 
-            AutoSplitter.StartAnalyzingFrames();
+            settings = new SonicVisualSplitSettings();
+            settings.SettingsChanged += OnSettingChanged;
+
+            frameAnalyzer = new FrameAnalyzer(state, settings);
+            frameAnalyzer.StartAnalyzingFrames();
 
             state.OnReset += OnReset;
             state.OnStart += OnStart;
@@ -54,12 +57,12 @@ namespace SonicVisualSplit
         protected void Recalculate()
         {
             string text = "Hello youtube";
-            InternalComponent.InformationValue = text;
+            internalComponent.InformationValue = text;
         }
 
         void IComponent.Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
         {
-            InternalComponent.Update(invalidator, state, width, height, mode);
+            internalComponent.Update(invalidator, state, width, height, mode);
         }
 
         void IDisposable.Dispose()
@@ -70,46 +73,46 @@ namespace SonicVisualSplit
         void IComponent.DrawHorizontal(Graphics g, LiveSplitState state, float height, Region clipRegion)
         {
             PrepareDraw(state, LayoutMode.Horizontal);
-            InternalComponent.DrawHorizontal(g, state, height, clipRegion);
+            internalComponent.DrawHorizontal(g, state, height, clipRegion);
         }
 
         void IComponent.DrawVertical(Graphics g, LiveSplitState state, float width, Region clipRegion)
         {
-            InternalComponent.PrepareDraw(state, LayoutMode.Vertical);
+            internalComponent.PrepareDraw(state, LayoutMode.Vertical);
             PrepareDraw(state, LayoutMode.Vertical);
-            InternalComponent.DrawVertical(g, state, width, clipRegion);
+            internalComponent.DrawVertical(g, state, width, clipRegion);
         }
 
         void PrepareDraw(LiveSplitState state, LayoutMode mode)
         {
-            InternalComponent.NameLabel.ForeColor = state.LayoutSettings.TextColor;
-            InternalComponent.ValueLabel.ForeColor = state.LayoutSettings.TextColor;
-            InternalComponent.PrepareDraw(state, mode);
+            internalComponent.NameLabel.ForeColor = state.LayoutSettings.TextColor;
+            internalComponent.ValueLabel.ForeColor = state.LayoutSettings.TextColor;
+            internalComponent.PrepareDraw(state, mode);
         }
 
-        float IComponent.HorizontalWidth => InternalComponent.HorizontalWidth;
-        float IComponent.MinimumHeight => InternalComponent.MinimumHeight;
-        float IComponent.MinimumWidth => InternalComponent.MinimumWidth;
-        float IComponent.PaddingBottom => InternalComponent.PaddingBottom;
-        float IComponent.PaddingLeft => InternalComponent.PaddingLeft;
-        float IComponent.PaddingRight => InternalComponent.PaddingRight;
-        float IComponent.PaddingTop => InternalComponent.PaddingTop;
-        float IComponent.VerticalHeight => InternalComponent.VerticalHeight;
+        float IComponent.HorizontalWidth => internalComponent.HorizontalWidth;
+        float IComponent.MinimumHeight => internalComponent.MinimumHeight;
+        float IComponent.MinimumWidth => internalComponent.MinimumWidth;
+        float IComponent.PaddingBottom => internalComponent.PaddingBottom;
+        float IComponent.PaddingLeft => internalComponent.PaddingLeft;
+        float IComponent.PaddingRight => internalComponent.PaddingRight;
+        float IComponent.PaddingTop => internalComponent.PaddingTop;
+        float IComponent.VerticalHeight => internalComponent.VerticalHeight;
 
         XmlNode IComponent.GetSettings(XmlDocument document)
         {
-            return Settings.GetSettings(document);
+            return settings.GetSettings(document);
         }
 
         Control IComponent.GetSettingsControl(LayoutMode mode)
         {
-            Settings.Mode = mode;
-            return Settings;
+            settings.Mode = mode;
+            return settings;
         }
 
         void IComponent.SetSettings(XmlNode settings)
         {
-            Settings.SetSettings(settings);
+            this.settings.SetSettings(settings);
         }
     }
 }

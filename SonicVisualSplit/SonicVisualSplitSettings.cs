@@ -15,11 +15,14 @@ namespace SonicVisualSplit
         public bool SettingsLoaded { get; set; }
 
         public event EventHandler SettingsChanged;
-        private bool disposed = false;
+        public FrameAnalyzer FrameAnalyzer { get; set; }
 
         public SonicVisualSplitSettings()
         {
             InitializeComponent();
+            Disposed += OnDisposed;
+
+            // default values of the settings
             RGB = false;
             Stretched = false;
             SettingsLoaded = false;
@@ -39,23 +42,24 @@ namespace SonicVisualSplit
         {
             if (Parent.Visible)
             {
-                AutoSplitter.AddFrameConsumer(this);
+                FrameAnalyzer.AddFrameConsumer(this);
             }
             else
             {
-                AutoSplitter.RemoveFrameConsumer(this);
+                FrameAnalyzer.RemoveFrameConsumer(this);
             }
         }
 
-        ~SonicVisualSplitSettings()
+        private void OnDisposed(object sender, EventArgs e)
         {
-            AutoSplitter.RemoveFrameConsumer(this);
+            FrameAnalyzer.RemoveFrameConsumer(this);
         }
-        
+
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
             if (Parent == null || !Parent.Visible)
                 return false;
+
             try
             {
                 // Calling Invoke to update the everything from UI thread.

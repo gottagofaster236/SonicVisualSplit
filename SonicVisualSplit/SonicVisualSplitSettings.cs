@@ -32,7 +32,7 @@ namespace SonicVisualSplit
                 "Sonic 2",
                 "Sonic 3 & Knuckles",
                 "Sonic CD",
-                "Knuckles Chaotix"});
+                "Knuckles' Chaotix"});
             gamesComboBox.SelectedIndex = 0;
         }
 

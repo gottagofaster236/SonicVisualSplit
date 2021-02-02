@@ -12,7 +12,7 @@ namespace SonicVisualSplit
     {
         public bool RGB { get; set; }
         public bool Stretched { get; set; }
-        public bool SettingsLoaded { get; set; }
+        public string Game { get; set; }
 
         public event EventHandler SettingsChanged;
         public FrameAnalyzer FrameAnalyzer { get; set; }
@@ -25,8 +25,79 @@ namespace SonicVisualSplit
             // default values of the settings
             RGB = false;
             Stretched = false;
-            SettingsLoaded = false;
+            Game = "Sonic 1";
+
+            gamesComboBox.Items.AddRange(new string[] {
+                "Sonic 1",
+                "Sonic 2",
+                "Sonic 3 & Knuckles",
+                "Sonic CD",
+                "Knuckles Chaotix"});
+            gamesComboBox.SelectedIndex = 0;
         }
+
+        public LayoutMode Mode { get; internal set; }
+
+        public XmlNode GetSettings(XmlDocument document)
+        {
+            var parent = document.CreateElement("Settings");
+            CreateSettingsNode(document, parent);
+            return parent;
+        }
+
+        public int CreateSettingsNode(XmlDocument document, XmlElement parent)
+        {
+            return SettingsHelper.CreateSetting(document, parent, "Version", "0.1") ^
+                SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
+                SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
+                SettingsHelper.CreateSetting(document, parent, "Game", Game);
+        }
+
+        public void SetSettings(XmlNode settings)
+        {
+            RGB = SettingsHelper.ParseBool(settings["RGB"]);
+            compositeButton.Checked = !RGB;
+            rgbButton.Checked = RGB;
+
+            Stretched = SettingsHelper.ParseBool(settings["Stretched"]);
+            fourByThreeButton.Checked = !Stretched;
+            sixteenByNineButton.Checked = Stretched;
+
+            Game = SettingsHelper.ParseString(settings["Game"]);
+            int gameIndex = gamesComboBox.FindStringExact(Game);
+            if (gameIndex == -1)
+            {
+                // No such game found, the settings are from previous version?
+                gameIndex = 0;
+                Game = "Sonic 1";
+            }
+            gamesComboBox.SelectedIndex = gameIndex;
+        }
+
+        private void OnVideoConnectorChanged(object sender, EventArgs e)
+        {
+            RGB = rgbButton.Checked;
+            OnSettingsChanged();
+        }
+
+        private void OnAspectRatioChanged(object sender, EventArgs e)
+        {
+            Stretched = sixteenByNineButton.Checked;
+            OnSettingsChanged();
+        }
+
+        private void OnGameChanged(object sender, EventArgs e)
+        {
+            Game = (string) gamesComboBox.SelectedItem;
+            OnSettingsChanged();
+        }
+
+        private void OnSettingsChanged()
+        {
+            SettingsChanged?.Invoke(this, null);
+        }
+
+        // Code that shows the preview of digits recognition results.
 
         protected override void OnParentChanged(EventArgs e)
         {
@@ -72,7 +143,7 @@ namespace SonicVisualSplit
 
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                     {
-                        resultText = "You have to open OBS with the game. Read more at this link";
+                        resultText = "You have to open OBS with the game capture. Read more at this link";
                     }
                     else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
                     {
@@ -120,57 +191,10 @@ namespace SonicVisualSplit
             return true;
         }
 
-        private void OnRecognitionResultsLabelLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void ShowHelp(object sender, LinkLabelLinkClickedEventArgs e)
         {
             var startInfo = new ProcessStartInfo("http://www.google.com");
             Process.Start(startInfo);
-        }
-
-
-        public LayoutMode Mode { get; internal set; }
-
-        public XmlNode GetSettings(XmlDocument document)
-        {
-            var parent = document.CreateElement("Settings");
-            CreateSettingsNode(document, parent);
-            return parent;
-        }
-
-        public int CreateSettingsNode(XmlDocument document, XmlElement parent)
-        {
-            return SettingsHelper.CreateSetting(document, parent, "Version", "0.1") ^
-                SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
-                SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched);
-        }
-
-        public void SetSettings(XmlNode settings)
-        {
-            RGB = SettingsHelper.ParseBool(settings["RGB"]);
-            compositeButton.Checked = !RGB;
-            rgbButton.Checked = RGB;
-
-            Stretched = SettingsHelper.ParseBool(settings["Stretched"]);
-            fourByThreeButton.Checked = !Stretched;
-            sixteenByNineButton.Checked = Stretched;
-
-            SettingsLoaded = true;
-        }
-
-        private void OnVideoConnectorChanged(object sender, EventArgs e)
-        {
-            RGB = rgbButton.Checked;
-            OnSettingsChanged();
-        }
-
-        private void OnAspectRatioChanged(object sender, EventArgs e)
-        {
-            Stretched = sixteenByNineButton.Checked;
-            OnSettingsChanged();
-        }
-
-        private void OnSettingsChanged()
-        {
-            SettingsChanged?.Invoke(this, null);
         }
     }
 }

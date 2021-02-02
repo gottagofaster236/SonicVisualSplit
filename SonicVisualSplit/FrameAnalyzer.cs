@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Reflection;
 
 namespace SonicVisualSplit
 {
@@ -35,8 +36,12 @@ namespace SonicVisualSplit
         {
             lock (nativeFrameAnalyzerLock)
             {
-                string templatesDirectory = Path.GetFullPath("C:\\Users\\lievl\\source\\repos\\gottagofaster236\\SonicVisualSplitWIP\\Templates\\Sonic 1@Composite");
-                nativeFrameAnalyzer = new SonicVisualSplitWrapper.FrameAnalyzer("Sonic 1", templatesDirectory, false);
+                // finding the path with template images for the game
+                string livesplitComponents = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
+                string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
+
+                nativeFrameAnalyzer = new SonicVisualSplitWrapper.FrameAnalyzer(settings.Game, templatesDirectory, settings.Stretched);
             }
         }
 

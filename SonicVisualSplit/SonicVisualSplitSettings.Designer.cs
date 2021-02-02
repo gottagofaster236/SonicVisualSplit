@@ -31,7 +31,6 @@ namespace SonicVisualSplit
         {
             this.gameCapturePreview = new System.Windows.Forms.PictureBox();
             this.livePreviewLabel = new System.Windows.Forms.Label();
-            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.copyrightLabel = new System.Windows.Forms.Label();
             this.settingsLabel = new System.Windows.Forms.Label();
             this.gamesComboBox = new System.Windows.Forms.ComboBox();
@@ -68,14 +67,6 @@ namespace SonicVisualSplit
             this.livePreviewLabel.Size = new System.Drawing.Size(0, 17);
             this.livePreviewLabel.TabIndex = 2;
             // 
-            // linkLabel1
-            // 
-            this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(16, 43);
-            this.linkLabel1.Name = "linkLabel1";
-            this.linkLabel1.Size = new System.Drawing.Size(0, 17);
-            this.linkLabel1.TabIndex = 3;
-            // 
             // copyrightLabel
             // 
             this.copyrightLabel.AutoSize = true;
@@ -98,17 +89,12 @@ namespace SonicVisualSplit
             // 
             this.gamesComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.gamesComboBox.FormattingEnabled = true;
-            this.gamesComboBox.Items.AddRange(new object[] {
-            "Sonic 1",
-            "Sonic 2",
-            "Sonic 3 & Knuckles",
-            "Sonic CD",
-            "Knuckles Chaotix"});
             this.gamesComboBox.Location = new System.Drawing.Point(112, 506);
             this.gamesComboBox.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.gamesComboBox.Name = "gamesComboBox";
-            this.gamesComboBox.Size = new System.Drawing.Size(121, 24);
+            this.gamesComboBox.Size = new System.Drawing.Size(134, 24);
             this.gamesComboBox.TabIndex = 9;
+            this.gamesComboBox.SelectedIndexChanged += new System.EventHandler(this.OnGameChanged);
             // 
             // selectGameLabel
             // 
@@ -189,9 +175,9 @@ namespace SonicVisualSplit
             this.aspectRatioBox.Controls.Add(this.fourByThreeButton);
             this.aspectRatioBox.Controls.Add(this.sixteenByNineButton);
             this.aspectRatioBox.Location = new System.Drawing.Point(340, 564);
-            this.aspectRatioBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.aspectRatioBox.Margin = new System.Windows.Forms.Padding(4);
             this.aspectRatioBox.Name = "aspectRatioBox";
-            this.aspectRatioBox.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.aspectRatioBox.Padding = new System.Windows.Forms.Padding(4);
             this.aspectRatioBox.Size = new System.Drawing.Size(172, 75);
             this.aspectRatioBox.TabIndex = 12;
             this.aspectRatioBox.TabStop = false;
@@ -216,7 +202,7 @@ namespace SonicVisualSplit
             this.recognitionResultsLabel.Size = new System.Drawing.Size(248, 23);
             this.recognitionResultsLabel.TabIndex = 14;
             this.recognitionResultsLabel.Text = "Recognition results will go here";
-            this.recognitionResultsLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.OnRecognitionResultsLabelLinkClicked);
+            this.recognitionResultsLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.ShowHelp);
             // 
             // SonicVisualSplitSettings
             // 
@@ -230,7 +216,6 @@ namespace SonicVisualSplit
             this.Controls.Add(this.gamesComboBox);
             this.Controls.Add(this.settingsLabel);
             this.Controls.Add(this.copyrightLabel);
-            this.Controls.Add(this.linkLabel1);
             this.Controls.Add(this.livePreviewLabel);
             this.Controls.Add(this.gameCapturePreview);
             this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
@@ -249,7 +234,6 @@ namespace SonicVisualSplit
         #endregion
         private System.Windows.Forms.PictureBox gameCapturePreview;
         private System.Windows.Forms.Label livePreviewLabel;
-        private System.Windows.Forms.LinkLabel linkLabel1;
         private System.Windows.Forms.Label copyrightLabel;
         private System.Windows.Forms.Label settingsLabel;
         private System.Windows.Forms.ComboBox gamesComboBox;

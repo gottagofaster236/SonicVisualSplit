@@ -19,9 +19,15 @@ namespace SonicVisualSplit
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
         private object nativeFrameAnalyzerLock = new object();
 
+        private int gameTimerOnSegmentStart = 0;
+        private int globalTimeOnSegmentStart = 0;
+        private int unsuccessfulStreak = 0;
+        private AnalysisResult previous = null;
+
         private ISet<IFrameConsumer> frameConsumers = new HashSet<IFrameConsumer>();
         private CancellationTokenSource frameAnalyzerTaskToken;
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(500);
+
 
         public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings)
         {
@@ -90,10 +96,12 @@ namespace SonicVisualSplit
             AnalysisResult result;
             lock (nativeFrameAnalyzerLock)
             {
-                result = nativeFrameAnalyzer.AnalyzeFrame(frameTime, false, visualize, true);
+                result = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false,
+                                                          visualize, recalculateOnError: unsuccessfulStreak >= 5);
             }
-            BaseWrapper.DeleteSavedFramesBefore(frameTime);
             SendFrameToConsumers(result);
+            BaseWrapper.DeleteSavedFramesBefore(frameTime);
+            
         }
 
         private void SendFrameToConsumers(AnalysisResult result)

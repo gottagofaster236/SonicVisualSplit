@@ -1,6 +1,4 @@
 #pragma once
-#include <vector>
-#include <string>
 #include <opencv2/core.hpp>
 
 namespace SonicVisualSplitBase {

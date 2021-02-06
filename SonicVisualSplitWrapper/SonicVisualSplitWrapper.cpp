@@ -1,6 +1,8 @@
 ﻿#include "SonicVisualSplitWrapper.h"
+#pragma managed(push, off)
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
 #include "../SonicVisualSplitBase/FrameStorage.h"
+#pragma managed(pop)
 #include <msclr/marshal_cppstd.h>
 #include <algorithm>
 #undef NO_ERROR  // defined in WinError.h
@@ -24,14 +26,17 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
     SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
-    resultConverted->FoundAnyDigits = result.foundAnyDigits;
-    resultConverted->TimeDigits = gcnew String(result.timeDigits.c_str());
+    resultConverted->RecognizedTime = result.recognizedTime;
+    resultConverted->TimeInMilliseconds = result.timeInMilliseconds;
+    resultConverted->TimeString = gcnew String(result.timeString.c_str());
     resultConverted->IsScoreScreen = result.isScoreScreen;
     resultConverted->IsBlackScreen = result.isBlackScreen;
     resultConverted->ErrorReason = (ErrorReasonEnum) result.errorReason;
+    resultConverted->FrameTime = result.frameTime;
+
     if (resultConverted->ErrorReason != ErrorReasonEnum::VIDEO_DISCONNECTED && visualize) {
-        const cv::Mat& mat = result.visualizedFrame;
         // matrix to bitmap code taken from https://github.com/shimat/opencvsharp/blob/master/src/OpenCvSharp.Extensions/BitmapConverter.cs 
+        const cv::Mat& mat = result.visualizedFrame;
         Bitmap^ converted = gcnew Bitmap(mat.cols, mat.rows, PixelFormat::Format24bppRgb);
         Rectangle rect(0, 0, mat.cols, mat.rows);
         BitmapData^ bitmapData = converted->LockBits(rect, ImageLockMode::WriteOnly, converted->PixelFormat);
@@ -61,6 +66,10 @@ Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
 
+
+void AnalysisResult::MarkAsIncorrectlyRecognized() {
+    FrameStorage::markFrameAsRecognizedIncorrectly(FrameTime);
+}
 
 void BaseWrapper::StartSavingFrames() {
     FrameStorage::startSavingFrames();

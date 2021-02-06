@@ -57,7 +57,7 @@ private:
 
 
 // FakeMinimize:
-// We cannot make a screenshot of a minimized window, because of WinAPI limitations.
+// It's impossible to make a screenshot of a minimized window (because of WinAPI limitations).
 // So we are actually restoring a window, but making it transparent and click-through.
 // The user doesn't see the window, so it's the same as if it's still minimized.
 // When the user tries to "restore" the window (it's restored already), we intercept it with a hook

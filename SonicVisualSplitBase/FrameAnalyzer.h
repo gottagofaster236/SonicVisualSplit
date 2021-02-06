@@ -1,13 +1,8 @@
 #pragma once
-#include <vector>
-#include <filesystem>
-#ifdef __cplusplus_cli
-#pragma managed(push, off)
-#endif
 #include <opencv2/core.hpp>
-#ifdef __cplusplus_cli
-#pragma managed(pop)
-#endif
+#include <filesystem>
+#include <vector>
+#include <string>
 
 namespace SonicVisualSplitBase {
 
@@ -16,11 +11,13 @@ enum class ErrorReasonEnum {
 };
 
 struct AnalysisResult {
-    bool foundAnyDigits = false;
-    std::string timeDigits;  // e. g. if the time is 1'08"23 then the string will be "10823"
+    bool recognizedTime = false;
+    int timeInMilliseconds = 0;  // the time on the screen converted to milliseconds
+    std::string timeString;  // the time on the screen, e. g. 1'08"23
     bool isScoreScreen = false;  // needed to understand if we finished the level
     bool isBlackScreen = false;  // e.g. transition screen
     cv::Mat visualizedFrame;
+    long long frameTime;
     ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
 };
 

@@ -157,7 +157,7 @@ namespace SonicVisualSplit
                         }
                         else
                         {
-                            resultText = $"Recognized time digits: {result.TimeDigits}.";
+                            resultText = $"Recognized time digits: {result.TimeString}.";
                             if (result.IsScoreScreen)
                                 resultText += " Score screen (level completed).";
                         }

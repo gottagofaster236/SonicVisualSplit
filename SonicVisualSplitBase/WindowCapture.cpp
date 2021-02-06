@@ -1,6 +1,6 @@
 #include "WindowCapture.h"
 #include "GameCapture.h"
-#include <cstdlib>
+#include <cassert>
 
 namespace SonicVisualSplitBase {
 

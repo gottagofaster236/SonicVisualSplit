@@ -13,14 +13,18 @@ public enum class ErrorReasonEnum {
 
 public ref class AnalysisResult {
 public:
-    Boolean FoundAnyDigits;
-    String^ TimeDigits;
+    Boolean RecognizedTime;
+    Int32 TimeInMilliseconds;
+    String^ TimeString;
     Boolean IsScoreScreen;
     Boolean IsBlackScreen;
     Bitmap^ VisualizedFrame;
     ErrorReasonEnum ErrorReason;
+    Int64 FrameTime;
 
     Boolean IsSuccessful();
+
+    void MarkAsIncorrectlyRecognized();
 };
 
 public ref class FrameAnalyzer {

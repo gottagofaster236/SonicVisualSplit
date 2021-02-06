@@ -1,12 +1,6 @@
 #pragma once
-#include <vector>
-#ifdef __cplusplus_cli
-#pragma managed(push, off)
-#endif
 #include <opencv2/core.hpp>
-#ifdef __cplusplus_cli
-#pragma managed(pop)
-#endif
+#include <vector>
 
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
@@ -22,9 +16,15 @@ std::vector<long long> getSavedFramesTimes();
 
 cv::UMat getSavedFrame(long long frameTime);
 
+// Deletes saved frames with time of save less than frameTime
 void deleteSavedFramesBefore(long long frameTime);
 
 void deleteAllSavedFrames();
+
+// Sometimes we may recognize the time on a frame incorrectly. If we detect that, we mark that frame as such.
+void markFrameAsRecognizedIncorrectly(long long frameTime);
+
+bool isFrameRecognizedIncorrectly(long long frameTime);
 
 }  // namespace SonicVisualSplitBase
 }  // namespace FrameStorage

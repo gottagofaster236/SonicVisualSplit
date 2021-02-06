@@ -46,7 +46,12 @@ FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem:
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
     result = AnalysisResult();
-    result.foundAnyDigits = false;
+    result.frameTime = frameTime;
+    result.recognizedTime = false;
+    if (FrameStorage::isFrameRecognizedIncorrectly(frameTime)) {
+        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        return result;
+    }
 
     cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
     if (originalFrame.cols == 0 || originalFrame.rows == 0) {
@@ -70,7 +75,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory);
     std::vector<std::pair<cv::Rect2f, char>> allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
     checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
-    if (result.foundAnyDigits) {
+    if (result.recognizedTime) {
         return result;
     }
     else if (recalculateOnError) {
@@ -80,7 +85,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
             allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
             checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
         }
-        if (!result.foundAnyDigits && visualize)
+        if (!result.recognizedTime && visualize)
             visualizeResult(allSymbols);
     }
     return result;
@@ -88,7 +93,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 
 
 void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize) {
-    result.foundAnyDigits = false;
+    result.recognizedTime = false;
 
     std::map<char, std::vector<cv::Rect2f>> positionsOfSymbol;
 
@@ -134,9 +139,10 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         return lhs.first.x < rhs.first.x;
     });
 
+    bool includesMilliseconds = (gameName == "Sonic CD" || gameName == "Knuckles' Chaotix");
     int requiredDigitsCount;
-    if (gameName == "Sonic CD" || gameName == "Knuckles' Chaotix")
-        requiredDigitsCount = 5;  // includes milliseconds
+    if (includesMilliseconds)
+        requiredDigitsCount = 5;
     else
         requiredDigitsCount = 3;
 
@@ -155,16 +161,26 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
             timeDigits.pop_back();
     }
 
+    std::string timeDigitsStr;
     for (auto& [position, digit] : timeDigits)
-        result.timeDigits += digit;
+        timeDigitsStr += digit;
 
-    if (result.timeDigits.size() != requiredDigitsCount) {
+    if (timeDigitsStr.size() != requiredDigitsCount) {
         result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
         return;
     }
-
-    result.foundAnyDigits = true;
+    result.recognizedTime = true;
     result.errorReason = ErrorReasonEnum::NO_ERROR;
+
+    // Formatting the timeString and calculating timeInMilliseconds
+    std::string minutes = timeDigitsStr.substr(0, 1), seconds = timeDigitsStr.substr(1, 2);
+    result.timeString = minutes + "'" + seconds;
+    result.timeInMilliseconds = std::stoi(minutes) * 60 * 1000 + std::stoi(seconds) * 1000;
+    if (includesMilliseconds) {
+        std::string milliseconds = timeDigitsStr.substr(3, 2);
+        result.timeString += '"' + milliseconds;
+        result.timeInMilliseconds += std::stoi(milliseconds);
+    }
 
     if (visualize) {
         auto recognizedSymbols = timeDigits;

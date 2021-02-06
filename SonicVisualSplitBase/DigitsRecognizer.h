@@ -2,6 +2,8 @@
 #include <opencv2/core.hpp>
 #include <vector>
 #include <map>
+#include <string>
+#include <tuple>
 #include <filesystem>
 
 namespace SonicVisualSplitBase {

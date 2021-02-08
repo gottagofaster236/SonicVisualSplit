@@ -30,7 +30,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
     if (checkForScoreScreen)
         digitsRoi = {0, 0, 0, 0};  // we're gonna recalculate it
-    // roi stands for region of interest
+    // ROI stands for region of interest.
 
     std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;   // {location, digit, similarity coefficient}
     bool isSonicOne = (gameName == "Sonic 1");
@@ -60,7 +60,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             return {};
 
         if (symbol == TIME) {
-            // We scan the whole screen for the "TIME" label.
+            // We search the whole screen for the "TIME" label.
             // For other symbols we will speed up the calculation by scaling the image down to the best scale.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
             frame = frame(topHalf);
@@ -69,9 +69,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             }
         }
         else if (symbol == SCORE) {
-            // we've scanned "TIME" and "SCORE". (scanning "SCORE" so that it's not confused with "TIME")
-            // We'll look for the digits only in the horizontal stripe containing the word "TIME"
-            // To "crop" the frame to that horizontal stripe, we simply change the ROI (region of interest)
+            // We've searched for "TIME" and "SCORE". (Scanning "SCORE" so that it's not confused with "TIME".)
+            // We'll look for the digits only in the horizontal stripe containing the word "TIME".
+            // To "crop" the frame to that horizontal stripe, we simply change the ROI (region of interest).
             if (matches.empty())
                 return {};
             std::vector<std::pair<cv::Rect2f, char>> curRecognized = removeOverlappingLocations(digitLocations);
@@ -114,7 +114,7 @@ bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
 
 
 DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)
-    : gameName(gameName), templatesDirectory(templatesDirectory) {
+        : gameName(gameName), templatesDirectory(templatesDirectory) {
     std::vector<char> symbolsToLoad = {TIME, SCORE};
     for (char digit = '0'; digit <= '9'; digit++)
         symbolsToLoad.push_back(digit);
@@ -222,7 +222,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
 
     std::sort(digitLocations.begin(), digitLocations.end(), [](const auto& lhs, const auto& rhs) {
         return std::get<2>(lhs) > std::get<2>(rhs);
-              });
+    });
     for (const auto& [location, symbol, similarity] : digitLocations) {
         bool intersectsWithOthers = false;
 

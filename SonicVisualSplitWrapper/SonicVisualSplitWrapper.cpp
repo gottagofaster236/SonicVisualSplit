@@ -18,7 +18,7 @@ FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boole
 
 
 // Converting non-managed types to managed ones to call the native version of the function
-AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError) {
+AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean recalculateOnError, Boolean visualize) {
     msclr::interop::marshal_context context;
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);

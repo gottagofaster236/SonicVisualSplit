@@ -9,6 +9,7 @@
 namespace SonicVisualSplitBase {
 
 // TODO
+// force user to open settings at least once.
 // Save the frame size sometime (to understand the minimum size mb). Not urgent? IDK
 // if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
 // ATEXIT: restore OBS, stop all threads.
@@ -179,7 +180,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
     if (includesMilliseconds) {
         std::string milliseconds = timeDigitsStr.substr(3, 2);
         result.timeString += '"' + milliseconds;
-        result.timeInMilliseconds += std::stoi(milliseconds);
+        result.timeInMilliseconds += std::stoi(milliseconds) * 10;
     }
 
     if (visualize) {

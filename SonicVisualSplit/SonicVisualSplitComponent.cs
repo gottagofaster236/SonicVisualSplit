@@ -9,11 +9,12 @@ using LiveSplit.UI;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
-using System.Runtime.InteropServices;
+using SonicVisualSplitWrapper;
+
 
 namespace SonicVisualSplit
 {
-    class SonicVisualSplitComponent : IComponent
+    class SonicVisualSplitComponent : IComponent, FrameAnalyzer.Callback
     {
         private InfoTextComponent internalComponent;
         private SonicVisualSplitSettings settings;
@@ -27,37 +28,12 @@ namespace SonicVisualSplit
         public SonicVisualSplitComponent(LiveSplitState state)
         {
             this.state = state;
-            internalComponent = new InfoTextComponent("Hello", "World");
-
+            internalComponent = new InfoTextComponent("Time on screen (SVS)", "Wait..");
             settings = new SonicVisualSplitSettings();
-            settings.SettingsChanged += OnSettingChanged;
 
             frameAnalyzer = new FrameAnalyzer(state, settings);
+            frameAnalyzer.AddFrameConsumer(this);
             frameAnalyzer.StartAnalyzingFrames();
-
-            state.OnReset += OnReset;
-            state.OnStart += OnStart;
-        }
-
-        private void OnSettingChanged(object sender, EventArgs e)
-        {
-            Recalculate();
-        }
-
-        private void OnStart(object sender, EventArgs e)
-        {
-            Recalculate();
-        }
-
-        protected void OnReset(object sender, TimerPhase value)
-        {
-            Recalculate();
-        }
-
-        protected void Recalculate()
-        {
-            string text = "Hello youtube";
-            internalComponent.InformationValue = text;
         }
 
         void IComponent.Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
@@ -67,7 +43,8 @@ namespace SonicVisualSplit
 
         void IDisposable.Dispose()
         {
-
+            frameAnalyzer.StopAnalyzingFrames();
+            state.IsGameTimePaused = false;
         }
 
         void IComponent.DrawHorizontal(Graphics g, LiveSplitState state, float height, Region clipRegion)
@@ -114,5 +91,27 @@ namespace SonicVisualSplit
         {
             this.settings.SetSettings(settings);
         }
+
+        public bool OnFrameAnalyzed(AnalysisResult result)
+        {
+            if (result.RecognizedTime)
+            {
+                internalComponent.InformationValue = result.TimeString;
+            }
+            else if (!result.IsSuccessful())
+            {
+                if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                {
+                    internalComponent.InformationValue = "-";
+                }
+                else if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                {
+                    internalComponent.InformationValue = "Open OBS";
+                }
+            }
+            return true;
+        }
+
+        public bool VisualizeAnalysisResult => false;
     }
 }

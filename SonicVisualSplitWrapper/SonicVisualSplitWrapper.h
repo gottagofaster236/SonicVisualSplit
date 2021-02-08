@@ -31,7 +31,7 @@ public ref class FrameAnalyzer {
 public:
     FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9);
 
-    AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, Boolean recalculateOnError);
+    AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean recalculateOnError, Boolean visualize);
 
 private:
     String^ gameName;

@@ -14,7 +14,7 @@ using SonicVisualSplitWrapper;
 
 namespace SonicVisualSplit
 {
-    class SonicVisualSplitComponent : IComponent, FrameAnalyzer.Callback
+    class SonicVisualSplitComponent : IComponent, FrameAnalyzer.IResultConsumer
     {
         private InfoTextComponent internalComponent;
         private SonicVisualSplitSettings settings;
@@ -32,7 +32,7 @@ namespace SonicVisualSplit
             settings = new SonicVisualSplitSettings();
 
             frameAnalyzer = new FrameAnalyzer(state, settings);
-            frameAnalyzer.AddFrameConsumer(this);
+            frameAnalyzer.AddResultConsumer(this);
             frameAnalyzer.StartAnalyzingFrames();
         }
 

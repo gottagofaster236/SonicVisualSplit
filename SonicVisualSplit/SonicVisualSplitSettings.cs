@@ -8,7 +8,7 @@ using SonicVisualSplitWrapper;
 
 namespace SonicVisualSplit
 {
-    public partial class SonicVisualSplitSettings : UserControl, FrameAnalyzer.Callback
+    public partial class SonicVisualSplitSettings : UserControl, FrameAnalyzer.IResultConsumer
     {
         public bool RGB { get; set; }
         public bool Stretched { get; set; }
@@ -114,17 +114,17 @@ namespace SonicVisualSplit
         {
             if (Parent.Visible)
             {
-                FrameAnalyzer.AddFrameConsumer(this);
+                FrameAnalyzer.AddResultConsumer(this);
             }
             else
             {
-                FrameAnalyzer.RemoveFrameConsumer(this);
+                FrameAnalyzer.RemoveResultConsumer(this);
             }
         }
 
         private void OnDisposed(object sender, EventArgs e)
         {
-            FrameAnalyzer.RemoveFrameConsumer(this);
+            FrameAnalyzer.RemoveResultConsumer(this);
         }
 
         public bool OnFrameAnalyzed(AnalysisResult result)

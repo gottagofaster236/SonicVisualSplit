@@ -37,7 +37,7 @@ namespace SonicVisualSplit
         private AnalysisResult previousResult = null;
         private int unsuccessfulStreak = 0;
 
-        private ISet<Callback> frameConsumers = new HashSet<Callback>();
+        private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellationTokenSource frameAnalyzerTaskToken;
         private object frameAnalyzerThreadRunningLock = new object();
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(500);
@@ -67,9 +67,9 @@ namespace SonicVisualSplit
             long lastFrameTime = frameTimes.Last();
 
             bool visualize;
-            lock (frameConsumers)
+            lock (resultConsumers)
             {
-                visualize = frameConsumers.Any(frameConsumer => frameConsumer.VisualizeAnalysisResult);
+                visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
             }
 
             AnalysisResult result;
@@ -78,7 +78,7 @@ namespace SonicVisualSplit
                 result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen: false,
                                                            recalculateOnError: unsuccessfulStreak >= 5, visualize);
             }
-            SendFrameToConsumers(result);
+            SendResultToConsumers(result);
 
             if (!result.IsSuccessful())
             {
@@ -254,43 +254,43 @@ namespace SonicVisualSplit
             */
         }
 
-        private void SendFrameToConsumers(AnalysisResult result)
+        private void SendResultToConsumers(AnalysisResult result)
         {
-            lock (frameConsumers)
+            lock (resultConsumers)
             {
-                var frameConsumersToRemove = new List<Callback>();
-                foreach (var frameConsumer in frameConsumers)
+                var resultConsumersToRemove = new List<IResultConsumer>();
+                foreach (var resultConsumer in resultConsumers)
                 {
-                    if (!frameConsumer.OnFrameAnalyzed(result))
-                        frameConsumersToRemove.Add(frameConsumer);
+                    if (!resultConsumer.OnFrameAnalyzed(result))
+                        resultConsumersToRemove.Add(resultConsumer);
                 }
 
-                foreach (var frameConsumerToRemove in frameConsumersToRemove)
+                foreach (var resultConsumerToRemove in resultConsumersToRemove)
                 {
-                    frameConsumers.Remove(frameConsumerToRemove);
+                    resultConsumers.Remove(resultConsumerToRemove);
                 }
             }
         }
 
-        public void AddFrameConsumer(Callback frameConsumer)
+        public void AddResultConsumer(IResultConsumer resultConsumer)
         {
-            lock (frameConsumers)
+            lock (resultConsumers)
             {
-                frameConsumers.Add(frameConsumer);
+                resultConsumers.Add(resultConsumer);
             }
         }
 
-        public void RemoveFrameConsumer(Callback frameConsumer)
+        public void RemoveResultConsumer(IResultConsumer resultConsumer)
         {
-            lock (frameConsumers)
+            lock (resultConsumers)
             {
-                frameConsumers.Remove(frameConsumer);
+                resultConsumers.Remove(resultConsumer);
             }
         }
 
-        public interface Callback
+        public interface IResultConsumer
         {
-            // Callback to do something with a frame. Return value: true if the consumer wants to continue to receive frames.
+            // Callback to do something with the analysis result. Return value: true if the consumer wants to continue to receive frames.
             bool OnFrameAnalyzed(AnalysisResult result);
 
             bool VisualizeAnalysisResult { get; }

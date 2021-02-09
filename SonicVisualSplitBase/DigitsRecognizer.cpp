@@ -179,6 +179,9 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         matches.clear();
 
         double maximumSqdiff = -SIMILARITY_COEFFICIENT * bestSimilarity * opaquePixels;
+        if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
+            maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
+
         cv::threshold(matchResult, matchResultBinary, maximumSqdiff, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);

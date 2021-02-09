@@ -106,7 +106,7 @@ namespace SonicVisualSplit
                 }
                 else if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
-                    internalComponent.InformationValue = "Open OBS";
+                    internalComponent.InformationValue = "OBS Disconnected";
                 }
             }
             return true;

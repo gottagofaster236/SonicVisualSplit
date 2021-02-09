@@ -55,7 +55,7 @@ private:
 
     // CONSTANTS
     // Minimum similarity of a match (zero is a perfect match)
-    static constexpr double MIN_SIMILARITY = -0.05;
+    static constexpr double MIN_SIMILARITY = -0.5;
 
     // minimum similarity in relation to the best found similarity
     static constexpr double SIMILARITY_COEFFICIENT = 2.25;

@@ -56,10 +56,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             digitLocations.push_back({location, symbol, similarity});
         }
 
-        if (symbol == TIME && matches.empty())  // cannot find the "TIME" label - but it should be there!
-            return {};
-
         if (symbol == TIME) {
+            if (matches.empty())  // cannot find the "TIME" label - but it should be there!
+                return {};
             // We search the whole screen for the "TIME" label.
             // For other symbols we will speed up the calculation by scaling the image down to the best scale.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
@@ -166,11 +165,17 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             double minimumSqdiff;
             cv::minMaxLoc(matchResult, &minimumSqdiff, nullptr, nullptr, nullptr);
             double maxSimilarityForScale = -minimumSqdiff / opaquePixels;
-            if (bestSimilarity < maxSimilarityForScale || bestScale == -1) {
+            if (bestSimilarity < maxSimilarityForScale) {
                 bestSimilarity = maxSimilarityForScale;
                 bestScale = scale;
             }
+            else {
+                // this is not the best scale
+                continue;
+            }
         }
+
+        matches.clear();
 
         double maximumSqdiff = -SIMILARITY_COEFFICIENT * bestSimilarity * opaquePixels;
         cv::threshold(matchResult, matchResultBinary, maximumSqdiff, 1, cv::THRESH_BINARY_INV);
@@ -199,15 +204,6 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             matches.push_back({matchRect, similarity});
         }
     }
-
-
-    double minSimilarity = SIMILARITY_COEFFICIENT * bestSimilarity;
-    // sort the matches in descending order and remove the matches with low similarity
-    sort(matches.begin(), matches.end(), [](const auto& lhs, const auto& rhs) {
-        return lhs.second > rhs.second;
-         });
-    while (!matches.empty() && matches.back().second < minSimilarity)
-        matches.pop_back();
 
     if (matches.size() < 1000)
         return matches;

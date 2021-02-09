@@ -76,7 +76,7 @@ namespace SonicVisualSplit
             lock (nativeFrameAnalyzerLock)
             {
                 result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen: false,
-                                                           recalculateOnError: unsuccessfulStreak >= 5, visualize);
+                    recalculateOnError: unsuccessfulStreak >= 5, visualize);
             }
             SendResultToConsumers(result);
 

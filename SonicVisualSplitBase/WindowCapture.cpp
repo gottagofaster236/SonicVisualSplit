@@ -21,8 +21,6 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     width = windowSize.right;
     height = windowSize.bottom;
 
-    image.create(height, width, CV_8UC4);
-
     // create a bitmap
     hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
     bmpInfo.biSize = sizeof(BITMAPINFOHEADER);  // http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
@@ -55,6 +53,9 @@ void WindowCapture::getScreenshot() {
         image = cv::Mat();  // set the result to an empty image in case of error
         return;
     }
+
+    // ensure the correct size is set
+    image.create(height, width, CV_8UC4);
     // copy from the window device context to the bitmap device context
     BitBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, SRCCOPY);
     GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, image.data, (BITMAPINFO*) &bmpInfo, DIB_RGB_COLORS);  // copy from hwindowCompatibleDC to hbwindow

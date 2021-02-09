@@ -15,11 +15,11 @@ public:
     // Find locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
+    bool recalculatedDigitsPlacementLastTime();
+
     // We precalculate the rectangle where all of the digits are located.
     // In case of error (e.g. video source properties changed), we may want to recalculate that.
-    static void resetDigitsPlacement();
-
-    bool recalculatedDigitsPlacementLastTime();
+    static void resetDigitsPlacementNoSync();
 
     // We search for symbols in our code
     static const char SCORE = 'S';

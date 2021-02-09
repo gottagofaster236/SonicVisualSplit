@@ -1,4 +1,5 @@
 ﻿#include "DigitsRecognizer.h"
+#include "FrameAnalyzer.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <fstream>
@@ -99,7 +100,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 }
 
 
-void DigitsRecognizer::resetDigitsPlacement() {
+void DigitsRecognizer::resetDigitsPlacementNoSync() {
     if (instance) {
         instance->bestScale = -1;
         instance->digitsRoi = {0, 0, 0, 0};

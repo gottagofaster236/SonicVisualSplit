@@ -31,6 +31,11 @@ namespace SonicVisualSplitBase {
 // ===================
 
 
+// Using a global variable, because FrameAnalyzer.h is included by C++/CLI code (SonicVisualSplitWrapper),
+// where there's no <mutex> include.
+static std::recursive_mutex frameAnalyzationMutex;
+
+
 FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9) {
     if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory || instance->isStretchedTo16By9 != isStretchedTo16By9) {
         delete instance;
@@ -46,6 +51,8 @@ FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem:
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
+    std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
+
     result = AnalysisResult();
     result.frameTime = frameTime;
     result.recognizedTime = false;
@@ -82,7 +89,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     else if (recalculateOnError) {
         // we can still try to fix it - maybe video source properties have changed!
         if (!digitsRecognizer.recalculatedDigitsPlacementLastTime()) {
-            digitsRecognizer.resetDigitsPlacement();
+            resetDigitsPlacement();
             allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
             checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
         }
@@ -90,6 +97,12 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
             visualizeResult(allSymbols);
     }
     return result;
+}
+
+
+void FrameAnalyzer::resetDigitsPlacement() {
+    std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
+    DigitsRecognizer::resetDigitsPlacementNoSync();
 }
 
 

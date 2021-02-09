@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <vector>
 #include <string>
+#undef NO_ERROR
+
 
 namespace SonicVisualSplitBase {
 
@@ -28,6 +30,10 @@ public:
     static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
+
+    // We precalculate the rectangle where all of the digits are located.
+    // In case of error (e.g. video source properties changed), we may want to recalculate that.
+    static void resetDigitsPlacement();
 
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);

@@ -19,7 +19,7 @@ namespace SonicVisualSplit
         private SonicVisualSplitSettings settings;
 
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
-        private object nativeFrameAnalyzerLock = new object();
+        private object frameAnalyzationLock = new object();
 
         // All times are in milliseconds.
         // A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
@@ -35,7 +35,11 @@ namespace SonicVisualSplit
         private int ingameTimerOnSegmentStart = 0;
 
         private AnalysisResult previousResult = null;
+
+        // How many times in a row the recognition failed.
         private int unsuccessfulStreak = 0;
+
+        private long lastFailedFrameTime = 0;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellationTokenSource frameAnalyzerTaskToken;
@@ -61,131 +65,145 @@ namespace SonicVisualSplit
         [MethodImpl(MethodImplOptions.Synchronized)]
         private void AnalyzeFrame()
         {
-            List<long> frameTimes = BaseWrapper.GetSavedFramesTimes();
-            if (frameTimes.Count == 0)
-                return;
-            long lastFrameTime = frameTimes.Last();
-
-            bool visualize;
-            lock (resultConsumers)
+            lock (frameAnalyzationLock)
             {
-                visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
-            }
+                List<long> frameTimes = BaseWrapper.GetSavedFramesTimes();
+                if (frameTimes.Count == 0)
+                    return;
+                long lastFrameTime = frameTimes.Last();
 
-            AnalysisResult result;
-            lock (nativeFrameAnalyzerLock)
-            {
+                bool visualize;
+                lock (resultConsumers)
+                {
+                    visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
+                }
+
+                AnalysisResult result;
                 result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen: false,
                     recalculateOnError: unsuccessfulStreak >= 5, visualize);
-            }
-            SendResultToConsumers(result);
+                SendResultToConsumers(result);
 
-            if (!result.IsSuccessful())
-            {
-                unsuccessfulStreak++;
-                return;
-            }
-            else
-            {
-                unsuccessfulStreak = 0;
-            }
-
-            if (result.RecognizedTime)
-            {
-                if (previousResult != null && previousResult.IsBlackScreen)
+                if (!result.IsSuccessful())
                 {
-                    // This is the first recognized frame after a black transition screen.
-                    // We may have skipped the first frame after the transition, so we go and find it.
-                    int startingIndex = frameTimes.IndexOf(previousResult.FrameTime);
-                    for (int frameIndex = startingIndex; ; frameIndex++)
-                    {
-                        long frameTime = frameTimes[frameIndex];
-                        AnalysisResult frameAfterTransition;
+                    unsuccessfulStreak++;
+                    HandleUnrecognizedFrame(result.FrameTime);
+                    return;
+                }
+                else
+                {
+                    unsuccessfulStreak = 0;
+                }
 
-                        if (frameTime < lastFrameTime)
+                if (result.RecognizedTime)
+                {
+                    if (previousResult != null && previousResult.IsBlackScreen)
+                    {
+                        // This is the first recognized frame after a black transition screen.
+                        // We may have skipped the first frame after the transition, so we go and find it.
+                        int startingIndex = frameTimes.IndexOf(previousResult.FrameTime);
+                        for (int frameIndex = startingIndex; ; frameIndex++)
                         {
-                            lock (nativeFrameAnalyzerLock)
+                            long frameTime = frameTimes[frameIndex];
+                            AnalysisResult frameAfterTransition;
+
+                            if (frameTime < lastFrameTime)
                             {
                                 frameAfterTransition = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false,
+                                    recalculateOnError: false, visualize: false);
+                            }
+                            else
+                            {
+                                frameAfterTransition = result;
+                            }
+
+                            if (frameAfterTransition.RecognizedTime)
+                            {
+                                gameTimeOnSegmentStart = gameTime;
+                                ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
+                                previousResult = frameAfterTransition;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (previousResult != null && previousResult.RecognizedTime)
+                    {
+                        // Checking that the recognized time is correct (at least to some degree).
+                        // If the time decreased, or if it increased by too much, we just ignore that.
+                        if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds
+                            || result.TimeInMilliseconds - previousResult.TimeInMilliseconds > result.FrameTime - previousResult.FrameTime + 1500)
+                        {
+                            Debug.WriteLine($"incorrectly recognized! prev time: {previousResult.TimeInMilliseconds}, " +
+                                $"cur time: {result.TimeInMilliseconds}");
+                            HandleUnrecognizedFrame(result.FrameTime);
+                            return;
+                        }
+                    }
+
+                    gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
+                    UpdateGameTime();
+                }
+                else if (result.IsBlackScreen && previousResult != null && !previousResult.IsBlackScreen)
+                {
+                    // This is the first black frame. That means we've entered the transition.
+                    // We try to find the last frame before the transition to find the time.
+                    int startingIndex = frameTimes.IndexOf(result.FrameTime) - 1;
+                    for (int frameIndex = startingIndex; ; frameIndex--)
+                    {
+                        long frameTime = frameTimes[frameIndex];
+                        AnalysisResult frameBeforeTransition;
+
+                        if (frameTime > previousResult.FrameTime)
+                        {
+                            lock (frameAnalyzationLock)
+                            {
+                                frameBeforeTransition = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false,
                                     recalculateOnError: false, visualize: false);
                             }
                         }
                         else
                         {
-                            frameAfterTransition = result;
+                            frameBeforeTransition = previousResult;
                         }
 
-                        if (frameAfterTransition.RecognizedTime)
+                        if (frameBeforeTransition.RecognizedTime)
                         {
+                            gameTime = (frameBeforeTransition.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
                             gameTimeOnSegmentStart = gameTime;
-                            ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
-                            previousResult = frameAfterTransition;
+                            UpdateGameTime();
+
+                            AnalysisResult scoreScreenCheck;
+                            lock (frameAnalyzationLock)
+                            {
+                                scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: true,
+                                    recalculateOnError: false, visualize: false);
+                            }
+                            if (scoreScreenCheck.IsScoreScreen)
+                                model.Split();
+
                             break;
                         }
                     }
                 }
 
-                if (previousResult != null && previousResult.RecognizedTime)
-                {
-                    // Checking that the recognized time is correct (at least to some degree).
-                    // If the time decreased, or if it increased by too much, we just ignore that.
-                    if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds
-                        || result.TimeInMilliseconds - previousResult.TimeInMilliseconds > result.FrameTime - previousResult.FrameTime + 1500)
-                    {
-                        Debug.WriteLine($"incorrectly recognized! prev time: {previousResult.TimeInMilliseconds}, cur time: {result.TimeInMilliseconds}");
-                        result.MarkAsIncorrectlyRecognized();
-                        return;
-                    }
-                }
-
-                gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
-                UpdateGameTime();
+                previousResult = result;
+                BaseWrapper.DeleteSavedFramesBefore(lastFrameTime);
             }
-            else if (result.IsBlackScreen && previousResult != null && !previousResult.IsBlackScreen)
+        }
+
+        private void HandleUnrecognizedFrame(long frameTime)
+        {
+            // Delete the frame so we don't try to analyze it again.
+            BaseWrapper.DeleteSavedFrame(frameTime);
+
+            if (previousResult == null || previousResult.FrameTime < lastFailedFrameTime)
             {
-                // This is the first black frame. That means we've entered the transition.
-                // We try to find the last frame before the transition to find the time.
-                int startingIndex = frameTimes.IndexOf(result.FrameTime) - 1;
-                for (int frameIndex = startingIndex; ; frameIndex--)
-                {
-                    long frameTime = frameTimes[frameIndex];
-                    AnalysisResult frameBeforeTransition;
-
-                    if (frameTime > previousResult.FrameTime)
-                    {
-                        lock (nativeFrameAnalyzerLock)
-                        {
-                            frameBeforeTransition = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false,
-                                recalculateOnError: false, visualize: false);
-                        }
-                    }
-                    else
-                    {
-                        frameBeforeTransition = previousResult;
-                    }
-
-                    if (frameBeforeTransition.RecognizedTime)
-                    {
-                        gameTime = (frameBeforeTransition.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
-                        gameTimeOnSegmentStart = gameTime;
-                        UpdateGameTime();
-
-                        AnalysisResult scoreScreenCheck;
-                        lock (nativeFrameAnalyzerLock)
-                        {
-                            scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: true,
-                                recalculateOnError: false, visualize: false);
-                        }
-                        if (scoreScreenCheck.IsScoreScreen)
-                            model.Split();
-
-                        break;
-                    }
-                }
+                // If the previous analyzed frame was also a fail, we delete the frames since that moment,
+                // to save up on memory usage.
+                BaseWrapper.DeleteSavedFramesInRange(lastFailedFrameTime, frameTime);
             }
 
-            previousResult = result;
-            BaseWrapper.DeleteSavedFramesBefore(lastFrameTime);
+            lastFailedFrameTime = frameTime;
         }
 
         private void UpdateGameTime()
@@ -234,7 +252,7 @@ namespace SonicVisualSplit
 
         private void OnSettingsChanged(object sender = null, EventArgs e = null)
         {
-            lock (nativeFrameAnalyzerLock)
+            lock (frameAnalyzationLock)
             {
                 // finding the path with template images for the game
                 string livesplitComponents = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

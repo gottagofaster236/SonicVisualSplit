@@ -23,8 +23,6 @@ public:
     Int64 FrameTime;
 
     Boolean IsSuccessful();
-
-    void MarkAsIncorrectlyRecognized();
 };
 
 public ref class FrameAnalyzer {
@@ -47,7 +45,11 @@ public:
 
     static List<Int64>^ GetSavedFramesTimes();
 
+    static void DeleteSavedFrame(Int64 frameTime);
+
     static void DeleteSavedFramesBefore(Int64 frameTime);
+
+    static void DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime);
 
     static void DeleteAllSavedFrames();
 };

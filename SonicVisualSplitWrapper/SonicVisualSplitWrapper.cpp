@@ -66,11 +66,6 @@ Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
 
-
-void AnalysisResult::MarkAsIncorrectlyRecognized() {
-    FrameStorage::markFrameAsRecognizedIncorrectly(FrameTime);
-}
-
 void BaseWrapper::StartSavingFrames() {
     FrameStorage::startSavingFrames();
 }
@@ -91,9 +86,20 @@ List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
 }
 
 
-void BaseWrapper::DeleteSavedFramesBefore(Int64 frameTime) {
-    FrameStorage::deleteSavedFramesBefore(frameTime);
+void BaseWrapper::DeleteSavedFrame(Int64 frameTime) {
+    DeleteSavedFramesInRange(frameTime, frameTime + 1);
 }
+
+
+void BaseWrapper::DeleteSavedFramesBefore(Int64 frameTime) {
+    DeleteSavedFramesInRange(0, frameTime);
+}
+
+
+void BaseWrapper::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
+    FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
+}
+
 
 void BaseWrapper::DeleteAllSavedFrames() {
     FrameStorage::deleteAllSavedFrames();

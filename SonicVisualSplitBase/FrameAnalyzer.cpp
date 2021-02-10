@@ -56,10 +56,6 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     result = AnalysisResult();
     result.frameTime = frameTime;
     result.recognizedTime = false;
-    if (FrameStorage::isFrameRecognizedIncorrectly(frameTime)) {
-        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
-        return result;
-    }
 
     cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
     if (originalFrame.cols == 0 || originalFrame.rows == 0) {

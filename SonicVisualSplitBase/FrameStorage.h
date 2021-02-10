@@ -16,15 +16,10 @@ std::vector<long long> getSavedFramesTimes();
 
 cv::UMat getSavedFrame(long long frameTime);
 
-// Deletes saved frames with time of save less than frameTime
-void deleteSavedFramesBefore(long long frameTime);
+// Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
+void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 
 void deleteAllSavedFrames();
-
-// Sometimes we may recognize the time on a frame incorrectly. If we detect that, we mark that frame as such.
-void markFrameAsRecognizedIncorrectly(long long frameTime);
-
-bool isFrameRecognizedIncorrectly(long long frameTime);
 
 }  // namespace SonicVisualSplitBase
 }  // namespace FrameStorage

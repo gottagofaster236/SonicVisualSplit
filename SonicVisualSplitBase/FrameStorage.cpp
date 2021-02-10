@@ -11,7 +11,6 @@ std::map<long long, cv::Mat> savedFrames;
 std::mutex savedFramesMutex;
 std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
-std::set<long long> incorrectlyRecognizedFrames;
 
 void startSavingFrames() {
     using namespace std::chrono;
@@ -68,30 +67,17 @@ cv::UMat getSavedFrame(long long frameTime) {
 }
 
 
-void deleteSavedFramesBefore(long long frameTime) {
+void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) {
     // std::map and std::set are sorted by key (i.e. frame time)
-    {
-        std::lock_guard<std::mutex> guard(savedFramesMutex);
-        // delete the frames whose save time is less than frameTime
-        savedFrames.erase(savedFrames.begin(), savedFrames.lower_bound(frameTime));
-    }
-    // delete the frames whose save time is less than frameTime
-    incorrectlyRecognizedFrames.erase(incorrectlyRecognizedFrames.begin(), incorrectlyRecognizedFrames.lower_bound(frameTime));
+    std::lock_guard<std::mutex> guard(savedFramesMutex);
+    // delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
+    savedFrames.erase(savedFrames.lower_bound(beginFrameTime), savedFrames.lower_bound(endFrameTime));
 }
 
 
 void deleteAllSavedFrames() {
     std::lock_guard<std::mutex> guard(savedFramesMutex);
     savedFrames.clear();
-}
-
-
-void markFrameAsRecognizedIncorrectly(long long frameTime) {
-    incorrectlyRecognizedFrames.insert(frameTime);
-}
-
-bool isFrameRecognizedIncorrectly(long long frameTime) {
-    return incorrectlyRecognizedFrames.count(frameTime);
 }
 
 }  // namespace SonicVisualSplitBase

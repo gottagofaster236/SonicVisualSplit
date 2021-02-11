@@ -49,9 +49,9 @@ public:
 
     static void DeleteSavedFramesBefore(Int64 frameTime);
 
-    static void DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime);
-
     static void DeleteAllSavedFrames();
+
+    static void DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime);
 };
 
 }  // namespace SonicVisualSplitWrapper

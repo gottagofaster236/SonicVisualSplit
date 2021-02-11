@@ -9,6 +9,9 @@ namespace FrameStorage {
 
 std::map<long long, cv::Mat> savedFrames;
 std::mutex savedFramesMutex;
+std::map<long long, AnalysisResult> cachedResults;
+std::mutex cachedResultsMutex;
+
 std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
 
@@ -68,16 +71,37 @@ cv::UMat getSavedFrame(long long frameTime) {
 
 
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) {
-    // std::map and std::set are sorted by key (i.e. frame time)
-    std::lock_guard<std::mutex> guard(savedFramesMutex);
-    // delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
-    savedFrames.erase(savedFrames.lower_bound(beginFrameTime), savedFrames.lower_bound(endFrameTime));
+    // std::map is sorted by key (i.e. frame time)
+    {
+        std::lock_guard<std::mutex> guard(savedFramesMutex);
+        // delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
+        savedFrames.erase(savedFrames.lower_bound(beginFrameTime), savedFrames.lower_bound(endFrameTime));
+    }
+    {
+        std::lock_guard<std::mutex> guard(cachedResultsMutex);
+        // delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
+        cachedResults.erase(cachedResults.lower_bound(beginFrameTime), cachedResults.lower_bound(endFrameTime));
+    }
 }
 
+void addResultToCache(const AnalysisResult& result) {
+    std::lock_guard<std::mutex> guard(cachedResultsMutex);
+    AnalysisResult resultCopy = result;
+    resultCopy.visualizedFrame = cv::Mat();  // make sure that we don't store the image
+    cachedResults[resultCopy.frameTime] = resultCopy;
+}
 
-void deleteAllSavedFrames() {
-    std::lock_guard<std::mutex> guard(savedFramesMutex);
-    savedFrames.clear();
+bool getResultFromCache(long long frameTime, AnalysisResult& resultOutput) {
+    std::lock_guard<std::mutex> guard(cachedResultsMutex);
+    auto iterator = cachedResults.find(frameTime);
+    if (iterator == cachedResults.end()) {
+        // we don't have the result cached
+        return false;
+    }
+    else {
+        resultOutput = iterator->second;
+        return true;
+    }
 }
 
 }  // namespace SonicVisualSplitBase

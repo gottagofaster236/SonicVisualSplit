@@ -38,6 +38,8 @@ public:
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
 
+    AnalysisResult analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
+
     void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize);
 
     void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);

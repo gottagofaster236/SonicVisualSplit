@@ -92,17 +92,16 @@ void BaseWrapper::DeleteSavedFrame(Int64 frameTime) {
 
 
 void BaseWrapper::DeleteSavedFramesBefore(Int64 frameTime) {
-    DeleteSavedFramesInRange(0, frameTime);
-}
-
-
-void BaseWrapper::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
-    FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
+    DeleteSavedFramesInRange(INT64_MIN, frameTime);
 }
 
 
 void BaseWrapper::DeleteAllSavedFrames() {
-    FrameStorage::deleteAllSavedFrames();
+    DeleteSavedFramesInRange(INT64_MIN, INT64_MAX);
+}
+
+void BaseWrapper::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
+    FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
 }
 
 }

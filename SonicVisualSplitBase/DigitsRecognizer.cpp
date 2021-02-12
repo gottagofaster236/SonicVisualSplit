@@ -69,7 +69,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             }
         }
         else if (symbol == SCORE) {
-            // We've searched for "TIME" and "SCORE". (Scanning "SCORE" so that it's not confused with "TIME".)
+            // We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
             // We'll look for the digits only in the horizontal stripe containing the word "TIME".
             // To "crop" the frame to that horizontal stripe, we simply change the ROI (region of interest).
             if (matches.empty())
@@ -92,7 +92,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             if (digitsRoi.empty())
                 return {};
             frame = frame(digitsRoi);
-            // cv::imwrite("C:/tmp/digitsRoi.png", frame);
         }
     }
 
@@ -135,8 +134,10 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
     if (recalculateDigitsPlacement) {
         // Sega Genesis resolution is 320×224 (height = 224)
         // we scale up the template images 2x, so we have to do the same for the resolution.
-        const int minHeight = 150 * 2;
-        const int maxHeight = 250 * 2;
+        const int minHeight = 200 * 2;
+        const int maxHeight = 300 * 2;
+        // 224 / 300 ≈ 0.75
+        // Thus the frame should take at least 75% of stream's height.
         minScale = ((double) minHeight) / frame.rows;
         maxScale = ((double) maxHeight) / frame.rows;
     }

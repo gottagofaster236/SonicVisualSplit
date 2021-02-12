@@ -17,7 +17,8 @@ struct AnalysisResult {
     int timeInMilliseconds = 0;  // the time on the screen converted to milliseconds
     std::string timeString;  // the time on the screen, e. g. 1'08"23
     bool isScoreScreen = false;  // needed to understand if we finished the level
-    bool isBlackScreen = false;  // e.g. transition screen
+    bool isBlackScreen = false;  // e.g. transition screen between levels
+    bool isWhiteScreen = false;  // e.g. transition screen to a special stage
     cv::Mat visualizedFrame;
     long long frameTime;
     ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
@@ -44,7 +45,8 @@ private:
 
     void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);
 
-    static bool checkIfFrameIsBlack(cv::UMat frame);
+    enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
+    static SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
 
     std::string gameName;
     std::filesystem::path templatesDirectory;

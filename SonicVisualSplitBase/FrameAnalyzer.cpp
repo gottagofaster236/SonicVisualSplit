@@ -80,8 +80,12 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
     if (visualize) {
         originalFrame.copyTo(result.visualizedFrame);
     }
-    if (checkIfFrameIsBlack(frame)) {
+    switch (checkIfFrameIsSingleColor(frame)) {
+    case SingleColor::BLACK:
         result.isBlackScreen = true;
+        return result;
+    case SingleColor::WHITE:
+        result.isWhiteScreen = true;
         return result;
     }
 
@@ -221,8 +225,8 @@ void FrameAnalyzer::visualizeResult(const std::vector<std::pair<cv::Rect2f, char
 }
 
 
-bool FrameAnalyzer::checkIfFrameIsBlack(cv::UMat frame) {
-    // calculating the median value out of 1000 pixels, and checking if it's dark enough
+FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
+    // calculating the median value out of 1000 pixels, and checking if it's dark/bright enough
     cv::Mat frameRead = frame.getMat(cv::ACCESS_READ);
     const int pixelsPerDimension = 30;
     int stepX = std::max(frame.cols / pixelsPerDimension, 1);
@@ -236,7 +240,13 @@ bool FrameAnalyzer::checkIfFrameIsBlack(cv::UMat frame) {
     int medianPosition = pixels.size() / 2;
     std::nth_element(pixels.begin(), pixels.begin() + medianPosition, pixels.end());
     int median = pixels[medianPosition];
-    return median <= 10;
+
+    if (median <= 10)
+        return SingleColor::BLACK;
+    else if (median >= 245)
+        return SingleColor::WHITE;
+    else
+        return SingleColor::NOT_SINGLE_COLOR;
 }
 
 }  // namespace SonicVisualSplitBase

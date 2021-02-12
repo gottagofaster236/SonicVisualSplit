@@ -31,6 +31,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
     resultConverted->TimeString = gcnew String(result.timeString.c_str());
     resultConverted->IsScoreScreen = result.isScoreScreen;
     resultConverted->IsBlackScreen = result.isBlackScreen;
+    resultConverted->IsWhiteScreen = result.isWhiteScreen;
     resultConverted->ErrorReason = (ErrorReasonEnum) result.errorReason;
     resultConverted->FrameTime = result.frameTime;
 

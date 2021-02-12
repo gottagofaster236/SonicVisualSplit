@@ -18,6 +18,7 @@ public:
     String^ TimeString;
     Boolean IsScoreScreen;
     Boolean IsBlackScreen;
+    Boolean IsWhiteScreen;
     Bitmap^ VisualizedFrame;
     ErrorReasonEnum ErrorReason;
     Int64 FrameTime;

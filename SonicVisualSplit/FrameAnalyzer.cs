@@ -99,8 +99,8 @@ namespace SonicVisualSplit
                 {
                     if (previousResult != null && previousResult.IsBlackScreen)
                     {
-                        // This is the first recognized frame after a black transition screen.
-                        // We may have skipped the first frame after the transition, so we go and find it.
+                        /* This is the first recognized frame after a black transition screen.
+                         * We may have skipped the first frame after the transition, so we go and find it. */
                         AnalysisResult frameAfterTransition = FindFirstRecognizedFrameAfter(previousResult.FrameTime);
                         gameTimeOnSegmentStart = gameTime;
                         ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
@@ -109,8 +109,8 @@ namespace SonicVisualSplit
 
                     if (previousResult != null && previousResult.RecognizedTime)
                     {
-                        // Checking that the recognized time is correct (at least to some degree).
-                        // If the time decreased, or if it increased by too much, we just ignore that.
+                        /* Checking that the recognized time is correct (at least to some degree).
+                         * If the time decreased, or if it increased by too much, we just ignore that.*/
                         if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds
                             || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
                                 > result.FrameTime - previousResult.FrameTime + 1500)
@@ -120,31 +120,44 @@ namespace SonicVisualSplit
                         }
                     }
 
-                    gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
-                    UpdateGameTime();
+                    UpdateGameTime(result);
                 }
-                else if (result.IsBlackScreen && previousResult != null)
+                else if ((result.IsBlackScreen || result.IsWhiteScreen) && previousResult != null)
                 {
                     if (previousResult.RecognizedTime)
                     {
-                        // This is the first black frame. That means we've entered the transition.
-                        // We try to find the last frame before the transition to find the time.
+                        /* This is the first frame of a transition.
+                         * Possible transitions: stage -> next stage (black), stage -> same stage in case of death (black),
+                         * stage -> special stage (white), special stage -> stage (black),
+                         * final stage -> game ending (depends on the game).
+                         * We find the last frame before the transition to find out the time. */
                         AnalysisResult frameBeforeTransition = FindFirstRecognizedFrameBefore(result.FrameTime);
-                        gameTime = (frameBeforeTransition.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
+                        UpdateGameTime(frameBeforeTransition);
                         gameTimeOnSegmentStart = gameTime;
-                        UpdateGameTime();
 
-                        AnalysisResult scoreScreenCheck;
-                        lock (frameAnalyzationLock)
+                        if (state.CurrentSplitIndex == state.Run.Count - 1)
                         {
-                            scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime,
-                                checkForScoreScreen: true, recalculateOnError: false, visualize: false);
-                        }
-                        if (scoreScreenCheck.IsScoreScreen)
+                            // If we were on the last split, that means the run has finished.
                             model.Split();
+                        }
+                        else if (result.IsBlackScreen)
+                        {
+                            // Check if it's a transition to the next stage (i.e. not a death), split in that case.
+                            AnalysisResult scoreScreenCheck;
+                            lock (frameAnalyzationLock)
+                            {
+                                scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime,
+                                    checkForScoreScreen: true, recalculateOnError: false, visualize: false);
+                            }
+                            if (scoreScreenCheck.IsScoreScreen)
+                                model.Split();
+                        }
                     }
-                    else if (previousResult.IsWhiteScreen)
+                    else if (result.IsBlackScreen && previousResult.IsWhiteScreen)
                     {
+                        /* We had a transition to the special stage,
+                         * where we couldn't recognize any frames (as there's no time on screen),
+                         * so previousResult will be a white frame of the transition INTO the special stage. */
                         model.Split();
                     }
                 }
@@ -152,6 +165,12 @@ namespace SonicVisualSplit
                 previousResult = result;
                 BaseWrapper.DeleteSavedFramesBefore(lastFrameTime);
             }
+        }
+
+        private void UpdateGameTime(AnalysisResult result)
+        {
+            gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
+            UpdateGameTime();
         }
 
         private AnalysisResult FindFirstRecognizedFrameAfter(long startFrameTime)
@@ -185,8 +204,8 @@ namespace SonicVisualSplit
 
             if (previousResult == null || previousResult.FrameTime < lastFailedFrameTime)
             {
-                // If the previous analyzed frame was also a fail, we delete the frames since that moment,
-                // to save up on memory usage.
+                /* If the previous analyzed frame was also a fail, we delete the frames since that moment,
+                 * to save up on memory usage. */
                 BaseWrapper.DeleteSavedFramesInRange(lastFailedFrameTime, frameTime);
             }
 

@@ -57,12 +57,12 @@ namespace SonicVisualSplit
         public void SetSettings(XmlNode settings)
         {
             RGB = SettingsHelper.ParseBool(settings["RGB"]);
-            compositeButton.Checked = !RGB;
             rgbButton.Checked = RGB;
+            compositeButton.Checked = !RGB;
 
             Stretched = SettingsHelper.ParseBool(settings["Stretched"]);
-            fourByThreeButton.Checked = !Stretched;
             sixteenByNineButton.Checked = Stretched;
+            fourByThreeButton.Checked = !Stretched;
 
             Game = SettingsHelper.ParseString(settings["Game"]);
             int gameIndex = gamesComboBox.FindStringExact(Game);
@@ -189,8 +189,8 @@ namespace SonicVisualSplit
             }
             catch (InvalidOperationException)
             {
-                // We have a race condition (checking for parent visibility and THEN calling BeginInvoke).
-                // Thus we may sometimes call BeginInvoke after the control was destroyed.
+                /* We have a race condition (checking for parent visibility and THEN calling BeginInvoke).
+                 * Thus we may sometimes call BeginInvoke after the control was destroyed. */
                 return false;
             }
             return true;

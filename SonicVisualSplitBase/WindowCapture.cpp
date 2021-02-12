@@ -7,8 +7,8 @@ namespace SonicVisualSplitBase {
 // WindowCapture is based on https://github.com/sturkmen72/opencv_samples/blob/master/Screen-Capturing.cpp
 
 WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
-    // DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
-    // This function call raises the system requirements to Windows 10 Anniversary Update (2016), unfortunately.
+    /* DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
+     * This function call raises the system requirements to Windows 10 Anniversary Update (2016), unfortunately. */
     SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
     hwindowDC = GetDC(hwnd);

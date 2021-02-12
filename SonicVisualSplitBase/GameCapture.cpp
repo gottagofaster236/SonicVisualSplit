@@ -37,8 +37,8 @@ cv::Mat getObsScreenshot() {
 
 
 cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
-    // In OBS, the stream preview has a light-gray border around it.
-    // It is adjacent to the sides of the screen. We start from the right side.
+    /* In OBS, the stream preview has a light-gray border around it.
+     * It is adjacent to the sides of the screen. We start from the right side. */
     cv::UMat streamPreview;
     if (screenshot.empty())
         return streamPreview;  // return an empty image in case of error
@@ -162,7 +162,7 @@ BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
 }  // namespace SonicVisualSplitBase
 
 
-/* Debug code
+/* Debug code for game capture.
 #include "FrameStorage.h"
 
 int main() {

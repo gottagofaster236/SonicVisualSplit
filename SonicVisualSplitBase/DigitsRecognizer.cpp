@@ -16,6 +16,9 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
     return *instance;
 }
 
+DigitsRecognizer* DigitsRecognizer::getCurrentInstance() {
+    return instance;
+}
 
 // Find locations of all digits, "SCORE" and "TIME" labels.
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
@@ -60,8 +63,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         if (symbol == TIME) {
             if (matches.empty())  // cannot find the "TIME" label - but it should be there!
                 return {};
-            // We search the whole screen for the "TIME" label.
-            // For other symbols we will speed up the calculation by scaling the image down to the best scale.
+            /* We search the whole screen for the "TIME" label.
+             * For other symbols we will speed up the calculation by scaling the image down to the best scale. */
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
             frame = frame(topHalf);
             if (recalculateDigitsPlacement) {
@@ -69,9 +72,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             }
         }
         else if (symbol == SCORE) {
-            // We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
-            // We'll look for the digits only in the horizontal stripe containing the word "TIME".
-            // To "crop" the frame to that horizontal stripe, we simply change the ROI (region of interest).
+            /* We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
+             * We'll look for the digits only in the horizontal stripe containing the word "TIME".
+             * To "crop" the frame to that horizontal stripe, we simply change the ROI (region of interest). */
             if (matches.empty())
                 return {};
             std::vector<std::pair<cv::Rect2f, char>> curRecognized = removeOverlappingLocations(digitLocations);
@@ -110,6 +113,18 @@ void DigitsRecognizer::resetDigitsPlacementNoSync() {
 bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
     return recalculateDigitsPlacement;
 }
+
+
+cv::Rect DigitsRecognizer::getDigitsRoi() {
+    if (bestScale == -1 || digitsRoi.empty()) {
+        return cv::Rect();  // return an empty rect if not calculated
+    }
+    else {
+        return cv::Rect((int) (digitsRoi.x / bestScale), (int) (digitsRoi.y / bestScale),
+                        (int) (digitsRoi.width / bestScale), (int) (digitsRoi.height / bestScale));
+    }
+}
+
 
 
 DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)

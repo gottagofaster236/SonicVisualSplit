@@ -48,7 +48,7 @@ public:
     ~OriginalWindowPositions();
 
 private:
-    // Return the window to the original position and remove transparency (as if the user restored the window)
+    // Return the window to the original position and remove transparency (as if the user restored the window).
     void restoreWindow(HWND hwnd, POINT originalPosition);
 
     std::map<HWND, POINT> originalWindowPositions;
@@ -56,12 +56,12 @@ private:
 };
 
 
-// FakeMinimize:
-// It's impossible to make a screenshot of a minimized window (because of WinAPI limitations).
-// So we are actually restoring a window, but making it transparent and click-through.
-// The user doesn't see the window, so it's the same as if it's still minimized.
-// When the user tries to "restore" the window (it's restored already), we intercept it with a hook
-// and return the window to its original state.
+/* FakeMinimize:
+ * It's impossible to make a screenshot of a minimized window (because of WinAPI limitations).
+ * So we are actually restoring a window, but making it transparent and click-through.
+ * The user doesn't see the window, so it's the same as if it's still minimized.
+ * When the user tries to "restore" the window (it's restored already), we intercept it with a hook
+ * and return the window to its original state. */
 
 class FakeMinimize {
 public:

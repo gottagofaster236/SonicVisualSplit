@@ -32,8 +32,8 @@ namespace SonicVisualSplitBase {
 // ===================
 
 
-// Using a global variable, because FrameAnalyzer.h is included by C++/CLI code (SonicVisualSplitWrapper),
-// where there's no <mutex> include.
+/* Using a global variable, because FrameAnalyzer.h is included by C++/CLI code (SonicVisualSplitWrapper),
+ * where there's no <mutex> include. */
 static std::recursive_mutex frameAnalyzationMutex;
 
 
@@ -227,10 +227,10 @@ void FrameAnalyzer::visualizeResult(const std::vector<std::pair<cv::Rect2f, char
 
 
 FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
-    // The algorithm is the following:
-    // We take a thousand pixels from the frame, and check whether at least half of them have around the same brightness.
-    // If that brightness is around 0, then we say that it's a black frame.
-    // If it's high enough, we say that it's a white frame.
+    /* The algorithm is the following:
+     * we take a thousand pixels from the frame, and check whether at least half of them have around the same brightness.
+     * If that brightness is around 0, then we say that it's a black frame.
+     * If it's high enough, we say that it's a white frame. */
 
     cv::Mat frameRead = frame.getMat(cv::ACCESS_READ);
     const int pixelsPerDimension = 30;
@@ -242,7 +242,7 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
             pixels.push_back(frameRead.at<uint8_t>(y, x));
         }
     }
-    
+
     std::vector<int> pixelDistribution(256);
     for (int pixel : pixels) {
         pixelDistribution[pixel]++;
@@ -272,12 +272,32 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
 
     if (maximumOccurrences < pixels.size() * 0.45)
         return SingleColor::NOT_SINGLE_COLOR;
-    else if (mostPopularWindow <= 10)
-        return SingleColor::BLACK;
-    else if (mostPopularWindow >= 95)
+
+    if (mostPopularWindow >= 95) {
         return SingleColor::WHITE;
-    else
+    }
+    else if (mostPopularWindow <= 10) {
+        /* This is a black frame, supposedly.
+         * Sonic 1's Star Light zone is dark enough to trick the algorithm, so we make another check:
+         * if we precalculated the area with digits, it must dark (i.e. black frame shouldn't contain digits). */
+        DigitsRecognizer* instance = DigitsRecognizer::getCurrentInstance();
+        cv::Rect digitsRoi;
+        if (instance == nullptr || (digitsRoi = instance->getDigitsRoi()).empty())
+            return SingleColor::BLACK;
+
+        // Check that every pixel's brightness is 20 or lower
+        for (int y = digitsRoi.y; y < digitsRoi.y + digitsRoi.height; y++) {
+            for (int x = digitsRoi.x; x < digitsRoi.x + digitsRoi.width; x++) {
+                if (frameRead.at<uint8_t>(y, x) > 20)
+                    return SingleColor::NOT_SINGLE_COLOR;
+            }
+        }
+        TODO CHECK THIS!!!
+        return SingleColor::BLACK;
+    }
+    else {
         return SingleColor::NOT_SINGLE_COLOR;
+    }
 }
 
 }  // namespace SonicVisualSplitBase

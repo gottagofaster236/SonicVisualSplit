@@ -32,8 +32,8 @@ public:
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
-    // We precalculate the rectangle where all of the digits are located.
-    // In case of error (e.g. video source properties changed), we may want to recalculate that.
+    /* We precalculate the rectangle where all of the digits are located.
+     * In case of error (e.g. video source properties changed), we may want to recalculate that. */
     static void resetDigitsPlacement();
 
 private:
@@ -46,7 +46,7 @@ private:
     void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);
 
     enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
-    static SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
+    SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
 
     std::string gameName;
     std::filesystem::path templatesDirectory;

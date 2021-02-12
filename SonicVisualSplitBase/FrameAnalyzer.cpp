@@ -5,6 +5,7 @@
 #include <opencv2/imgproc.hpp>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 namespace SonicVisualSplitBase {
 
@@ -226,7 +227,11 @@ void FrameAnalyzer::visualizeResult(const std::vector<std::pair<cv::Rect2f, char
 
 
 FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
-    // calculating the median value out of 1000 pixels, and checking if it's dark/bright enough
+    // The algorithm is the following:
+    // We take a thousand pixels from the frame, and check whether at least half of them have around the same brightness.
+    // If that brightness is around 0, then we say that it's a black frame.
+    // If it's high enough, we say that it's a white frame.
+
     cv::Mat frameRead = frame.getMat(cv::ACCESS_READ);
     const int pixelsPerDimension = 30;
     int stepX = std::max(frame.cols / pixelsPerDimension, 1);
@@ -237,13 +242,39 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
             pixels.push_back(frameRead.at<uint8_t>(y, x));
         }
     }
-    int medianPosition = pixels.size() / 2;
-    std::nth_element(pixels.begin(), pixels.begin() + medianPosition, pixels.end());
-    int median = pixels[medianPosition];
+    
+    std::vector<int> pixelDistribution(256);
+    for (int pixel : pixels) {
+        pixelDistribution[pixel]++;
+    }
 
-    if (median <= 10)
+    // We go through the pixel distribution with a sliding window of size 10, to see the most frequent brightness.
+    const int SLIDING_WINDOW_SIZE = 10;
+
+    int maximumOccurrences = INT_MIN;
+    int mostPopularWindow;
+
+    int currentOccurrences = std::accumulate(pixelDistribution.begin(), pixelDistribution.begin() + SLIDING_WINDOW_SIZE, 0);
+    for (int currentWindowStart = 0; ; currentWindowStart++) {
+        if (currentOccurrences > maximumOccurrences) {
+            maximumOccurrences = currentOccurrences;
+            mostPopularWindow = currentWindowStart;
+        }
+
+        if (currentWindowStart == pixelDistribution.size() - SLIDING_WINDOW_SIZE) {
+            break;
+        }
+        else {
+            currentOccurrences -= pixelDistribution[currentWindowStart];
+            currentOccurrences += pixelDistribution[currentWindowStart + SLIDING_WINDOW_SIZE];
+        }
+    }
+
+    if (maximumOccurrences < pixels.size() * 0.45)
+        return SingleColor::NOT_SINGLE_COLOR;
+    else if (mostPopularWindow <= 5)
         return SingleColor::BLACK;
-    else if (median >= 245)
+    else if (mostPopularWindow >= 95)
         return SingleColor::WHITE;
     else
         return SingleColor::NOT_SINGLE_COLOR;

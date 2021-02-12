@@ -123,23 +123,30 @@ namespace SonicVisualSplit
                     gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
                     UpdateGameTime();
                 }
-                else if (result.IsBlackScreen && previousResult != null && !previousResult.IsBlackScreen)
+                else if (result.IsBlackScreen && previousResult != null)
                 {
-                    // This is the first black frame. That means we've entered the transition.
-                    // We try to find the last frame before the transition to find the time.
-                    AnalysisResult frameBeforeTransition = FindFirstRecognizedFrameBefore(result.FrameTime);
-                    gameTime = (frameBeforeTransition.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
-                    gameTimeOnSegmentStart = gameTime;
-                    UpdateGameTime();
-
-                    AnalysisResult scoreScreenCheck;
-                    lock (frameAnalyzationLock)
+                    if (previousResult.RecognizedTime)
                     {
-                        scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime, 
-                            checkForScoreScreen: true, recalculateOnError: false, visualize: false);
+                        // This is the first black frame. That means we've entered the transition.
+                        // We try to find the last frame before the transition to find the time.
+                        AnalysisResult frameBeforeTransition = FindFirstRecognizedFrameBefore(result.FrameTime);
+                        gameTime = (frameBeforeTransition.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
+                        gameTimeOnSegmentStart = gameTime;
+                        UpdateGameTime();
+
+                        AnalysisResult scoreScreenCheck;
+                        lock (frameAnalyzationLock)
+                        {
+                            scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime,
+                                checkForScoreScreen: true, recalculateOnError: false, visualize: false);
+                        }
+                        if (scoreScreenCheck.IsScoreScreen)
+                            model.Split();
                     }
-                    if (scoreScreenCheck.IsScoreScreen)
+                    else if (previousResult.IsWhiteScreen)
+                    {
                         model.Split();
+                    }
                 }
 
                 previousResult = result;

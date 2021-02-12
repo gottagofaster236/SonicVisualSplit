@@ -156,6 +156,10 @@ namespace SonicVisualSplit
                         {
                             resultText = "Black transition screen.";
                         }
+                        else if (result.IsWhiteScreen)
+                        {
+                            resultText = "White transition screen.";
+                        }
                         else
                         {
                             resultText = $"Recognized time digits: {result.TimeString}.";

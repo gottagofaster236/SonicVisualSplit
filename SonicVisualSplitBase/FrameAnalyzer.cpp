@@ -272,7 +272,7 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
 
     if (maximumOccurrences < pixels.size() * 0.45)
         return SingleColor::NOT_SINGLE_COLOR;
-    else if (mostPopularWindow <= 5)
+    else if (mostPopularWindow <= 10)
         return SingleColor::BLACK;
     else if (mostPopularWindow >= 95)
         return SingleColor::WHITE;

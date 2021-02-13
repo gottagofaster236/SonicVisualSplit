@@ -56,7 +56,9 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         if (FrameStorage::getResultFromCache(frameTime, result))
             return result;
     }
-    return FrameAnalyzer::analyzeNewFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
+    AnalysisResult result = FrameAnalyzer::analyzeNewFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
+    FrameStorage::addResultToCache(result);
+    return result;
 }
 
 
@@ -281,18 +283,22 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
          * Sonic 1's Star Light zone is dark enough to trick the algorithm, so we make another check:
          * if we precalculated the area with digits, it must dark (i.e. black frame shouldn't contain digits). */
         DigitsRecognizer* instance = DigitsRecognizer::getCurrentInstance();
-        cv::Rect digitsRoi;
-        if (instance == nullptr || (digitsRoi = instance->getDigitsRoi()).empty())
-            return SingleColor::BLACK;
+        if (instance == nullptr)
+            return SingleColor::NOT_SINGLE_COLOR;
+
+        cv::Rect2f relativeDigitsRoi = instance->getRelativeDigitsRoi();
+        cv::Rect digitsRoi = {(int) (relativeDigitsRoi.x * frame.cols), (int) (relativeDigitsRoi.y * frame.rows),
+            (int) (relativeDigitsRoi.width * frame.cols), (int) (relativeDigitsRoi.height * frame.rows)};
+        if (digitsRoi.empty())
+            return SingleColor::NOT_SINGLE_COLOR;
 
         // Check that every pixel's brightness is 20 or lower
-        for (int y = digitsRoi.y; y < digitsRoi.y + digitsRoi.height; y++) {
-            for (int x = digitsRoi.x; x < digitsRoi.x + digitsRoi.width; x++) {
-                if (frameRead.at<uint8_t>(y, x) > 20)
-                    return SingleColor::NOT_SINGLE_COLOR;
-            }
-        }
-        TODO CHECK THIS!!!
+        frameRead = frameRead(digitsRoi);
+        double maximumBrightness;
+        cv::minMaxLoc(frameRead, nullptr, &maximumBrightness);
+        if (maximumBrightness > 20)
+            return SingleColor::NOT_SINGLE_COLOR;
+        
         return SingleColor::BLACK;
     }
     else {

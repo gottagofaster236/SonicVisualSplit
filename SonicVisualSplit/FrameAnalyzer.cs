@@ -140,6 +140,12 @@ namespace SonicVisualSplit
                             // If we were on the last split, that means the run has finished.
                             model.Split();
                         }
+                        else if (settings.Game == "Sonic 1" && (state.CurrentSplitIndex == 16 || state.CurrentSplitIndex == 17))
+                        {
+                            /* Hack: Sonic 1's Scrap Brain 2 and 3 have different transitions.
+                             * If it's actually a death, you have to manually undo the split. */
+                            model.Split();
+                        }
                         else if (result.IsBlackScreen)
                         {
                             // Check if it's a transition to the next stage (i.e. not a death), split in that case.
@@ -214,9 +220,11 @@ namespace SonicVisualSplit
 
         private void UpdateGameTime()
         {
-            // make sure the run started
+            // Make sure the run started and hasn't finished
             if (state.CurrentSplitIndex == -1)
                 model.Start();
+            else if (state.CurrentSplitIndex == state.Run.Count)
+                model.UndoSplit();
             state.SetGameTime(TimeSpan.FromMilliseconds(gameTime));
         }
 

@@ -12,10 +12,6 @@ class DigitsRecognizer {
 public:
     static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory);
 
-    /* There is never more than instance of DigitsRecognizer, so we use a pseudo-singleton pattern to manage the memory easier.
-     * This function gets the current instance, or returns nullptr if there's no current instance. */
-    static DigitsRecognizer* getCurrentInstance();
-
     // Find locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
@@ -25,9 +21,15 @@ public:
 
     bool recalculatedDigitsPlacementLastTime();
 
-    /* If already precalculated, returns the area where the digits are located on an unscaled frame.
-     * Returns an empty rectangle otherwise. */
-    cv::Rect getDigitsRoi();
+    /* There is never more than instance of DigitsRecognizer, so we use a pseudo-singleton pattern to manage the memory easier.
+     * This function gets the current instance, or returns nullptr if there's no current instance. */
+    static DigitsRecognizer* getCurrentInstance();
+
+    /* Returns the region of interest where the time digits were located last time,
+     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
+     * This value is never reset, so that it's possible to estimate 
+     * the position of time digits ROI almost all the time. */
+    cv::Rect2f getRelativeDigitsRoi();
 
     // We search for symbols in our code
     static const char SCORE = 'S';
@@ -58,6 +60,9 @@ private:
 
     // map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
+
+    // See getRelativeDigitsRoi().
+    cv::Rect2f relativeDigitsRoi;
 
     inline static DigitsRecognizer* instance = nullptr;
 

@@ -16,9 +16,6 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
     return *instance;
 }
 
-DigitsRecognizer* DigitsRecognizer::getCurrentInstance() {
-    return instance;
-}
 
 // Find locations of all digits, "SCORE" and "TIME" labels.
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
@@ -94,7 +91,11 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             digitsRoi = {roiLeft, roiTop, roiRight - roiLeft, roiBottom - roiTop};
             if (digitsRoi.empty())
                 return {};
+            int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
             frame = frame(digitsRoi);
+            
+            relativeDigitsRoi = {(float) digitsRoi.x / oldWidth, (float) digitsRoi.y / oldHeight,
+                (float) digitsRoi.width / oldWidth, (float) digitsRoi.height / oldHeight};
         }
     }
 
@@ -115,16 +116,14 @@ bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
 }
 
 
-cv::Rect DigitsRecognizer::getDigitsRoi() {
-    if (bestScale == -1 || digitsRoi.empty()) {
-        return cv::Rect();  // return an empty rect if not calculated
-    }
-    else {
-        return cv::Rect((int) (digitsRoi.x / bestScale), (int) (digitsRoi.y / bestScale),
-                        (int) (digitsRoi.width / bestScale), (int) (digitsRoi.height / bestScale));
-    }
+DigitsRecognizer* DigitsRecognizer::getCurrentInstance() {
+    return instance;
 }
 
+
+cv::Rect2f DigitsRecognizer::getRelativeDigitsRoi() {
+    return relativeDigitsRoi;
+}
 
 
 DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)

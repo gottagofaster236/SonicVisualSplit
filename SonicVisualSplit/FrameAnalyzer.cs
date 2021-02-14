@@ -41,7 +41,7 @@ namespace SonicVisualSplit
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellationTokenSource frameAnalyzerTaskToken;
-        private object frameAnalyzerThreadRunningLock = new object();
+        private object analyzationThreadRunningLock = new object();
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(500);
 
         private LiveSplitState state;
@@ -150,11 +150,8 @@ namespace SonicVisualSplit
                         {
                             // Check if it's a transition to the next stage (i.e. not a death), split in that case.
                             AnalysisResult scoreScreenCheck;
-                            lock (frameAnalyzationLock)
-                            {
-                                scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime,
-                                    checkForScoreScreen: true, recalculateOnError: false, visualize: false);
-                            }
+                            scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime,
+                                checkForScoreScreen: true, recalculateOnError: false, visualize: false);
                             if (scoreScreenCheck.IsScoreScreen)
                                 model.Split();
                         }
@@ -238,7 +235,7 @@ namespace SonicVisualSplit
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    lock (frameAnalyzerThreadRunningLock)
+                    lock (analyzationThreadRunningLock)
                     {
                         DateTime start = DateTime.Now;
                         DateTime nextIteration = start + ANALYZE_FRAME_PERIOD;
@@ -258,10 +255,11 @@ namespace SonicVisualSplit
             BaseWrapper.StopSavingFrames();
             BaseWrapper.DeleteAllSavedFrames();
             // Making sure that the frame analyzer thread stops.
-            lock (frameAnalyzerThreadRunningLock) { }
+            lock (analyzationThreadRunningLock) { }
 
             // Restoring the LiveSplit state to the original.
             state.IsGameTimePaused = false;
+            state.OnReset -= OnReset;
         }
 
         private void OnSettingsChanged(object sender = null, EventArgs e = null)
@@ -279,11 +277,19 @@ namespace SonicVisualSplit
 
         private void OnReset(object sender, TimerPhase value)
         {
-            throw new NotImplementedException();
-            /*
-            gameTime = gameTimeOnSegmentStart = ingameTimerOnSegmentStart = 0;
-            previousResult = null;
-            */
+            Task.Run(() =>
+            {
+                lock (frameAnalyzationLock)
+                {
+                    // IsGameTimePaused is reset too, bring it back to true.
+                    state.IsGameTimePaused = true;
+                    BaseWrapper.DeleteAllSavedFrames();
+                    gameTime = 0;
+                    gameTimeOnSegmentStart = 0;
+                    ingameTimerOnSegmentStart = 0;
+                    previousResult = null;
+                }
+            });
         }
 
         private void SendResultToConsumers(AnalysisResult result)

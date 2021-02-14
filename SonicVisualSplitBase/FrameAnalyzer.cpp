@@ -106,6 +106,11 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
         if (!result.recognizedTime && visualize)
             visualizeResult(allSymbols);
     }
+
+    if (digitsRecognizer.recalculatedDigitsPlacementLastTime() && !result.recognizedTime) {
+        // We recalculated everything but failed. Make sure those results aren't saved.
+        DigitsRecognizer::resetDigitsPlacement();
+    }
     return result;
 }
 

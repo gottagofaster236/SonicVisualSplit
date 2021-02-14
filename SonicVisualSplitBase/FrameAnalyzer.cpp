@@ -275,10 +275,10 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
     if (maximumOccurrences < pixels.size() * 0.45)
         return SingleColor::NOT_SINGLE_COLOR;
 
-    if (mostPopularWindow >= 95) {
+    if (mostPopularWindow >= 70) {
         return SingleColor::WHITE;
     }
-    else if (mostPopularWindow <= 10) {
+    else if (mostPopularWindow <= 35) {
         /* This is a black frame, supposedly.
          * Sonic 1's Star Light zone is dark enough to trick the algorithm, so we make another check:
          * if we precalculated the area with digits, it must dark (i.e. black frame shouldn't contain digits). */
@@ -292,11 +292,11 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
         if (digitsRoi.empty())
             return SingleColor::NOT_SINGLE_COLOR;
 
-        // Check that every pixel's brightness is 20 or lower
+        // Check that every pixel's brightness is low enough.
         frameRead = frameRead(digitsRoi);
         double maximumBrightness;
         cv::minMaxLoc(frameRead, nullptr, &maximumBrightness);
-        if (maximumBrightness > 20)
+        if (maximumBrightness > 40)
             return SingleColor::NOT_SINGLE_COLOR;
         
         return SingleColor::BLACK;

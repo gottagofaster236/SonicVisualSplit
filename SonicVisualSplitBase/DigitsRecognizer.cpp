@@ -103,13 +103,19 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 }
 
 
-void DigitsRecognizer::resetDigitsPlacementNoSync() {
+void DigitsRecognizer::resetDigitsPlacement() {
+    FrameAnalyzer::lockFrameAnalyzationMutex();
     if (instance) {
         instance->bestScale = -1;
         instance->digitsRoi = {0, 0, 0, 0};
     }
+    FrameAnalyzer::unlockFrameAnalyzationMutex();
 }
 
+void DigitsRecognizer::resetDigitsPlacementAsync() {
+    // Not waiting for digitsRecognizerMutex.
+    std::thread(DigitsRecognizer::resetDigitsPlacement).detach();
+}
 
 bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
     return recalculateDigitsPlacement;
@@ -149,8 +155,8 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         // Sega Genesis resolution is 320×224 (height = 224)
         // we scale up the template images 2x, so we have to do the same for the resolution.
         const int minHeight = 200 * 2;
-        const int maxHeight = 300 * 2;
-        // 224 / 300 ≈ 0.75
+        const int maxHeight = 320 * 2;
+        // 224 / 320 ≈ 0.75
         // Thus the frame should take at least 75% of stream's height.
         minScale = ((double) minHeight) / frame.rows;
         maxScale = ((double) maxHeight) / frame.rows;

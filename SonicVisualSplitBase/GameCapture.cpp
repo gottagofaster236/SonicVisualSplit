@@ -1,10 +1,9 @@
 #include "GameCapture.h"
 #include "WindowCapture.h"
-#include "FrameAnalyzer.h"
+#include "DigitsRecognizer.h"
 #include <opencv2/imgproc.hpp>
 #include <Windows.h>
 #include <Tlhelp32.h>
-#include <iostream>
 #include <functional>
 
 
@@ -73,7 +72,7 @@ cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
     }
     screenshot(streamRectangle).copyTo(streamPreview);
     if (lastGameFrameWidth != streamPreview.cols || lastGameFrameHeight != streamPreview.rows) {
-        FrameAnalyzer::resetDigitsPlacement();
+        DigitsRecognizer::resetDigitsPlacementAsync();
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
         minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
@@ -105,7 +104,7 @@ bool updateOBSHwnd() {
             return true;
     }
     // reset the scale for the DigitRecognizer, as the video stream changed
-    FrameAnalyzer::resetDigitsPlacement();
+    DigitsRecognizer::resetDigitsPlacementAsync();
 
     obsHwnd = nullptr;
     DWORD processId = getOBSProcessId();

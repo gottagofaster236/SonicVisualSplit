@@ -1,6 +1,8 @@
 #include "FrameStorage.h"
 #include "GameCapture.h"
 #include <chrono>
+#include <thread>
+#include <atomic>
 #include <map>
 #include <set>
 

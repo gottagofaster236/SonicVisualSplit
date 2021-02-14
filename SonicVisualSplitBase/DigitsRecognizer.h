@@ -17,7 +17,10 @@ public:
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
-    static void resetDigitsPlacementNoSync();
+    static void resetDigitsPlacement();
+
+    // Same as resetDigitsPlacement, but non-blocking.
+    static void resetDigitsPlacementAsync();
 
     bool recalculatedDigitsPlacementLastTime();
 

@@ -32,8 +32,6 @@ namespace SonicVisualSplitBase {
 // ===================
 
 
-/* Using a global variable, because FrameAnalyzer.h is included by C++/CLI code (SonicVisualSplitWrapper),
- * where there's no <mutex> include. */
 static std::recursive_mutex frameAnalyzationMutex;
 
 
@@ -101,7 +99,7 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
     else if (recalculateOnError) {
         // we can still try to fix it - maybe video source properties have changed!
         if (!digitsRecognizer.recalculatedDigitsPlacementLastTime()) {
-            resetDigitsPlacement();
+            DigitsRecognizer::resetDigitsPlacement();
             allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
             checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
         }
@@ -109,12 +107,6 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
             visualizeResult(allSymbols);
     }
     return result;
-}
-
-
-void FrameAnalyzer::resetDigitsPlacement() {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
-    DigitsRecognizer::resetDigitsPlacementNoSync();
 }
 
 
@@ -304,6 +296,16 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
     else {
         return SingleColor::NOT_SINGLE_COLOR;
     }
+}
+
+
+void FrameAnalyzer::lockFrameAnalyzationMutex() {
+    frameAnalyzationMutex.lock();
+}
+
+
+void FrameAnalyzer::unlockFrameAnalyzationMutex() {
+    frameAnalyzationMutex.unlock();
 }
 
 }  // namespace SonicVisualSplitBase

@@ -10,27 +10,15 @@
 namespace SonicVisualSplitBase {
 
 // TODO
-// force user to open settings at least once.
-// Save the frame size sometime (to understand the minimum size mb). Not urgent? IDK
-// if the time increases by more than the time passed (+1?), ignore that!!!!!! (maybe also check the prev-prev-time, idk)
-// ATEXIT: restore OBS, stop all threads.
-// if the time got down without the "could not recognize", ignore that
-// double-check score (both the presense and the time). Split if they both match (presense and time)
-// do something with split undos. On each split, calculate the sum of times!
-// for the future: think about the end of a run; maybe detect "sega"? scaled down mb.
+// Make other games work.
+// Force user to open settings at least once.
+// Option to set the autosplitter to practice mode, it will show "Practice" in the menu.
+// (remember to fix that Begin/Stop AnalyzingFrames() works only once).
 // Test EVERY option (including 16:9)
-// set bestScale to -1 when the source is changed
-// sometimes it fails???
-// auto reset option (which can be turned off for sonic 3 and stuff)
-
-// ===================
-// options screen:
-// Live preview
-// Video settings:
-// composite / rf or rgb
-// 4:3 or 16:9 stretched
-// ===================
-
+// ATEXIT: restore OBS, stop all threads.
+// FUTURE:
+// Auto reset option (which can be turned off for sonic 3 and stuff)
+// Option to hide the component.
 
 static std::recursive_mutex frameAnalyzationMutex;
 

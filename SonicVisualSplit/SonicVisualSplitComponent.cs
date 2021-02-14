@@ -98,15 +98,15 @@ namespace SonicVisualSplit
             {
                 internalComponent.InformationValue = result.TimeString;
             }
-            else if (!result.IsSuccessful())
+            else
             {
-                if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
-                {
-                    internalComponent.InformationValue = "-";
-                }
-                else if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
                     internalComponent.InformationValue = "OBS Disconnected";
+                }
+                else
+                {
+                    internalComponent.InformationValue = "-";
                 }
             }
             return true;

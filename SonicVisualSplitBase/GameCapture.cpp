@@ -15,7 +15,7 @@ HWND obsHwnd = nullptr;
 int lastGameFrameWidth, lastGameFrameHeight;
 
 int obsVerticalMargin;  // difference between the client rect and window rect
-const int MINIMUM_STREAM_PREVIEW_HEIGHT = 480;
+const int MINIMUM_STREAM_PREVIEW_HEIGHT = 550;
 int minimumObsHeight = 720;  // the minimum acceptable height of the OBS window (initialized with 720 when not calculated)
 
 bool updateOBSHwnd();

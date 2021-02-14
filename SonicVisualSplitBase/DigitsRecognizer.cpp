@@ -170,17 +170,14 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
     std::vector<std::pair<cv::Rect2f, double>> matches;  // pairs: {supposed digit location, similarity coefficient}
 
-    // reusing the same matrices for our loop
-    cv::UMat resized;
-    cv::UMat matchResult;
-    cv::UMat matchResultBinary;
-
     for (double scale = maxScale; scale >= minScale; scale *= 0.96) {
+        cv::UMat resized;
         if (scale != 1)
             cv::resize(frame, resized, cv::Size(), scale, scale, cv::INTER_AREA);
         else
             resized = frame;
 
+        cv::UMat matchResult;
         cv::matchTemplate(resized, templateImage, matchResult, cv::TM_SQDIFF, templateMask);
 
         if (recalculateDigitsPlacement) {
@@ -203,6 +200,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
             maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
 
+        cv::UMat matchResultBinary;
         cv::threshold(matchResult, matchResultBinary, maximumSqdiff, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);

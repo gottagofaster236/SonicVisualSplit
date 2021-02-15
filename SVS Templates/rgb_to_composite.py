@@ -1,8 +1,11 @@
 from PIL import Image
 import os
 
-directory = "./Sonic 1@RGB"
-output_directory = "./Sonic 1@Composite"
+game_name = input("Enter game name: (for example, Sonic 1): ")
+directory = f"./{game_name}@RGB"
+output_directory = f"./{game_name}@Composite"
+
+os.makedirs(output_directory, exist_ok=True)
 
 for file in os.listdir(directory):
     path = os.path.join(directory, file)

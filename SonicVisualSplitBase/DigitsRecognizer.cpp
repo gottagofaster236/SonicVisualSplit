@@ -34,7 +34,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
     // ROI stands for region of interest.
 
     std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;   // {location, digit, similarity coefficient}
-    bool isSonicOne = (gameName == "Sonic 1");
 
     std::vector<char> symbolsToSearch;
     if (checkForScoreScreen) {
@@ -49,7 +48,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
-            if (isSonicOne && symbol == '1') {
+            if (symbol == '1') {
                 similarity *= 5;  // hack. "1" is the smallest symbol, and we can confuse it with the right side of "9", for example
             }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.

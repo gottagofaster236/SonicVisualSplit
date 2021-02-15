@@ -149,7 +149,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         return lhs.first.x < rhs.first.x;
     });
 
-    bool includesMilliseconds = (gameName == "Sonic CD" || gameName == "Knuckles' Chaotix");
+    bool includesMilliseconds = (gameName == "Sonic CD");
     int requiredDigitsCount;
     if (includesMilliseconds)
         requiredDigitsCount = 5;

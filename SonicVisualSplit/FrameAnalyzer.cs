@@ -63,7 +63,6 @@ namespace SonicVisualSplit
             OnSettingsChanged();
         }
 
-        [MethodImpl(MethodImplOptions.Synchronized)]
         private void AnalyzeFrame()
         {
             lock (frameAnalyzationLock)

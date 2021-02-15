@@ -115,7 +115,6 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
             }
         }
 
-        // score is divisible by 10, so there must be a zero on the screen
         if (positionsOfSymbol[DigitsRecognizer::SCORE].empty() || positionsOfSymbol[DigitsRecognizer::TIME].empty()) {
             result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
             return;

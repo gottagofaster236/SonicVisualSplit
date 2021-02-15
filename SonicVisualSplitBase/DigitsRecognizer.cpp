@@ -210,7 +210,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         for (const cv::Point& match : matchPoints) {
             int x = match.x, y = match.y;
             // If the method of template matching is square difference (TM_SQDIFF), then less is better.
-            // We want less to be worse, so that we make it negative.
+            // We want less to be worse, so we make it negative.
             double similarity = -matchResultRead.at<float>(y, x) / opaquePixels;
 
             // After the scale brute force, we resize the image to the best scale

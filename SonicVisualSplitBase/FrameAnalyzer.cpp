@@ -10,11 +10,13 @@
 namespace SonicVisualSplitBase {
 
 // TODO
-// Make other games work.
+// Test Sonic 3 and/or K runs
+// Make OBS not restore, but minimize!
 // Force user to open settings at least once.
 // Option to set the autosplitter to practice mode, it will show "Practice" in the menu.
 // (remember to fix that Begin/Stop AnalyzingFrames() works only once).
 // Test EVERY option (including 16:9)
+
 // ATEXIT: restore OBS, stop all threads.
 // FUTURE:
 // Auto reset option (which can be turned off for sonic 3 and stuff)

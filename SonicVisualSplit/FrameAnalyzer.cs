@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SonicVisualSplitWrapper;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace SonicVisualSplit
 {
@@ -60,7 +59,6 @@ namespace SonicVisualSplit
         private LiveSplitState state;
         private ITimerModel model;
         private SonicVisualSplitSettings settings;
-        private bool isStopping = false;
 
         public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings)
         {
@@ -128,7 +126,7 @@ namespace SonicVisualSplit
                             isScoreScreen = scoreScreenCheck.IsScoreScreen;
                         }
 
-                        if (isScoreScreen)
+                        if (!isScoreScreen)
                         {
                             isAfterSplit = false;
                             UpdateGameTime(result);
@@ -163,10 +161,9 @@ namespace SonicVisualSplit
                     // If we're splitting, we want to double-check that.
                     if (result.IsScoreScreen)
                     {
-                        Debug.WriteLine($"Is score screen! timeOnLastScoreCheck: {timeOnLastScoreCheck}, result.TimeInMilliseconds: {result.TimeInMilliseconds}");
                         if (timeOnLastScoreCheck == result.TimeInMilliseconds)
                         {
-                            model.Split();
+                            Split();
                             isAfterSplit = true;
                             gameTimeOnSegmentStart = gameTime;
                             ingameTimerOnSegmentStart = 0;
@@ -182,7 +179,8 @@ namespace SonicVisualSplit
                         timeOnLastScoreCheck = -1;
                     }
 
-                    UpdateGameTime(result);
+                    if (!isAfterSplit)
+                        UpdateGameTime(result);
                 }
                 else if ((result.IsBlackScreen || result.IsWhiteScreen) && previousResult != null)
                 {
@@ -201,13 +199,13 @@ namespace SonicVisualSplit
                         {
                             /* If we were on the last split, that means the run has finished.
                              * (Or it was a death on the final stage. In this case the timer we'll undo the split automatically.) */
-                            model.Split();
+                            Split();
                         }
                         else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
                         {
                             /* Hack: Sonic 1's Scrap Brain 3 has a unique transitions.
                              * If it's actually a death, you have to manually undo the split. */
-                            model.Split();
+                            Split();
                         }
                     }
                 }
@@ -225,12 +223,16 @@ namespace SonicVisualSplit
 
         private void UpdateGameTime()
         {
-            // Make sure the run started and hasn't finished
-            if (state.CurrentSplitIndex == -1)
-                model.Start();
-            else if (state.CurrentSplitIndex == state.Run.Count)
-                model.UndoSplit();
-            state.SetGameTime(TimeSpan.FromMilliseconds(gameTime));
+            int gameTimeCopy = gameTime;
+
+            RunOnUiThreadAsync(() => {
+                // Make sure the run started and hasn't finished
+                if (state.CurrentSplitIndex == -1)
+                    model.Start();
+                else if (state.CurrentSplitIndex == state.Run.Count)
+                    model.UndoSplit();
+                state.SetGameTime(TimeSpan.FromMilliseconds(gameTimeCopy));
+            });
         }
 
         private AnalysisResult FindFirstRecognizedFrameAfter(long startFrameTime)
@@ -302,9 +304,7 @@ namespace SonicVisualSplit
             BaseWrapper.StopSavingFrames();
             BaseWrapper.DeleteAllSavedFrames();
             // Making sure that the frame analyzer thread stops.
-            isStopping = true;
             lock (analyzationThreadRunningLock) { }
-            isStopping = false;
 
             // Restoring the LiveSplit state to the original.
             state.IsGameTimePaused = false;
@@ -343,6 +343,19 @@ namespace SonicVisualSplit
                     ingameTimerOnSplit = 0;
                 }
             });
+        }
+
+        private void Split()
+        {
+            RunOnUiThreadAsync(() => model.Split());
+        }
+
+        /* We execute all actions that can cause the UI thread to update asynchronously,
+         * because if UI thread is waiting for frame analyzer thread to finish (StopAnalyzingFrames), this can cause a deadlock. */
+        private void RunOnUiThreadAsync(Action action)
+        {
+            Control mainWindow = Application.OpenForms[0];
+            mainWindow.BeginInvoke(action);
         }
 
         private void SendResultToConsumers(AnalysisResult result)

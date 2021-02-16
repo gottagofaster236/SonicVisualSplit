@@ -60,6 +60,7 @@ namespace SonicVisualSplit
         private LiveSplitState state;
         private ITimerModel model;
         private SonicVisualSplitSettings settings;
+        private bool isStopping = false;
 
         public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings)
         {
@@ -162,6 +163,7 @@ namespace SonicVisualSplit
                     // If we're splitting, we want to double-check that.
                     if (result.IsScoreScreen)
                     {
+                        Debug.WriteLine($"Is score screen! timeOnLastScoreCheck: {timeOnLastScoreCheck}, result.TimeInMilliseconds: {result.TimeInMilliseconds}");
                         if (timeOnLastScoreCheck == result.TimeInMilliseconds)
                         {
                             model.Split();
@@ -300,7 +302,9 @@ namespace SonicVisualSplit
             BaseWrapper.StopSavingFrames();
             BaseWrapper.DeleteAllSavedFrames();
             // Making sure that the frame analyzer thread stops.
+            isStopping = true;
             lock (analyzationThreadRunningLock) { }
+            isStopping = false;
 
             // Restoring the LiveSplit state to the original.
             state.IsGameTimePaused = false;

@@ -30,7 +30,20 @@ namespace SonicVisualSplit
         // What the ingame timer was showing in the beginning of the current segment.
         private int ingameTimerOnSegmentStart = 0;
 
+        // The previous successfully analyzed frame.
         private AnalysisResult previousResult = null;
+
+        // The last frame time that was checked for the score screen.
+        private long lastScoreScreenCheckTime = 0;
+
+        /* The time that was reported on the last frame with successful score screen check, or -1 if last frame was not such. */
+        private int timeOnLastScoreCheck = -1;
+
+        // A state when we've split already, but the next stage hasn't started yet.
+        private bool isAfterSplit = false;
+
+        // If isAfterSplit is true, this is the ingame timer we've split on.
+        private int ingameTimerOnSplit = 0;
 
         // How many times in a row the recognition failed.
         private int unsuccessfulStreak = 0;
@@ -77,9 +90,12 @@ namespace SonicVisualSplit
                 {
                     visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
                 }
+                bool checkForScoreScreen = (lastFrameTime - lastScoreScreenCheckTime >= 1000);
+                if (checkForScoreScreen)
+                    lastScoreScreenCheckTime = lastFrameTime;
 
                 AnalysisResult result;
-                result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen: false,
+                result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen,
                     recalculateOnError: unsuccessfulStreak >= 5, visualize);
                 SendResultToConsumers(result);
 
@@ -94,18 +110,32 @@ namespace SonicVisualSplit
                     unsuccessfulStreak = 0;
                 }
 
-                if (result.RecognizedTime)
+                if (isAfterSplit)
                 {
-                    if (previousResult != null && previousResult.IsBlackScreen)
+                    // Check if the next stage has started.
+                    if (result.RecognizedTime && result.TimeInMilliseconds < ingameTimerOnSplit)
                     {
-                        /* This is the first recognized frame after a black transition screen.
-                         * We may have skipped the first frame after the transition, so we go and find it. */
-                        AnalysisResult frameAfterTransition = FindFirstRecognizedFrameAfter(previousResult.FrameTime);
-                        gameTimeOnSegmentStart = gameTime;
-                        ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
-                        previousResult = frameAfterTransition;
-                    }
+                        bool isScoreScreen;
+                        if (checkForScoreScreen)
+                        {
+                            isScoreScreen = result.IsScoreScreen;
+                        }
+                        else
+                        {
+                            var scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen,
+                                recalculateOnError: false, visualize: false);
+                            isScoreScreen = scoreScreenCheck.IsScoreScreen;
+                        }
 
+                        if (isScoreScreen)
+                        {
+                            isAfterSplit = false;
+                            UpdateGameTime(result);
+                        }
+                    }
+                }
+                else if (result.RecognizedTime)
+                {
                     if (previousResult != null && previousResult.RecognizedTime)
                     {
                         /* Checking that the recognized time is correct (at least to some degree).
@@ -117,6 +147,37 @@ namespace SonicVisualSplit
                             HandleUnrecognizedFrame(result.FrameTime);
                             return;
                         }
+                    }
+
+                    if (previousResult != null && previousResult.IsBlackScreen)
+                    {
+                        /* This is the first recognized frame after a black transition screen.
+                         * We may have skipped the first frame after the transition, so we go and find it. */
+                        AnalysisResult frameAfterTransition = FindFirstRecognizedFrameAfter(previousResult.FrameTime);
+                        gameTimeOnSegmentStart = gameTime;
+                        ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
+                        previousResult = frameAfterTransition;
+                    }
+
+                    // If we're splitting, we want to double-check that.
+                    if (result.IsScoreScreen)
+                    {
+                        if (timeOnLastScoreCheck == result.TimeInMilliseconds)
+                        {
+                            model.Split();
+                            isAfterSplit = true;
+                            gameTimeOnSegmentStart = gameTime;
+                            ingameTimerOnSegmentStart = 0;
+                            ingameTimerOnSplit = result.TimeInMilliseconds;
+                        }
+                        else
+                        {
+                            timeOnLastScoreCheck = result.TimeInMilliseconds;
+                        }
+                    }
+                    else if (checkForScoreScreen)
+                    {
+                        timeOnLastScoreCheck = -1;
                     }
 
                     UpdateGameTime(result);
@@ -136,31 +197,16 @@ namespace SonicVisualSplit
 
                         if (state.CurrentSplitIndex == state.Run.Count - 1)
                         {
-                            // If we were on the last split, that means the run has finished.
+                            /* If we were on the last split, that means the run has finished.
+                             * (Or it was a death on the final stage. In this case the timer we'll undo the split automatically.) */
                             model.Split();
                         }
-                        else if (settings.Game == "Sonic 1" && (state.CurrentSplitIndex == 16 || state.CurrentSplitIndex == 17))
+                        else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
                         {
-                            /* Hack: Sonic 1's Scrap Brain 2 and 3 have different transitions.
+                            /* Hack: Sonic 1's Scrap Brain 3 has a unique transitions.
                              * If it's actually a death, you have to manually undo the split. */
                             model.Split();
                         }
-                        else if (result.IsBlackScreen)
-                        {
-                            // Check if it's a transition to the next stage (i.e. not a death), split in that case.
-                            AnalysisResult scoreScreenCheck;
-                            scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(frameBeforeTransition.FrameTime,
-                                checkForScoreScreen: true, recalculateOnError: false, visualize: false);
-                            if (scoreScreenCheck.IsScoreScreen)
-                                model.Split();
-                        }
-                    }
-                    else if (result.IsBlackScreen && previousResult.IsWhiteScreen)
-                    {
-                        /* We had a transition to the special stage,
-                         * where we couldn't recognize any frames (as there's no time on screen),
-                         * so previousResult will be a white frame of the transition INTO the special stage. */
-                        model.Split();
                     }
                 }
 
@@ -173,6 +219,16 @@ namespace SonicVisualSplit
         {
             gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
             UpdateGameTime();
+        }
+
+        private void UpdateGameTime()
+        {
+            // Make sure the run started and hasn't finished
+            if (state.CurrentSplitIndex == -1)
+                model.Start();
+            else if (state.CurrentSplitIndex == state.Run.Count)
+                model.UndoSplit();
+            state.SetGameTime(TimeSpan.FromMilliseconds(gameTime));
         }
 
         private AnalysisResult FindFirstRecognizedFrameAfter(long startFrameTime)
@@ -212,16 +268,6 @@ namespace SonicVisualSplit
             }
 
             lastFailedFrameTime = frameTime;
-        }
-
-        private void UpdateGameTime()
-        {
-            // Make sure the run started and hasn't finished
-            if (state.CurrentSplitIndex == -1)
-                model.Start();
-            else if (state.CurrentSplitIndex == state.Run.Count)
-                model.UndoSplit();
-            state.SetGameTime(TimeSpan.FromMilliseconds(gameTime));
         }
 
         public void StartAnalyzingFrames()
@@ -287,6 +333,10 @@ namespace SonicVisualSplit
                     gameTimeOnSegmentStart = 0;
                     ingameTimerOnSegmentStart = 0;
                     previousResult = null;
+                    lastScoreScreenCheckTime = 0;
+                    timeOnLastScoreCheck = -1;
+                    isAfterSplit = false;
+                    ingameTimerOnSplit = 0;
                 }
             });
         }

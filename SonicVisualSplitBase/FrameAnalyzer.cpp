@@ -13,10 +13,28 @@ namespace SonicVisualSplitBase {
 // Fix bug with "open layout"
 // Test Sonic 3 and/or K runs
 // Make OBS not restore, but minimize!
+// Game-specific ROIs to increase success rates
 // Force user to open settings at least once.
 // Option to set the autosplitter to practice mode, it will show "Practice" in the menu.
 // (remember to fix that Begin/Stop AnalyzingFrames() works only once).
 // Test EVERY option (including 16:9)
+
+/* README thoughts
+ * Note: this is an early version. I've tested it on hours of footage, but it may contain bugs. So feel free to report an issue.
+ * 
+ * Troubleshooting: if it says "OBS Disconnected", read <link>this</link>.
+ * If it has too many failed frames (when it writes a dash instead of recognized time), check your settings.
+ * Make sure you've selected the correct video mode (sometimes Composite may work better than RGB).
+ * 
+ * BUILDING:
+ * VS 2019
+ * vcpkg, integrate, install opencv-x64
+ * install LiveSplit to C:/Program Files/LiveSplit
+ * Clone LiveSplit in Visual Studio
+ * Clone this repository in Visual Studio
+ * Copy/Paste the output dlls of LiveSplit?
+ * Select the external program
+ */
 
 // ATEXIT: restore OBS, stop all threads.
 // FUTURE:

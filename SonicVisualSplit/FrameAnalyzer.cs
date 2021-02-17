@@ -193,7 +193,6 @@ namespace SonicVisualSplit
                          * We find the last frame before the transition to find out the time. */
                         AnalysisResult frameBeforeTransition = FindFirstRecognizedFrameBefore(result.FrameTime);
                         UpdateGameTime(frameBeforeTransition);
-                        gameTimeOnSegmentStart = gameTime;
 
                         if (state.CurrentSplitIndex == state.Run.Count - 1)
                         {
@@ -203,7 +202,7 @@ namespace SonicVisualSplit
                         }
                         else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
                         {
-                            /* Hack: Sonic 1's Scrap Brain 3 has a unique transitions.
+                            /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
                              * If it's actually a death, you have to manually undo the split. */
                             Split();
                         }

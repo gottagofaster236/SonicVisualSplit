@@ -176,6 +176,8 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         else
             resized = frame;
 
+        if (resized.cols < templateImage.cols || resized.rows < templateImage.rows)
+            continue;
         cv::UMat matchResult;
         cv::matchTemplate(resized, templateImage, matchResult, cv::TM_SQDIFF, templateMask);
 

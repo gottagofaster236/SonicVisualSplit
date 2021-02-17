@@ -94,8 +94,8 @@ bool WindowCapture::ensureWindowReadyForCapture() {
 
     windowPos.left = std::max(rc.left, std::min(rc.right - width, windowPos.left));
     windowPos.top = std::max(rc.top, std::min(rc.bottom - height, windowPos.top));
-    windowPos.right = windowPos.left + width;
-    windowPos.bottom = windowPos.top + height;
+    windowPos.right = std::min(rc.right, windowPos.left + width);
+    windowPos.bottom = std::min(rc.bottom, windowPos.top + height);
 
     if (oldWindowPos.left != windowPos.left || oldWindowPos.top != windowPos.top
             || oldWindowPos.right != windowPos.right || oldWindowPos.bottom != windowPos.bottom) {

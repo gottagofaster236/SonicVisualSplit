@@ -10,6 +10,7 @@
 namespace SonicVisualSplitBase {
 
 // TODO
+// Fix bug with "open layout"
 // Test Sonic 3 and/or K runs
 // Make OBS not restore, but minimize!
 // Force user to open settings at least once.

@@ -79,8 +79,10 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                 if (symbol == TIME && location.y < timeRect.y)
                     timeRect = location;
             }
+
+            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.5 : 2.45);
             int roiLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
-            int roiRight = (int) ((timeRect.x + timeRect.width * 3.5) * bestScale);
+            int roiRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int roiTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
             int roiBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
             roiLeft = std::max(roiLeft, 0);

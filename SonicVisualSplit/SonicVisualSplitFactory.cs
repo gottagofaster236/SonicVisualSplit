@@ -12,7 +12,7 @@ namespace SonicVisualSplit
 
         public string Description => "Auto-Splitter for people who play Sonic on console.";
 
-        public ComponentCategory Category => ComponentCategory.Information;
+        public ComponentCategory Category => ComponentCategory.Timer;
 
         public IComponent Create(LiveSplitState state) => new SonicVisualSplitComponent(state);
 

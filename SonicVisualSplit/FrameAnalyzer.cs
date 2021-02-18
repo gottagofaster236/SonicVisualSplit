@@ -206,6 +206,11 @@ namespace SonicVisualSplit
                              * If it's actually a death, you have to manually undo the split. */
                             Split();
                         }
+                        else if (settings.Game == "Sonic 2" && (state.CurrentSplitIndex == 17 || state.CurrentSplitIndex == 18))
+                        {
+                            // Same for Sonic 2's Sky Chase and Wing Fortress.
+                            Split();
+                        }
                     }
                 }
 

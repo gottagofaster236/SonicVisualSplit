@@ -8,13 +8,29 @@ namespace SonicVisualSplit
 {
     class SonicVisualSplitFactory : IComponentFactory
     {
+        static readonly WeakReference<SonicVisualSplitComponent> openedComponentRef = new WeakReference<SonicVisualSplitComponent>(null);
+
         public string ComponentName => "SonicVisualSplit";
 
         public string Description => "Auto-Splitter for people who play Sonic on console.";
 
         public ComponentCategory Category => ComponentCategory.Timer;
 
-        public IComponent Create(LiveSplitState state) => new SonicVisualSplitComponent(state);
+        public IComponent Create(LiveSplitState state)
+        {
+            /* Workaround a LiveSplit bug/feature when it creates a new component before deleting the previous instance,
+             * if you load another LiveSplit layout. */
+            SonicVisualSplitComponent openedComponent;
+            if (openedComponentRef.TryGetTarget(out openedComponent))
+            {
+                if (!openedComponent.Disposed)
+                    ((IDisposable) openedComponent).Dispose();
+            }
+
+            var newComponent = new SonicVisualSplitComponent(state);
+            openedComponentRef.SetTarget(newComponent);
+            return newComponent;
+        }
 
         public string UpdateName => ComponentName;
 

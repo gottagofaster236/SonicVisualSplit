@@ -10,7 +10,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
 using SonicVisualSplitWrapper;
-
+using System.Diagnostics;
 
 namespace SonicVisualSplit
 {
@@ -24,6 +24,8 @@ namespace SonicVisualSplit
         string IComponent.ComponentName => "SonicVisualSplit";
 
         IDictionary<string, Action> IComponent.ContextMenuControls => null;
+
+        public bool Disposed { get; private set; } = false;
         
         public SonicVisualSplitComponent(LiveSplitState state)
         {
@@ -43,6 +45,9 @@ namespace SonicVisualSplit
 
         void IDisposable.Dispose()
         {
+            if (Disposed)
+                return;
+            Disposed = true;
             frameAnalyzer.StopAnalyzingFrames();
             state.IsGameTimePaused = false;
         }

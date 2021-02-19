@@ -12,7 +12,7 @@ namespace SonicVisualSplitBase {
 // TODO
 // Fix bug with "open layout"
 // Test Sonic 3 and/or K runs
-// Make OBS not restore, but minimize!
+// Make OBS not restore, but minimize! Also, if OBS was maximized before, you should maximize it after restoring (not urgent).
 // Game-specific ROIs to increase success rates
 // Force user to open settings at least once.
 // Option to set the autosplitter to practice mode, it will show "Practice" in the menu.

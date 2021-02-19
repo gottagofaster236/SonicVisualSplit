@@ -187,8 +187,8 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         }
     }
 
-    if (gameName == "Sonic 1") {
-        // Sonic 1 has a really small "1" sprite, it sometimes recognizes that as a result of error
+    if (gameName == "Sonic 1" || gameName == "Sonic CD") {
+        // Sonic 1/CD has a really small "1" sprite, it sometimes recognizes that as a result of error
         while (timeDigits.size() > requiredDigitsCount && timeDigits.back().second == '1')
             timeDigits.pop_back();
     }
@@ -212,6 +212,11 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         std::string milliseconds = timeDigitsStr.substr(3, 2);
         result.timeString += '"' + milliseconds;
         result.timeInMilliseconds += std::stoi(milliseconds) * 10;
+
+        if (result.timeInMilliseconds == 30) {
+            // Sonic CD starts the timer from 0'00"03 when you die.
+            result.timeInMilliseconds = 0;
+        }
     }
 
     if (visualize) {

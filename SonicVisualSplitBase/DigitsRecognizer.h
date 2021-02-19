@@ -73,8 +73,12 @@ private:
     // Minimum similarity of a match (zero is a perfect match)
     static constexpr double MIN_SIMILARITY = -0.5;
 
-    // minimum similarity in relation to the best found similarity
+    // Minimum similarity in relation to the best found similarity
     static constexpr double SIMILARITY_COEFFICIENT = 3;
+
+    /* Minimum similarity of "TIME" in relation to the best found similarity.
+     * (We use "TIME" to detect the score screen, so we want to be sure). */ 
+    static constexpr double TIME_SIMILARITY_COEFFICIENT = 2;
 };
 
 }  // namespace SonicVisualSplitBase

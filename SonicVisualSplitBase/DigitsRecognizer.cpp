@@ -49,6 +49,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
         for (auto [location, similarity] : matches) {
             if (symbol == '1') {
+                // TODO add isRGB to frame/digits and don't multiply by 5 if RGB
+                0 = 0;
                 similarity *= 5;  // hack. "1" is the smallest symbol, and we can confuse it with the right side of "9", for example
             }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
@@ -80,7 +82,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                     timeRect = location;
             }
 
-            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.5 : 2.45);
+            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.45);
             int roiLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
             int roiRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int roiTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
@@ -199,7 +201,8 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
         matches.clear();
 
-        double maximumSqdiff = -SIMILARITY_COEFFICIENT * bestSimilarity * opaquePixels;
+        double similarityCoefficient = (symbol == TIME ? TIME_SIMILARITY_COEFFICIENT : SIMILARITY_COEFFICIENT);
+        double maximumSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
         if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
             maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
 

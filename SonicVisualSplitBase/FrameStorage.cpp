@@ -9,12 +9,12 @@
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
 
-std::map<long long, cv::Mat> savedFrames;
-std::mutex savedFramesMutex;
-std::map<long long, AnalysisResult> cachedResults;
-std::mutex cachedResultsMutex;
+static std::map<long long, cv::Mat> savedFrames;
+static std::mutex savedFramesMutex;
+static std::map<long long, AnalysisResult> cachedResults;
+static std::mutex cachedResultsMutex;
 
-std::atomic_bool* framesThreadCancelledFlag = nullptr;
+static std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
 
 void startSavingFrames() {

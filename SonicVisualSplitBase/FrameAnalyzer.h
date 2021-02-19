@@ -44,7 +44,7 @@ private:
 
     void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize);
 
-    void visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols);
+    void visualizeResult(std::vector<std::pair<cv::Rect2f, char>>& symbols);
 
     enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
     SingleColor checkIfFrameIsSingleColor(cv::UMat frame);

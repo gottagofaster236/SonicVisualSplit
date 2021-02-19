@@ -43,6 +43,8 @@ namespace SonicVisualSplitBase {
 
 static std::recursive_mutex frameAnalyzationMutex;
 
+static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
+
 
 FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9) {
     if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory || instance->isStretchedTo16By9 != isStretchedTo16By9) {
@@ -84,8 +86,7 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
     cv::UMat frame;
     cv::cvtColor(originalFrame, frame, cv::COLOR_BGR2GRAY);
     if (isStretchedTo16By9) {
-        const double scaleFactor = (4 / 3.) / (16 / 9.);
-        cv::resize(frame, frame, cv::Size(), scaleFactor, 1, cv::INTER_AREA);
+        cv::resize(frame, frame, cv::Size(), scaleFactorTo4By3, 1, cv::INTER_AREA);
     }
     if (visualize) {
         originalFrame.copyTo(result.visualizedFrame);
@@ -226,8 +227,12 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
 }
 
 
-void FrameAnalyzer::visualizeResult(const std::vector<std::pair<cv::Rect2f, char>>& symbols) {
+void FrameAnalyzer::visualizeResult(std::vector<std::pair<cv::Rect2f, char>>& symbols) {
     for (auto& [position, symbol] : symbols) {
+        if (isStretchedTo16By9) {
+            position.x /= scaleFactorTo4By3;
+            position.width /= scaleFactorTo4By3;
+        }
         cv::rectangle(result.visualizedFrame, position, cv::Scalar(0, 0, 255), 1);
     }
 }

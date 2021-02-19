@@ -54,7 +54,7 @@ namespace SonicVisualSplit
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellationTokenSource frameAnalyzerTaskToken;
         private object analyzationThreadRunningLock = new object();
-        private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
 
         private LiveSplitState state;
         private ITimerModel model;

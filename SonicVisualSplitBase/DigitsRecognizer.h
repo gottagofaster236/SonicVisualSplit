@@ -74,7 +74,7 @@ private:
     static constexpr double MIN_SIMILARITY = -0.5;
 
     // minimum similarity in relation to the best found similarity
-    static constexpr double SIMILARITY_COEFFICIENT = 2.25;
+    static constexpr double SIMILARITY_COEFFICIENT = 3;
 };
 
 }  // namespace SonicVisualSplitBase

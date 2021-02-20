@@ -79,7 +79,7 @@ private:
 
     /* Minimum similarity of "TIME" in relation to the best found similarity.
      * (We use "TIME" to detect the score screen, so we want to be sure). */ 
-    static constexpr double TIME_SIMILARITY_COEFFICIENT = 2;
+    static constexpr double TIME_SIMILARITY_COEFFICIENT = 1.5;
 };
 
 }  // namespace SonicVisualSplitBase

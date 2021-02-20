@@ -49,7 +49,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
         for (auto [location, similarity] : matches) {
             if (symbol == '1' && !isRGB) {
-                similarity *= 5;  // hack. "1" is the smallest symbol, and we can confuse it with the right side of "9", for example
+                similarity *= 3;  // hack. "1" is the smallest symbol, and we can confuse it with the right side of "9", for example
             }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
             location += cv::Point2f((float) (digitsRoi.x / bestScale), (float) (digitsRoi.y / bestScale));

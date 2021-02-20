@@ -8,10 +8,10 @@
 
 namespace SonicVisualSplitBase {
 
-DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory) {
+DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB) {
     if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory) {
         delete instance;
-        instance = new DigitsRecognizer(gameName, templatesDirectory);
+        instance = new DigitsRecognizer(gameName, templatesDirectory, isRGB);
     }
     return *instance;
 }
@@ -48,9 +48,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
-            if (symbol == '1') {
-                // TODO add isRGB to frame/digits and don't multiply by 5 if RGB
-                0 = 0;
+            if (symbol == '1' && !isRGB) {
                 similarity *= 5;  // hack. "1" is the smallest symbol, and we can confuse it with the right side of "9", for example
             }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
@@ -135,8 +133,8 @@ cv::Rect2f DigitsRecognizer::getRelativeDigitsRoi() {
 }
 
 
-DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory)
-        : gameName(gameName), templatesDirectory(templatesDirectory) {
+DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB)
+        : gameName(gameName), templatesDirectory(templatesDirectory), isRGB(isRGB) {
     std::vector<char> symbolsToLoad = {TIME, SCORE};
     for (char digit = '0'; digit <= '9'; digit++)
         symbolsToLoad.push_back(digit);

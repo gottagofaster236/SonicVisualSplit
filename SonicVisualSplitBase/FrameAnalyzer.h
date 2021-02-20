@@ -28,7 +28,8 @@ struct AnalysisResult {
 // This class finds the digits on the game frame (and gets a few other parameters, see AnalysisResult).
 class FrameAnalyzer {
 public:
-    static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
+    static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
+                                      bool isStretchedTo16By9, bool isRGB);
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
@@ -38,7 +39,7 @@ public:
     static void unlockFrameAnalyzationMutex();
 
 private:
-    FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9);
+    FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isRGB);
 
     AnalysisResult analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
@@ -52,6 +53,7 @@ private:
     std::string gameName;
     std::filesystem::path templatesDirectory;
     bool isStretchedTo16By9;
+    bool isRGB;
     AnalysisResult result;
 
     inline static FrameAnalyzer* instance = nullptr;

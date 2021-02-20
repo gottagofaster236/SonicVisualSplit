@@ -46,17 +46,20 @@ static std::recursive_mutex frameAnalyzationMutex;
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
-FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9) {
-    if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory || instance->isStretchedTo16By9 != isStretchedTo16By9) {
+FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
+                                          bool isStretchedTo16By9, bool isRGB) {
+    if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
+            || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isRGB != isRGB) {
         delete instance;
-        instance = new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9);
+        instance = new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isRGB);
     }
     return *instance;
 }
 
 
-FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9) {}
+FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory,
+                             bool isStretchedTo16By9, bool isRGB)
+    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isRGB(isRGB) {}
 
 
 // First checks if the frame was analyzed already, otherwise calls analyzeNewFrame and caches the result.
@@ -100,7 +103,7 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
         return result;
     }
 
-    DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory);
+    DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isRGB);
     std::vector<std::pair<cv::Rect2f, char>> allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
     checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
     if (result.recognizedTime) {

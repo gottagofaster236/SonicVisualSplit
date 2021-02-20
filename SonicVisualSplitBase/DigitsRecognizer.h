@@ -10,7 +10,7 @@ namespace SonicVisualSplitBase {
 
 class DigitsRecognizer {
 public:
-    static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory);
+    static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB);
 
     // Find locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
@@ -39,7 +39,7 @@ public:
     static const char TIME = 'T';
 
 private:
-    DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory);
+    DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB);
 
     std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
 
@@ -49,6 +49,7 @@ private:
 
     std::string gameName;
     std::filesystem::path templatesDirectory;
+    bool isRGB;
 
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     double bestScale = -1;

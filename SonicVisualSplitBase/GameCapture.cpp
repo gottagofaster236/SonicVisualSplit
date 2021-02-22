@@ -1,4 +1,5 @@
 #include "GameCapture.h"
+#define NOMINMAX  // fighting defines from Windows.h
 #include "WindowCapture.h"
 #include "DigitsRecognizer.h"
 #include <opencv2/imgproc.hpp>

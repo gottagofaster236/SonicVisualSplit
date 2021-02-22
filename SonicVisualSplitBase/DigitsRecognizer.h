@@ -10,7 +10,7 @@ namespace SonicVisualSplitBase {
 
 class DigitsRecognizer {
 public:
-    static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB);
+    static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
     // Find locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
@@ -39,7 +39,7 @@ public:
     static const char TIME = 'T';
 
 private:
-    DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB);
+    DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
     std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
 
@@ -49,7 +49,7 @@ private:
 
     std::string gameName;
     std::filesystem::path templatesDirectory;
-    bool isRGB;
+    bool isComposite;
 
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     double bestScale = -1;
@@ -80,6 +80,9 @@ private:
     /* Minimum similarity of "TIME" in relation to the best found similarity.
      * (We use "TIME" to detect the score screen, so we want to be sure). */ 
     static constexpr double TIME_SIMILARITY_COEFFICIENT = 2.5;
+
+    // Four is really similar to one, so we lower the coefficient.
+    static constexpr double ONE_FOUR_COEFFICIENT = 2.5;
 };
 
 }  // namespace SonicVisualSplitBase

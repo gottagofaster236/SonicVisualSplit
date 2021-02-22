@@ -18,6 +18,7 @@ namespace SonicVisualSplitBase {
 // Option to set the autosplitter to practice mode, it will show "Practice" in the menu.
 // (remember to fix that Begin/Stop AnalyzingFrames() works only once).
 // Test EVERY option (including 16:9)
+// Add a pythonanywhere server to check the current version. (OR think about adding it as a component).
 
 /* README thoughts
  * Note: this is an early version. I've tested it on hours of footage, but it may contain bugs. So feel free to report an issue.
@@ -26,6 +27,8 @@ namespace SonicVisualSplitBase {
  * If it has too many failed frames (when it writes a dash instead of recognized time), check your settings.
  * Make sure you've selected the correct video mode (sometimes Composite may work better than RGB).
  * If your capture card outputs a too dark image, you may have to apply a color correction filter in OBS.
+ * In general, the better your video capture is, the more accurate the SVS will be.
+ * Try maximizing OBS (so that the video feed has higher resolution).
  * 
  * BUILDING:
  * VS 2019
@@ -48,19 +51,19 @@ static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
 FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
-                                          bool isStretchedTo16By9, bool isRGB) {
+                                          bool isStretchedTo16By9, bool isComposite) {
     if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
-            || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isRGB != isRGB) {
+            || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isComposite != isComposite) {
         delete instance;
-        instance = new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isRGB);
+        instance = new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite);
     }
     return *instance;
 }
 
 
 FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory,
-                             bool isStretchedTo16By9, bool isRGB)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isRGB(isRGB) {}
+                             bool isStretchedTo16By9, bool isComposite)
+    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
 
 
 // First checks if the frame was analyzed already, otherwise calls analyzeNewFrame and caches the result.
@@ -104,7 +107,7 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
         return result;
     }
 
-    DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isRGB);
+    DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isComposite);
     frame.convertTo(frame, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
     std::vector<std::pair<cv::Rect2f, char>> allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
     checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);

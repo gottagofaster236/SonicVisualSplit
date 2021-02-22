@@ -13,8 +13,8 @@ using namespace SonicVisualSplitBase;
 
 namespace SonicVisualSplitWrapper {
 
-FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isRGB)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isRGB(isRGB) {}
+FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite)
+    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
 
 
 // Converting non-managed types to managed ones to call the native version of the function
@@ -23,7 +23,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
     auto& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted,
-                                                                           isStretchedTo16By9, isRGB);
+                                                                           isStretchedTo16By9, isComposite);
     SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();

@@ -29,7 +29,7 @@ struct AnalysisResult {
 class FrameAnalyzer {
 public:
     static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
-                                      bool isStretchedTo16By9, bool isRGB);
+                                      bool isStretchedTo16By9, bool isComposite);
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
@@ -39,7 +39,7 @@ public:
     static void unlockFrameAnalyzationMutex();
 
 private:
-    FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isRGB);
+    FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isComposite);
 
     AnalysisResult analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
 
@@ -53,7 +53,7 @@ private:
     std::string gameName;
     std::filesystem::path templatesDirectory;
     bool isStretchedTo16By9;
-    bool isRGB;
+    bool isComposite;
     AnalysisResult result;
 
     inline static FrameAnalyzer* instance = nullptr;

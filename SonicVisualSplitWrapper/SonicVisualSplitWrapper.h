@@ -28,7 +28,7 @@ public:
 
 public ref class FrameAnalyzer {
 public:
-    FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isRGB);
+    FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
 
     AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean recalculateOnError, Boolean visualize);
 
@@ -36,7 +36,7 @@ private:
     String^ gameName;
     String^ templatesDirectory;
     Boolean isStretchedTo16By9;
-    Boolean isRGB;
+    Boolean isComposite;
 };
 
 public ref class BaseWrapper {

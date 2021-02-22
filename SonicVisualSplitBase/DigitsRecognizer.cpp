@@ -8,10 +8,10 @@
 
 namespace SonicVisualSplitBase {
 
-DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB) {
+DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite) {
     if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory) {
         delete instance;
-        instance = new DigitsRecognizer(gameName, templatesDirectory, isRGB);
+        instance = new DigitsRecognizer(gameName, templatesDirectory, isComposite);
     }
     return *instance;
 }
@@ -129,8 +129,8 @@ cv::Rect2f DigitsRecognizer::getRelativeDigitsRoi() {
 }
 
 
-DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isRGB)
-        : gameName(gameName), templatesDirectory(templatesDirectory), isRGB(isRGB) {
+DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite)
+        : gameName(gameName), templatesDirectory(templatesDirectory), isComposite(isComposite) {
     std::vector<char> symbolsToLoad = {TIME, SCORE};
     for (char digit = '0'; digit <= '9'; digit++)
         symbolsToLoad.push_back(digit);
@@ -195,7 +195,14 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
         matches.clear();
 
-        double similarityCoefficient = ((symbol == TIME || symbol == SCORE) ? TIME_SIMILARITY_COEFFICIENT : SIMILARITY_COEFFICIENT);
+        double similarityCoefficient;
+        if (symbol == TIME || symbol == SCORE)
+            similarityCoefficient = TIME_SIMILARITY_COEFFICIENT;
+        else if (symbol == '1' || symbol == '4')
+            similarityCoefficient = ONE_FOUR_COEFFICIENT;
+        else
+            similarityCoefficient = SIMILARITY_COEFFICIENT;
+
         double maximumSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
         if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
             maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
@@ -223,7 +230,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
             // Making sure that matches don't overlap in case of a small error.
             int matchMargin;
-            if (!isRGB && symbol == '1')  // "1" is too small, make the match rectangle larger
+            if (symbol == '1')  // "1" is too small, make the match rectangle larger
                 matchMargin = 2;
             else
                 matchMargin = -2;
@@ -247,13 +254,11 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
     std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
     std::sort(digitLocations.begin(), digitLocations.end(), [this](const auto& lhs, const auto& rhs) {
-        if (isRGB) {
-            if (std::get<1>(lhs) == '1' && std::get<1>(rhs) != '1') {
-                return false;
-            }
-            else if (std::get<1>(lhs) != '1' && std::get<1>(rhs) == '1') {
-                return true;
-            }
+        if (std::get<1>(lhs) == '1' && std::get<1>(rhs) != '1') {
+            return false;
+        }
+        else if (std::get<1>(lhs) != '1' && std::get<1>(rhs) == '1') {
+            return true;
         }
         return std::get<2>(lhs) > std::get<2>(rhs);
     });

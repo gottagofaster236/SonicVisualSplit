@@ -100,7 +100,6 @@ namespace SonicVisualSplit
 
                 if (!result.IsSuccessful())
                 {
-                    unsuccessfulStreak++;
                     HandleUnrecognizedFrame(result.FrameTime);
                     return;
                 }
@@ -148,7 +147,7 @@ namespace SonicVisualSplit
                         }
                     }
 
-                    if (previousResult != null && previousResult.IsBlackScreen)
+                    if (previousResult != null && previousResult.IsBlackScreen && state.CurrentSplitIndex != -1)
                     {
                         /* This is the first recognized frame after a black transition screen.
                          * We may have skipped the first frame after the transition, so we go and find it. */
@@ -276,6 +275,7 @@ namespace SonicVisualSplit
             }
 
             lastFailedFrameTime = frameTime;
+            unsuccessfulStreak++;
         }
 
         public void StartAnalyzingFrames()

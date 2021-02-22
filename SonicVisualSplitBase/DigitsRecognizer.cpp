@@ -19,7 +19,6 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 
 // Find locations of all digits, "SCORE" and "TIME" labels.
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
-    cv::UMat originalFrame = frame;
     if (bestScale != -1 && !digitsRoi.empty()) {
         cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
         if (!checkForScoreScreen)  // if we look for digits only, we can speed everything up
@@ -48,9 +47,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
-            if (symbol == '1' && !isRGB) {
-                similarity *= 3;  // hack. "1" is the smallest symbol, and we can confuse it with the right side of "9", for example
-            }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
             location += cv::Point2f((float) (digitsRoi.x / bestScale), (float) (digitsRoi.y / bestScale));
             digitLocations.push_back({location, symbol, similarity});
@@ -62,7 +58,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             /* We search the whole screen for the "TIME" label.
              * For other symbols we will speed up the calculation by scaling the image down to the best scale. */
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
-            frame = frame(topHalf);
+            frame = frame(topHalf);  // so that "SCORE" is searched faster
             if (recalculateDigitsPlacement) {
                 cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
             }
@@ -80,8 +76,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                     timeRect = location;
             }
 
-            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.45);
-            int roiLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
+            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.55);
+            int roiLeft = (int) ((timeRect.x + timeRect.width * 1.28) * bestScale);
             int roiRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int roiTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
             int roiBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
@@ -94,7 +90,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                 return {};
             int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
             frame = frame(digitsRoi);
-            
+
             relativeDigitsRoi = {(float) digitsRoi.x / oldWidth, (float) digitsRoi.y / oldHeight,
                 (float) digitsRoi.width / oldWidth, (float) digitsRoi.height / oldHeight};
         }
@@ -185,7 +181,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
         if (recalculateDigitsPlacement) {
             double minimumSqdiff;
-            cv::minMaxLoc(matchResult, &minimumSqdiff, nullptr, nullptr, nullptr);
+            cv::minMaxLoc(matchResult, &minimumSqdiff);
             double maxSimilarityForScale = -minimumSqdiff / opaquePixels;
             if (bestSimilarity < maxSimilarityForScale) {
                 bestSimilarity = maxSimilarityForScale;
@@ -199,7 +195,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
         matches.clear();
 
-        double similarityCoefficient = (symbol == TIME ? TIME_SIMILARITY_COEFFICIENT : SIMILARITY_COEFFICIENT);
+        double similarityCoefficient = ((symbol == TIME || symbol == SCORE) ? TIME_SIMILARITY_COEFFICIENT : SIMILARITY_COEFFICIENT);
         double maximumSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
         if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
             maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
@@ -225,9 +221,16 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             else
                 actualScale = scale;
 
+            // Making sure that matches don't overlap in case of a small error.
+            int matchMargin;
+            if (!isRGB && symbol == '1')  // "1" is too small, make the match rectangle larger
+                matchMargin = 2;
+            else
+                matchMargin = -2;
+
             cv::Rect2f matchRect((float) (x / actualScale), (float) (y / actualScale),
-                                 (float) ((templateImage.cols - 2) / actualScale), (float) ((templateImage.rows - 2) / actualScale));
-            // -2 so that they don't overlap in case of a small error
+                                 (float) ((templateImage.cols + matchMargin) / actualScale),
+                                 (float) ((templateImage.rows + matchMargin) / actualScale));
             matches.push_back({matchRect, similarity});
         }
     }
@@ -243,7 +246,15 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
     // Sort the matches by similarity in descending order, and remove the overlapping ones.
     std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
-    std::sort(digitLocations.begin(), digitLocations.end(), [](const auto& lhs, const auto& rhs) {
+    std::sort(digitLocations.begin(), digitLocations.end(), [this](const auto& lhs, const auto& rhs) {
+        if (isRGB) {
+            if (std::get<1>(lhs) == '1' && std::get<1>(rhs) != '1') {
+                return false;
+            }
+            else if (std::get<1>(lhs) != '1' && std::get<1>(rhs) == '1') {
+                return true;
+            }
+        }
         return std::get<2>(lhs) > std::get<2>(rhs);
     });
     for (const auto& [location, symbol, similarity] : digitLocations) {
@@ -268,7 +279,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
 // Separates the image and its alpha channel.
 // Returns a tuple of {image, binary alpha mask, count of opaque pixels}
 std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(char symbol) {
-    // the path can contain unicode, so we read the file by ourselves
+    // The path can contain unicode, so we read the file by ourselves.
     std::filesystem::path templatePath = templatesDirectory / (symbol + std::string(".png"));
     std::ifstream fin(templatePath, std::ios::binary);
     std::vector<uint8_t> templateBuffer((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
@@ -277,14 +288,18 @@ std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(c
     cv::UMat templateWithAlpha;
     cv::imdecode(templateBuffer, cv::IMREAD_UNCHANGED).copyTo(templateWithAlpha);
     cv::resize(templateWithAlpha, templateWithAlpha, cv::Size(), 2, 2, cv::INTER_NEAREST);
-    // we upscale the template twice, as then matching works better
+    // We double the size of the image, as then matching is more accurate.
 
     cv::UMat templateImage;
     cv::cvtColor(templateWithAlpha, templateImage, cv::COLOR_BGRA2GRAY);
+    templateImage.convertTo(templateImage, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
 
     std::vector<cv::UMat> templateChannels(4);
     cv::split(templateWithAlpha, templateChannels);
     cv::UMat templateMask = templateChannels[3];  // get the alpha channel
+    cv::threshold(templateMask, templateMask, 0, 1.0, cv::THRESH_BINARY);
+    templateMask.convertTo(templateMask, CV_32F);
+
     int opaquePixels = cv::countNonZero(templateMask);
 
     return {templateImage, templateMask, opaquePixels};

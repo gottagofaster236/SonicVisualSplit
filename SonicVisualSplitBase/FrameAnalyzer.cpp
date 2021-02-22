@@ -25,6 +25,7 @@ namespace SonicVisualSplitBase {
  * Troubleshooting: if it says "OBS Disconnected", read <link>this</link>.
  * If it has too many failed frames (when it writes a dash instead of recognized time), check your settings.
  * Make sure you've selected the correct video mode (sometimes Composite may work better than RGB).
+ * If your capture card outputs a too dark image, you may have to apply a color correction filter in OBS.
  * 
  * BUILDING:
  * VS 2019
@@ -104,6 +105,7 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
     }
 
     DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isRGB);
+    frame.convertTo(frame, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
     std::vector<std::pair<cv::Rect2f, char>> allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
     checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
     if (result.recognizedTime) {

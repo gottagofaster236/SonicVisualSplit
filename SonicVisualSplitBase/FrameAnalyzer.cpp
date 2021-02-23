@@ -195,17 +195,10 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         }
     }
 
-    if (gameName == "Sonic 1" || gameName == "Sonic CD") {
-        // Sonic 1/CD has a really small "1" sprite, it sometimes recognizes that as a result of error.
-        // Removing excess ones on the end.
-        while (timeDigits.size() > requiredDigitsCount && timeDigits.back().second == '1')
-            timeDigits.pop_back();
-
-        if (gameName == "Sonic 1") {
-            // Colon may be recognized as a one.
-            if (timeDigits.size() > requiredDigitsCount && timeDigits[1].second == '1')
-                timeDigits.erase(timeDigits.begin() + 1);
-        }
+    if (gameName == "Sonic 1") {
+        // Colon may be recognized as a one.
+        if (timeDigits.size() > requiredDigitsCount && timeDigits[1].second == '1')
+            timeDigits.erase(timeDigits.begin() + 1);
     }
 
     std::string timeDigitsStr;

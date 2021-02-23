@@ -191,7 +191,8 @@ namespace SonicVisualSplit
                     if (!isAfterSplit)
                         UpdateGameTime(result);
                 }
-                else if ((result.IsBlackScreen || result.IsWhiteScreen) && previousResult != null)
+                else if (previousResult != null && 
+                    (result.IsBlackScreen || (result.IsWhiteScreen && state.CurrentSplitIndex == state.Run.Count - 1)))
                 {
                     if (previousResult.RecognizedTime)
                     {

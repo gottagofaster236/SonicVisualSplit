@@ -197,12 +197,20 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         matches.clear();
 
         double similarityCoefficient;
-        if (symbol == TIME || symbol == SCORE)
-            similarityCoefficient = TIME_SIMILARITY_COEFFICIENT;
-        else if (symbol == '1' || symbol == '4')
-            similarityCoefficient = ONE_FOUR_COEFFICIENT;
-        else
+        switch (symbol) {
+        default:
             similarityCoefficient = SIMILARITY_COEFFICIENT;
+            break;
+        case TIME: case SCORE:
+            similarityCoefficient = TIME_SIMILARITY_COEFFICIENT;
+            break;
+        case '1':
+            similarityCoefficient = ONE_SIMILARITY_COEFFICIENT;
+            break;
+        case '4':
+            similarityCoefficient = FOUR_SIMILARITY_COEFFICIENT;
+            break;
+        }
 
         double maximumSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
         if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
@@ -248,12 +256,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
     std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
     std::sort(digitLocations.begin(), digitLocations.end(), [this](const auto& lhs, const auto& rhs) {
-        if (std::get<1>(lhs) == '1' && std::get<1>(rhs) != '1') {
-            return false;
-        }
-        else if (std::get<1>(lhs) != '1' && std::get<1>(rhs) == '1') {
-            return true;
-        }
         return std::get<2>(lhs) > std::get<2>(rhs);
     });
     for (const auto& [location, symbol, similarity] : digitLocations) {

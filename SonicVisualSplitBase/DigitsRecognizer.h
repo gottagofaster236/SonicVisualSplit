@@ -75,14 +75,17 @@ private:
     static constexpr double MIN_SIMILARITY = -7000;
 
     // Minimum similarity in relation to the best found similarity
-    static constexpr double SIMILARITY_COEFFICIENT = 3.2;
+    static constexpr double SIMILARITY_COEFFICIENT = 3.25;
 
     /* Minimum similarity of "TIME" in relation to the best found similarity.
      * (We use "TIME" to detect the score screen, so we want to be sure). */ 
     static constexpr double TIME_SIMILARITY_COEFFICIENT = 2.5;
 
-    // Four is really similar to one, so we lower the coefficient.
-    static constexpr double ONE_FOUR_COEFFICIENT = 2.5;
+    /* One is really small, so it can be misdetected, thus the coefficient is lowered.
+     * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
+    static constexpr double ONE_SIMILARITY_COEFFICIENT = 1;
+
+    static constexpr double FOUR_SIMILARITY_COEFFICIENT = 2;
 };
 
 }  // namespace SonicVisualSplitBase

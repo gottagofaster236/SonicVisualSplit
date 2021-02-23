@@ -159,7 +159,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
             for (int i = timeRects.size() - 1; i >= 0; i--) {
                 if (timeRects[i] == timeRect)
                     continue;
-                if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 2 * originalFrame.rows / 3) {
+                if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 3 * originalFrame.rows / 4) {
                     timeRects.erase(timeRects.begin() + i);
                 }
             }
@@ -186,18 +186,14 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
     else
         requiredDigitsCount = 3;
 
-    // Try remove excess digits. Check that the digits aren't too far from each other.
-    for (int i = 0; i + 1 < timeDigits.size(); i++) {
-        float distanceX = timeDigits[i + 1].first.x - timeDigits[i].first.x;
-        if (distanceX >= 2 * timeDigits[i].first.height) {
-            timeDigits.erase(timeDigits.begin() + i + 1, timeDigits.end());
-            break;
-        }
-    }
+    /* Checking that separators (:, ' and ") aren't detected as digits.
+     * For that we check that the digits adjacent to the separator have increased interval. */
+    std::vector<int> positionsToCheck = {1, 3};
 
-    if (gameName == "Sonic 1") {
-        // Colon may be recognized as a one.
-        if (timeDigits.size() > requiredDigitsCount && timeDigits[1].second == '1')
+    for (int sepIndex : positionsToCheck) {
+        if (timeDigits.size() > sepIndex &&
+                (timeDigits[sepIndex].first.x + timeDigits[sepIndex].first.width -
+                 (timeDigits[sepIndex - 1].first.x + timeDigits[sepIndex - 1].first.width)) < 28)
             timeDigits.erase(timeDigits.begin() + 1);
     }
 

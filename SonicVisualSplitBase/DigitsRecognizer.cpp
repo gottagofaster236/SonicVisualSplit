@@ -237,6 +237,9 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             else
                 actualScale = scale;
 
+            if (symbol == '1')  // We want the right edge to be aligned with the 8x8 tile of the digit.
+                x += 2;
+
             cv::Rect2f matchRect((float) (x / actualScale), (float) (y / actualScale),
                                  (float) (templateImage.cols / actualScale),
                                  (float) (templateImage.rows / actualScale));

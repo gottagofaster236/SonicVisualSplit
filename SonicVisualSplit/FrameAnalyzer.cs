@@ -148,10 +148,14 @@ namespace SonicVisualSplit
                     {
                         /* Checking that the recognized time is correct (at least to some degree).
                          * If the time decreased, or if it increased by too much, we just ignore that.
-                         * In Sonic CD the last digit is updated too frequently, so we don't rely on that. */
-                        if (result.TimeInMilliseconds < (previousResult.TimeInMilliseconds - previousResult.TimeInMilliseconds % 100)
+                         * We want to recover from errors, so we also introduce a margin of error. */
+                        long timeElapsed = result.FrameTime - previousResult.FrameTime;
+                        long marginOfError = timeElapsed / 5;
+                        long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 100);
+
+                        if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
                             || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
-                                > result.FrameTime - previousResult.FrameTime + 1500)
+                                > timeElapsed + timerAccuracy + marginOfError)
                         {
                             HandleUnrecognizedFrame(result.FrameTime);
                             return;

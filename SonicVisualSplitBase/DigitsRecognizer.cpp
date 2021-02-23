@@ -48,6 +48,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
+            if (symbol == '1') {
+                similarity *= ONE_MULTIPLIER;
+            }
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
             location += cv::Point2f((float) (digitsRoi.x / bestScale), (float) (digitsRoi.y / bestScale));
             digitLocations.push_back({location, symbol, similarity});
@@ -205,7 +208,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             similarityCoefficient = TIME_SIMILARITY_COEFFICIENT;
             break;
         case '1':
-            similarityCoefficient = ONE_SIMILARITY_COEFFICIENT;
+            similarityCoefficient = ONE_SIMILARITY_COEFFICIENT * ONE_MULTIPLIER;
             break;
         case '4':
             similarityCoefficient = FOUR_SIMILARITY_COEFFICIENT;

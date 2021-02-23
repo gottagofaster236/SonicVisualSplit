@@ -85,6 +85,8 @@ private:
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     static constexpr double ONE_SIMILARITY_COEFFICIENT = 1;
 
+    static constexpr double ONE_MULTIPLIER = 2;
+
     static constexpr double FOUR_SIMILARITY_COEFFICIENT = 2;
 };
 

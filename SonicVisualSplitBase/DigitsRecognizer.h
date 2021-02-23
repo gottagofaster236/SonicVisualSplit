@@ -72,10 +72,10 @@ private:
 
     // CONSTANTS
     // Minimum similarity of a match (zero is a perfect match)
-    static constexpr double MIN_SIMILARITY = -10000;
+    static constexpr double MIN_SIMILARITY = -7000;
 
     // Minimum similarity in relation to the best found similarity
-    static constexpr double SIMILARITY_COEFFICIENT = 3.5;
+    static constexpr double SIMILARITY_COEFFICIENT = 3.2;
 
     /* Minimum similarity of "TIME" in relation to the best found similarity.
      * (We use "TIME" to detect the score screen, so we want to be sure). */ 

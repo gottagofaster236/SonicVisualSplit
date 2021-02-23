@@ -4,6 +4,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <fstream>
 #include <algorithm>
+#include <cctype>
 
 
 namespace SonicVisualSplitBase {
@@ -228,16 +229,9 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             else
                 actualScale = scale;
 
-            // Making sure that matches don't overlap in case of a small error.
-            int matchMargin;
-            if (symbol == '1')  // "1" is too small, make the match rectangle larger
-                matchMargin = 2;
-            else
-                matchMargin = -2;
-
             cv::Rect2f matchRect((float) (x / actualScale), (float) (y / actualScale),
-                                 (float) ((templateImage.cols + matchMargin) / actualScale),
-                                 (float) ((templateImage.rows + matchMargin) / actualScale));
+                                 (float) (templateImage.cols / actualScale),
+                                 (float) (templateImage.rows / actualScale));
             matches.push_back({matchRect, similarity});
         }
     }
@@ -267,10 +261,20 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
 
         for (auto& digit : resultDigitLocations) {
             const cv::Rect2f& other = digit.first;
-            if (!(location & other).empty()) {
-                intersectsWithOthers = true;
-                break;
+
+            if (std::isdigit(symbol) && std::isdigit(digit.second)) {
+                if (std::abs(location.x + location.width - (other.x + other.width)) < 14) {
+                    intersectsWithOthers = true;
+                }
             }
+            else {
+                if (!(location & other).empty()) {
+                    intersectsWithOthers = true;
+                }
+            }
+
+            if (intersectsWithOthers)
+                break;
         }
 
         if (!intersectsWithOthers)

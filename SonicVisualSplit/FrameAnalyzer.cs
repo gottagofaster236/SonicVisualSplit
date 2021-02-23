@@ -134,6 +134,14 @@ namespace SonicVisualSplit
                 }
                 else if (result.RecognizedTime)
                 {
+                    if (previousResult != null && previousResult.IsWhiteScreen)
+                    {
+                        /* This was a transition to a special stage, or time travel in SCD.
+                         * Making sure that the time is checked too, as in the next "if" statement.*/
+                        previousResult.RecognizedTime = true;
+                        previousResult.TimeInMilliseconds = gameTime - gameTimeOnSegmentStart;
+                    }
+
                     if (previousResult != null && previousResult.RecognizedTime)
                     {
                         /* Checking that the recognized time is correct (at least to some degree).
@@ -168,8 +176,10 @@ namespace SonicVisualSplit
                             ingameTimerOnSegmentStart = 0;
                             ingameTimerOnSplit = result.TimeInMilliseconds;
                         }
-                        else
+                        else if (result.TimeInMilliseconds >= 1000)
                         {
+                            /* Checking that the time is at least a second,
+                             * because in SCD zone title can be recognized as score screen. */
                             timeOnLastScoreCheck = result.TimeInMilliseconds;
                         }
                     }

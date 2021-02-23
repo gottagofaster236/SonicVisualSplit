@@ -32,7 +32,7 @@ namespace SonicVisualSplitBase {
  * 
  * BUILDING:
  * VS 2019
- * vcpkg, integrate, install opencv-x64
+ * vcpkg, integrate, install opencv:x64-windows
  * install LiveSplit to C:/Program Files/LiveSplit
  * Clone LiveSplit in Visual Studio
  * Clone this repository in Visual Studio

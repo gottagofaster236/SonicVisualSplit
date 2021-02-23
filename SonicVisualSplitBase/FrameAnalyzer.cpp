@@ -29,6 +29,7 @@ namespace SonicVisualSplitBase {
  * If your capture card outputs a too dark image, you may have to apply a color correction filter in OBS.
  * In general, the better your video capture is, the more accurate the SVS will be.
  * Try maximizing OBS (so that the video feed has higher resolution).
+ * If it's sometimes displaying wrong time, but splits correctly - that's thanks to the error checking, it's fine.
  * 
  * BUILDING:
  * VS 2019

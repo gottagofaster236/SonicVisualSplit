@@ -89,13 +89,15 @@ namespace SonicVisualSplit
                 {
                     visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
                 }
+
+                bool recalculateOnError = (unsuccessfulStreak >= 5 || (previousResult != null && previousResult.IsBlackScreen));
                 bool checkForScoreScreen = (lastFrameTime - lastScoreScreenCheckTime >= 1000);
                 if (checkForScoreScreen)
                     lastScoreScreenCheckTime = lastFrameTime;
 
                 AnalysisResult result;
                 result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen,
-                    recalculateOnError: unsuccessfulStreak >= 5, visualize);
+                    recalculateOnError, visualize);
                 SendResultToConsumers(result);
 
                 if (!result.IsSuccessful())
@@ -145,8 +147,9 @@ namespace SonicVisualSplit
                     if (previousResult != null && previousResult.RecognizedTime)
                     {
                         /* Checking that the recognized time is correct (at least to some degree).
-                         * If the time decreased, or if it increased by too much, we just ignore that.*/
-                        if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds
+                         * If the time decreased, or if it increased by too much, we just ignore that.
+                         * In Sonic CD the last digit is updated too frequently, so we don't rely on that. */
+                        if (result.TimeInMilliseconds < (previousResult.TimeInMilliseconds - previousResult.TimeInMilliseconds % 100)
                             || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
                                 > result.FrameTime - previousResult.FrameTime + 1500)
                         {

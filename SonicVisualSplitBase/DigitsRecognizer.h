@@ -24,6 +24,9 @@ public:
 
     bool recalculatedDigitsPlacementLastTime();
 
+    // See bestScale.
+    double getBestScale();
+
     /* There is never more than instance of DigitsRecognizer, so we use a pseudo-singleton pattern to manage the memory easier.
      * This function gets the current instance, or returns nullptr if there's no current instance. */
     static DigitsRecognizer* getCurrentInstance();
@@ -79,7 +82,7 @@ private:
 
     /* Minimum similarity of "TIME" in relation to the best found similarity.
      * (We use "TIME" to detect the score screen, so we want to be sure). */ 
-    static constexpr double TIME_SIMILARITY_COEFFICIENT = 2.5;
+    static constexpr double TIME_SIMILARITY_COEFFICIENT = 2;
 
     /* One is really small, so it can be misdetected, thus the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */

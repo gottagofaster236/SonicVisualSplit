@@ -123,6 +123,11 @@ bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
 }
 
 
+double DigitsRecognizer::getBestScale() {
+    return bestScale;
+}
+
+
 DigitsRecognizer* DigitsRecognizer::getCurrentInstance() {
     return instance;
 }
@@ -271,7 +276,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
             const cv::Rect2f& other = digit.first;
 
             if (std::isdigit(symbol) && std::isdigit(digit.second)) {
-                if (std::abs(location.x + location.width - (other.x + other.width)) < 14) {
+                if (std::abs(location.x + location.width - (other.x + other.width)) * bestScale < 14) {
                     intersectsWithOthers = true;
                 }
             }

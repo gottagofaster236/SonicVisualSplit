@@ -187,25 +187,40 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
     else
         requiredDigitsCount = 3;
 
-    /* Checking that separators (:, ' and ") aren't detected as digits.
-     * For that we check that the digits adjacent to the separator have increased interval. */
-    std::vector<int> positionsToCheck = {1, 3};
-
-    for (int sepIndex : positionsToCheck) {
-        if (timeDigits.size() > sepIndex &&
-                (timeDigits[sepIndex].first.x + timeDigits[sepIndex].first.width -
-                 (timeDigits[sepIndex - 1].first.x + timeDigits[sepIndex - 1].first.width)) < 28)
-            timeDigits.erase(timeDigits.begin() + 1);
+    for (int i = 0; i + 1 < timeDigits.size(); i++) {
+        double bestScale = DigitsRecognizer::getCurrentInstance()->getBestScale();
+        int interval = ((timeDigits[i + 1].first.x + timeDigits[i + 1].first.width) -
+            (timeDigits[i].first.x + timeDigits[i].first.width)) * bestScale;
+        
+        if (i == 0 || i == 2) {
+            /* Checking that separators (:, ' and ") aren't detected as digits.
+             * For that we check that the digits adjacent to the separator have increased interval. */
+            if (interval < 28) {
+                timeDigits.erase(timeDigits.begin() + i + 1);
+                i--;
+            }
+        }
+        else {
+            // Checking that the interval is not too high.
+            if (interval > 18) {
+                result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+                return;
+            }
+        }
     }
+
+    if (timeDigits.size() != requiredDigitsCount) {
+        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        return;
+    }
+
+    /*result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+    return;*/
 
     std::string timeDigitsStr;
     for (auto& [position, digit] : timeDigits)
         timeDigitsStr += digit;
 
-    if (timeDigitsStr.size() != requiredDigitsCount) {
-        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
-        return;
-    }
     result.recognizedTime = true;
     result.errorReason = ErrorReasonEnum::NO_ERROR;
 

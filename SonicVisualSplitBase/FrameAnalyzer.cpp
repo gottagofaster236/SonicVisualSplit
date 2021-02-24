@@ -221,11 +221,13 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
     for (auto& [position, digit] : timeDigits)
         timeDigitsStr += digit;
 
-    result.recognizedTime = true;
-    result.errorReason = ErrorReasonEnum::NO_ERROR;
-
     // Formatting the timeString and calculating timeInMilliseconds
     std::string minutes = timeDigitsStr.substr(0, 1), seconds = timeDigitsStr.substr(1, 2);
+    if (std::stoi(seconds) >= 60) {
+        // The number of seconds is always 59 or lower.
+        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        return;
+    }
     result.timeString = minutes + "'" + seconds;
     result.timeInMilliseconds = std::stoi(minutes) * 60 * 1000 + std::stoi(seconds) * 1000;
     if (includesMilliseconds) {
@@ -239,6 +241,9 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
             result.timeInMilliseconds = 0;
         }
     }
+
+    result.recognizedTime = true;
+    result.errorReason = ErrorReasonEnum::NO_ERROR;
 
     if (visualize) {
         auto recognizedSymbols = timeDigits;

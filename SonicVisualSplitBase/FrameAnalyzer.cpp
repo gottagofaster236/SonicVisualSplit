@@ -68,25 +68,25 @@ FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem:
 
 
 // First checks if the frame was analyzed already, otherwise calls analyzeNewFrame and caches the result.
-AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
-    if (!checkForScoreScreen && !visualize && !recalculateOnError) {
+AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
+    if (!checkForScoreScreen && !visualize) {
         if (FrameStorage::getResultFromCache(frameTime, result))
             return result;
     }
-    AnalysisResult result = FrameAnalyzer::analyzeNewFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
+    AnalysisResult result = FrameAnalyzer::analyzeNewFrame(frameTime, checkForScoreScreen, visualize);
     FrameStorage::addResultToCache(result);
     return result;
 }
 
 
-AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError) {
+AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
     std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
 
     result = AnalysisResult();
     result.frameTime = frameTime;
     result.recognizedTime = false;
 
-    cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
+    originalFrame = FrameStorage::getSavedFrame(frameTime);
     if (originalFrame.cols == 0 || originalFrame.rows == 0) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
@@ -110,21 +110,14 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
 
     DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isComposite);
     frame.convertTo(frame, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
-    std::vector<std::pair<cv::Rect2f, char>> allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
-    checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
-    if (result.recognizedTime) {
+    recognizedSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
+    checkRecognizedSymbols(checkForScoreScreen, visualize);
+    originalFrame.release();
+
+    if (result.recognizedTime)
         return result;
-    }
-    else if (recalculateOnError) {
-        // we can still try to fix it - maybe video source properties have changed!
-        if (!digitsRecognizer.recalculatedDigitsPlacementLastTime()) {
-            DigitsRecognizer::resetDigitsPlacement();
-            allSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
-            checkRecognizedSymbols(allSymbols, originalFrame, checkForScoreScreen, visualize);
-        }
-        if (!result.recognizedTime && visualize)
-            visualizeResult(allSymbols);
-    }
+    else if (visualize)
+        visualizeResult();
 
     if (digitsRecognizer.recalculatedDigitsPlacementLastTime() && !result.recognizedTime) {
         // We recalculated everything but failed. Make sure those results aren't saved.
@@ -134,45 +127,19 @@ AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkFor
 }
 
 
-void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize) {
+void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visualize) {
     result.recognizedTime = false;
 
-    std::map<char, std::vector<cv::Rect2f>> positionsOfSymbol;
+    std::map<char, std::vector<cv::Rect2f>> scoreAndTimePositions;
 
     if (checkForScoreScreen) {
-        for (auto& [position, symbol] : allSymbols) {
-            if (symbol == DigitsRecognizer::SCORE || symbol == DigitsRecognizer::TIME) {
-                positionsOfSymbol[symbol].push_back(position);
-            }
-        }
-
-        if (positionsOfSymbol[DigitsRecognizer::SCORE].empty() || positionsOfSymbol[DigitsRecognizer::TIME].empty()) {
-            result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        doCheckForScoreScreen(scoreAndTimePositions);
+        if (result.errorReason != ErrorReasonEnum::NO_ERROR)
             return;
-        }
-        std::vector<cv::Rect2f>& timeRects = positionsOfSymbol[DigitsRecognizer::TIME];
-        cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
-            return rect1.y < rect2.y;
-        });
-
-        if (timeRects.size() >= 2) {
-            // make sure that the other recognized TIME rectangles are valid
-            for (int i = timeRects.size() - 1; i >= 0; i--) {
-                if (timeRects[i] == timeRect)
-                    continue;
-                if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 3 * originalFrame.rows / 4) {
-                    timeRects.erase(timeRects.begin() + i);
-                }
-            }
-        }
-
-        // There's always a "TIME" label on top of the screen
-        // But there's a second one during the score countdown screen ("TIME BONUS")
-        result.isScoreScreen = (timeRects.size() >= 2);
     }
 
     std::vector<std::pair<cv::Rect2f, char>> timeDigits;
-    for (auto& [position, symbol] : allSymbols) {
+    for (auto& [position, symbol] : recognizedSymbols) {
         if (symbol != DigitsRecognizer::TIME && symbol != DigitsRecognizer::SCORE)
             timeDigits.push_back({position, symbol});
     }
@@ -189,7 +156,7 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
 
     for (int i = 0; i + 1 < timeDigits.size(); i++) {
         double bestScale = DigitsRecognizer::getCurrentInstance()->getBestScale();
-        int interval = ((timeDigits[i + 1].first.x + timeDigits[i + 1].first.width) -
+        double interval = ((timeDigits[i + 1].first.x + timeDigits[i + 1].first.width) -
             (timeDigits[i].first.x + timeDigits[i].first.width)) * bestScale;
         
         if (i == 0 || i == 2) {
@@ -213,9 +180,6 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
         result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
         return;
     }
-
-    /*result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
-    return;*/
 
     std::string timeDigitsStr;
     for (auto& [position, digit] : timeDigits)
@@ -246,20 +210,53 @@ void FrameAnalyzer::checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2
     result.errorReason = ErrorReasonEnum::NO_ERROR;
 
     if (visualize) {
-        auto recognizedSymbols = timeDigits;
+        recognizedSymbols = timeDigits;
         char additionalSymbols[] = {DigitsRecognizer::SCORE, DigitsRecognizer::TIME};
         for (char c : additionalSymbols) {
-            for (const cv::Rect2f& position : positionsOfSymbol[c]) {
+            for (const cv::Rect2f& position : scoreAndTimePositions[c]) {
                 recognizedSymbols.push_back({position, c});
             }
         }
-        visualizeResult(recognizedSymbols);
+        visualizeResult();
     }
 }
 
 
-void FrameAnalyzer::visualizeResult(std::vector<std::pair<cv::Rect2f, char>>& symbols) {
-    for (auto& [position, symbol] : symbols) {
+void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>>& scoreAndTimePositions) {
+    for (auto& [position, symbol] : recognizedSymbols) {
+        if (symbol == DigitsRecognizer::SCORE || symbol == DigitsRecognizer::TIME) {
+            scoreAndTimePositions[symbol].push_back(position);
+        }
+    }
+
+    if (scoreAndTimePositions[DigitsRecognizer::SCORE].empty() || scoreAndTimePositions[DigitsRecognizer::TIME].empty()) {
+        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        return;
+    }
+    std::vector<cv::Rect2f>& timeRects = scoreAndTimePositions[DigitsRecognizer::TIME];
+    cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
+        return rect1.y < rect2.y;
+    });
+
+    if (timeRects.size() >= 2) {
+        // make sure that the other recognized TIME rectangles are valid
+        for (int i = timeRects.size() - 1; i >= 0; i--) {
+            if (timeRects[i] == timeRect)
+                continue;
+            if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 3 * originalFrame.rows / 4) {
+                timeRects.erase(timeRects.begin() + i);
+            }
+        }
+    }
+
+    // There's always a "TIME" label on top of the screen
+    // But there's a second one during the score countdown screen ("TIME BONUS")
+    result.isScoreScreen = (timeRects.size() >= 2);
+}
+
+
+void FrameAnalyzer::visualizeResult() {
+    for (auto& [position, symbol] : recognizedSymbols) {
         if (isStretchedTo16By9) {
             position.x /= scaleFactorTo4By3;
             position.width /= scaleFactorTo4By3;
@@ -285,8 +282,8 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
             pixels.push_back(frameRead.at<uint8_t>(y, x));
         }
     }
-
-    std::vector<int> pixelDistribution(256);
+    
+    std::vector<int> pixelDistribution(256);  // How many pixels have the corresponding brightness value.
     for (int pixel : pixels) {
         pixelDistribution[pixel]++;
     }

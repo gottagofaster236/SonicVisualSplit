@@ -115,7 +115,7 @@ void DigitsRecognizer::resetDigitsPlacement() {
 
 void DigitsRecognizer::resetDigitsPlacementAsync() {
     // Not waiting for digitsRecognizerMutex.
-    std::thread(DigitsRecognizer::resetDigitsPlacement).detach();
+    std::thread(resetDigitsPlacement).detach();
 }
 
 bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {

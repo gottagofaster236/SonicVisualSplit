@@ -30,7 +30,9 @@ public ref class FrameAnalyzer {
 public:
     FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
 
-    AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean recalculateOnError, Boolean visualize);
+    AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize);
+
+    static void ResetDigitsPlacement();
 
 private:
     String^ gameName;
@@ -39,7 +41,7 @@ private:
     Boolean isComposite;
 };
 
-public ref class BaseWrapper {
+public ref class FrameStorage {
 public:
     static void StartSavingFrames();
 

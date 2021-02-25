@@ -1,6 +1,7 @@
 ﻿#include "SonicVisualSplitWrapper.h"
 #pragma managed(push, off)
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
+#include "../SonicVisualSplitBase/DigitsRecognizer.h"
 #include "../SonicVisualSplitBase/FrameStorage.h"
 #pragma managed(pop)
 #include <msclr/marshal_cppstd.h>
@@ -9,7 +10,6 @@
 using System::Drawing::Imaging::PixelFormat;
 using System::Drawing::Imaging::ImageLockMode;
 using System::Drawing::Imaging::BitmapData;
-using namespace SonicVisualSplitBase;
 
 namespace SonicVisualSplitWrapper {
 
@@ -18,13 +18,13 @@ FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boole
 
 
 // Converting non-managed types to managed ones to call the native version of the function
-AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean recalculateOnError, Boolean visualize) {
+AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize) {
     msclr::interop::marshal_context context;
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
     auto& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted,
                                                                            isStretchedTo16By9, isComposite);
-    SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize, recalculateOnError);
+    SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
     resultConverted->RecognizedTime = result.recognizedTime;
@@ -64,22 +64,28 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 }
 
 
+void FrameAnalyzer::ResetDigitsPlacement()
+{
+    SonicVisualSplitBase::DigitsRecognizer::resetDigitsPlacement();
+}
+
+
 Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
 
-void BaseWrapper::StartSavingFrames() {
-    FrameStorage::startSavingFrames();
+void FrameStorage::StartSavingFrames() {
+    SonicVisualSplitBase::FrameStorage::startSavingFrames();
 }
 
 
-void BaseWrapper::StopSavingFrames() {
-    FrameStorage::stopSavingFrames();
+void FrameStorage::StopSavingFrames() {
+    SonicVisualSplitBase::FrameStorage::stopSavingFrames();
 }
 
 
-List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
-    std::vector<long long> savedFramesTimes = FrameStorage::getSavedFramesTimes();
+List<Int64>^ FrameStorage::GetSavedFramesTimes() {
+    std::vector<long long> savedFramesTimes = SonicVisualSplitBase::FrameStorage::getSavedFramesTimes();
     List<Int64>^ converted = gcnew List<Int64>(savedFramesTimes.size());
     for (long long frameTime : savedFramesTimes) {
         converted->Add(frameTime);
@@ -88,22 +94,23 @@ List<Int64>^ BaseWrapper::GetSavedFramesTimes() {
 }
 
 
-void BaseWrapper::DeleteSavedFrame(Int64 frameTime) {
+void FrameStorage::DeleteSavedFrame(Int64 frameTime) {
     DeleteSavedFramesInRange(frameTime, frameTime + 1);
 }
 
 
-void BaseWrapper::DeleteSavedFramesBefore(Int64 frameTime) {
+void FrameStorage::DeleteSavedFramesBefore(Int64 frameTime) {
     DeleteSavedFramesInRange(INT64_MIN, frameTime);
 }
 
 
-void BaseWrapper::DeleteAllSavedFrames() {
+void FrameStorage::DeleteAllSavedFrames() {
     DeleteSavedFramesInRange(INT64_MIN, INT64_MAX);
 }
 
-void BaseWrapper::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
-    FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
+
+void FrameStorage::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
+    SonicVisualSplitBase::FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
 }
 
-}
+}  // namespace SonicVisualSplitWrapper

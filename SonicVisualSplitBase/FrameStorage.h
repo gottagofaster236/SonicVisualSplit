@@ -9,6 +9,7 @@ namespace FrameStorage {
 /* This module saves frames from OBS for further usage (as we can't process all of them in real-time).
  * To distinguish between the frames, we use the time of capture (in milliseconds from epoch). */
 
+// Creates a thread which saves a screenshot of OBS every 16 milliseconds.
 void startSavingFrames();
 
 void stopSavingFrames();

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <vector>
 #include <string>
+#include <map>
 #undef NO_ERROR
 
 
@@ -29,9 +30,9 @@ struct AnalysisResult {
 class FrameAnalyzer {
 public:
     static FrameAnalyzer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
-                                      bool isStretchedTo16By9, bool isComposite);
+        bool isStretchedTo16By9, bool isComposite);
 
-    AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
+    AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
     // This header is included by C++/CLI, which doesn't have <mutex>.
     static void lockFrameAnalyzationMutex();
@@ -41,20 +42,27 @@ public:
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isComposite);
 
-    AnalysisResult analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize, bool recalculateOnError);
+    AnalysisResult analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
-    void checkRecognizedSymbols(const std::vector<std::pair<cv::Rect2f, char>>& allSymbols, cv::UMat originalFrame, bool checkForScoreScreen, bool visualize);
+    void checkRecognizedSymbols(bool checkForScoreScreen, bool visualize);
 
-    void visualizeResult(std::vector<std::pair<cv::Rect2f, char>>& symbols);
+    void doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>>& scoreAndTimePositions);
+
+    void visualizeResult();
 
     enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
     SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
 
+    // Settings.
     std::string gameName;
     std::filesystem::path templatesDirectory;
     bool isStretchedTo16By9;
     bool isComposite;
+
+    // Temporary fields for the functions.
     AnalysisResult result;
+    std::vector<std::pair<cv::Rect2f, char>> recognizedSymbols;
+    cv::UMat originalFrame;
 
     inline static FrameAnalyzer* instance = nullptr;
 };

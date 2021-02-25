@@ -55,8 +55,8 @@ std::vector<long long> getSavedFramesTimes() {
     std::vector<long long> savedFramesTimes;
     {
         std::lock_guard<std::mutex> guard(savedFramesMutex);
-        for (auto& kv : savedFrames)
-            savedFramesTimes.push_back(kv.first);
+        for (const auto& [frameTime, frame] : savedFrames)
+            savedFramesTimes.push_back(frameTime);
     }
     return savedFramesTimes;
 }
@@ -89,7 +89,7 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
 void addResultToCache(const AnalysisResult& result) {
     std::lock_guard<std::mutex> guard(cachedResultsMutex);
     AnalysisResult resultCopy = result;
-    resultCopy.visualizedFrame = cv::Mat();  // make sure that we don't store the image
+    resultCopy.visualizedFrame = cv::Mat();  // Make sure that we don't store the image.
     cachedResults[resultCopy.frameTime] = resultCopy;
 }
 
@@ -97,7 +97,7 @@ bool getResultFromCache(long long frameTime, AnalysisResult& resultOutput) {
     std::lock_guard<std::mutex> guard(cachedResultsMutex);
     auto iterator = cachedResults.find(frameTime);
     if (iterator == cachedResults.end()) {
-        // we don't have the result cached
+        // We don't have the result cached.
         return false;
     }
     else {

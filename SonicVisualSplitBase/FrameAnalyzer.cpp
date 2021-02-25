@@ -169,7 +169,7 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         }
         else {
             // Checking that the interval is not too high.
-            if (interval > 18) {
+            if (interval > 20) {
                 result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
                 return;
             }

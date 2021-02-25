@@ -94,7 +94,7 @@ namespace SonicVisualSplit
                 if (checkForScoreScreen)
                     lastScoreScreenCheckTime = lastFrameTime;
 
-                if (unsuccessfulStreak >= 5 || (previousResult != null && previousResult.IsBlackScreen))
+                if (unsuccessfulStreak >= 3 || (previousResult != null && previousResult.IsBlackScreen))
                 {
                     SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
                 }
@@ -153,7 +153,7 @@ namespace SonicVisualSplit
                          * We want to recover from errors, so we also introduce a margin of error. */
                         long timeElapsed = result.FrameTime - previousResult.FrameTime;
                         long marginOfError = timeElapsed / 5;
-                        long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 100);
+                        long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
 
                         if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
                             || result.TimeInMilliseconds - previousResult.TimeInMilliseconds

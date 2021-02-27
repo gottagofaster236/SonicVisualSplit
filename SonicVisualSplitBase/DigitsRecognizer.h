@@ -37,7 +37,7 @@ public:
      * the position of time digits ROI almost all the time. */
     cv::Rect2f getRelativeDigitsRoi();
 
-    // We search for symbols in our code
+    // We search for symbols in our code (hack hack).
     static const char SCORE = 'S';
     static const char TIME = 'T';
 
@@ -47,6 +47,13 @@ private:
     std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
 
     std::vector<std::pair<cv::Rect2f, char>> removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations);
+
+    // Returns the minimum similarity coefficient divided by the best found similarity.
+    static double getSymbolMinSimilarityCoefficient(char symbol);
+
+    /* Similarity of a symbol may be multiplied by a coefficient
+     * in order to make it a less or more preferable option when choosing between symbols. */
+    static double getSymbolSimilarityMultiplier(char symbol);
 
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
 
@@ -72,25 +79,6 @@ private:
     cv::Rect2f relativeDigitsRoi;
 
     inline static DigitsRecognizer* instance = nullptr;
-
-    // CONSTANTS
-    // Minimum similarity of a match (zero is a perfect match)
-    static constexpr double MIN_SIMILARITY = -7000;
-
-    // Minimum similarity in relation to the best found similarity
-    static constexpr double SIMILARITY_COEFFICIENT = 3.25;
-
-    /* Minimum similarity of "TIME" in relation to the best found similarity.
-     * (We use "TIME" to detect the score screen, so we want to be sure). */ 
-    static constexpr double TIME_SIMILARITY_COEFFICIENT = 2;
-
-    /* One is really small, so it can be misdetected, thus the coefficient is lowered.
-     * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
-    static constexpr double ONE_SIMILARITY_COEFFICIENT = 1;
-
-    static constexpr double ONE_MULTIPLIER = 2;
-
-    static constexpr double FOUR_SIMILARITY_COEFFICIENT = 2;
 };
 
 }  // namespace SonicVisualSplitBase

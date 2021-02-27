@@ -48,9 +48,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
-            if (symbol == '1') {
-                similarity *= ONE_MULTIPLIER;
-            }
+            similarity *= getSymbolSimilarityMultiplier(symbol);
             // we've changed the ROI to speed up the search. Now we have to compensate for that.
             location += cv::Point2f((float) (digitsRoi.x / bestScale), (float) (digitsRoi.y / bestScale));
             digitLocations.push_back({location, symbol, similarity});
@@ -81,7 +79,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             }
 
             double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.55);
-            int roiLeft = (int) ((timeRect.x + timeRect.width * 1.28) * bestScale);
+            int roiLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
             int roiRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int roiTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
             int roiBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
@@ -171,8 +169,10 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         minScale = maxScale = 1;
     }
 
-    if (recalculateDigitsPlacement)
-        bestSimilarity = MIN_SIMILARITY / SIMILARITY_COEFFICIENT;
+    if (recalculateDigitsPlacement) {
+        const double MIN_SIMILARITY = -13000;
+        bestSimilarity = MIN_SIMILARITY / getSymbolMinSimilarityCoefficient('0');
+    }
 
     std::vector<std::pair<cv::Rect2f, double>> matches;  // pairs: {supposed digit location, similarity coefficient}
 
@@ -204,22 +204,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
         matches.clear();
 
-        double similarityCoefficient;
-        switch (symbol) {
-        default:
-            similarityCoefficient = SIMILARITY_COEFFICIENT;
-            break;
-        case TIME: case SCORE:
-            similarityCoefficient = TIME_SIMILARITY_COEFFICIENT;
-            break;
-        case '1':
-            similarityCoefficient = ONE_SIMILARITY_COEFFICIENT * ONE_MULTIPLIER;
-            break;
-        case '4':
-            similarityCoefficient = FOUR_SIMILARITY_COEFFICIENT;
-            break;
-        }
-
+        double similarityCoefficient = getSymbolMinSimilarityCoefficient(symbol);
         double maximumSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
         if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
             maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
@@ -276,7 +261,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
             const cv::Rect2f& other = digit.first;
 
             if (std::isdigit(symbol) && std::isdigit(digit.second)) {
-                if (std::abs(location.x + location.width - (other.x + other.width)) * bestScale < 14) {
+                if (std::abs(location.x + location.width - (other.x + other.width)) * bestScale < 12) {
                     intersectsWithOthers = true;
                 }
             }
@@ -297,6 +282,37 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
     return resultDigitLocations;
 }
 
+double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
+    switch (symbol) {
+    default:
+        return 3.25;
+    // We use "TIME" to detect the score screen, so we want to be sure.
+    case TIME: case SCORE:
+        return 2;
+    /* One is really small, so it can be misdetected, thus the coefficient is lowered.
+     * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
+    case '1':
+        return 1.2;
+    case '4':
+        return 2.5;
+    }
+}
+
+
+double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
+    switch (symbol)
+    {
+    // No multiplier by default.
+    default:
+        return 1;
+    // Once again making one a less preferable option.
+    case '1':
+        return 2;
+    // Three is often confused with eight, make it more preferable.
+    case '3':
+        return 0.65;
+    }
+}
 
 // Separates the image and its alpha channel.
 // Returns a tuple of {image, binary alpha mask, count of opaque pixels}

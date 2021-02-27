@@ -49,11 +49,11 @@ private:
     std::vector<std::pair<cv::Rect2f, char>> removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations);
 
     // Returns the minimum similarity coefficient divided by the best found similarity.
-    static double getSymbolMinSimilarityCoefficient(char symbol);
+    double getSymbolMinSimilarityCoefficient(char symbol);
 
     /* Similarity of a symbol may be multiplied by a coefficient
      * in order to make it a less or more preferable option when choosing between symbols. */
-    static double getSymbolSimilarityMultiplier(char symbol);
+    double getSymbolSimilarityMultiplier(char symbol);
 
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
 

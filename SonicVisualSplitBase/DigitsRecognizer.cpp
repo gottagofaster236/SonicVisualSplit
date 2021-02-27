@@ -292,7 +292,10 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     /* One is really small, so it can be misdetected, thus the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
-        return 1.2;
+        if (isComposite)
+            return 1.2;
+        else
+            return 2.5;
     case '4':
         return 2.5;
     }
@@ -310,7 +313,7 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
         return 2;
     // Three is often confused with eight, make it more preferable.
     case '3':
-        return 0.65;
+        return 0.8;
     }
 }
 

@@ -293,7 +293,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
         if (isComposite)
-            return 1.55;
+            return 2;
         else
             return 2.5;
     case '4':

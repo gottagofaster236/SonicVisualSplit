@@ -114,8 +114,10 @@ namespace SonicVisualSplit
 
                 if (isAfterSplit)
                 {
-                    // Check if the next stage has started.
-                    if (result.RecognizedTime && result.TimeInMilliseconds < ingameTimerOnSplit)
+                    /* Check if the next stage has started.
+                     * Timer starts at zero, but we may miss that exact frame,
+                     * so we just check that the timer is less than 10 seconds. */
+                    if (result.RecognizedTime && result.TimeInMilliseconds < Math.Min(ingameTimerOnSplit, 10000))
                     {
                         bool isScoreScreen;
                         if (checkForScoreScreen)

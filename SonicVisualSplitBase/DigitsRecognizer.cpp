@@ -282,6 +282,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
     return resultDigitLocations;
 }
 
+
 double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     switch (symbol) {
     default:
@@ -316,6 +317,7 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
         return 0.8;
     }
 }
+
 
 // Separates the image and its alpha channel.
 // Returns a tuple of {image, binary alpha mask, count of opaque pixels}

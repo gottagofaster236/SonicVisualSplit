@@ -42,8 +42,6 @@ public:
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isComposite);
 
-    AnalysisResult analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
-
     void checkRecognizedSymbols(bool checkForScoreScreen, bool visualize);
 
     void doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>>& scoreAndTimePositions);

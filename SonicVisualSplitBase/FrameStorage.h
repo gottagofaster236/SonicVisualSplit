@@ -21,11 +21,5 @@ cv::UMat getSavedFrame(long long frameTime);
 // Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 
-// Caches the result of analyzing a frame for future usage.
-void addResultToCache(const AnalysisResult& result);
-
-// Writes the result to resultOutput if it's present in the cache, otherwise returns false.
-bool getResultFromCache(long long frameTime, AnalysisResult& resultOutput);
-
 }  // namespace SonicVisualSplitBase
 }  // namespace FrameStorage

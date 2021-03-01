@@ -67,19 +67,7 @@ FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem:
     : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
 
 
-// First checks if the frame was analyzed already, otherwise calls analyzeNewFrame and caches the result.
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
-    if (!checkForScoreScreen && !visualize) {
-        if (FrameStorage::getResultFromCache(frameTime, result))
-            return result;
-    }
-    AnalysisResult result = FrameAnalyzer::analyzeNewFrame(frameTime, checkForScoreScreen, visualize);
-    FrameStorage::addResultToCache(result);
-    return result;
-}
-
-
-AnalysisResult FrameAnalyzer::analyzeNewFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
     std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
 
     result = AnalysisResult();

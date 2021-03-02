@@ -49,7 +49,7 @@ namespace SonicVisualSplit
 
         private long lastFailedFrameTime = 0;
 
-        List<long> frameTimes;
+        List<long> savedFrameTimes;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellationTokenSource frameAnalyzerTaskToken;
@@ -79,10 +79,10 @@ namespace SonicVisualSplit
         {
             lock (frameAnalyzationLock)
             {
-                frameTimes = FrameStorage.GetSavedFramesTimes();
-                if (frameTimes.Count == 0)
+                savedFrameTimes = FrameStorage.GetSavedFramesTimes();
+                if (savedFrameTimes.Count == 0)
                     return;
-                long lastFrameTime = frameTimes.Last();
+                long lastFrameTime = savedFrameTimes.Last();
 
                 bool visualize;
                 lock (resultConsumers)
@@ -102,9 +102,8 @@ namespace SonicVisualSplit
                 AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize);
                 SendResultToConsumers(result);
 
-                if (!result.IsSuccessful())
+                if (!CheckAnalysisResult(result))
                 {
-                    HandleUnrecognizedFrame(result.FrameTime);
                     return;
                 }
                 else
@@ -143,34 +142,19 @@ namespace SonicVisualSplit
                     if (previousResult != null && previousResult.IsWhiteScreen)
                     {
                         /* This was a transition to a special stage, or time travel in SCD.
-                         * Making sure that the time is checked too, as in the next "if" statement.*/
+                         * Checking that time too. */
                         previousResult.RecognizedTime = true;
                         previousResult.TimeInMilliseconds = gameTime - gameTimeOnSegmentStart;
-                    }
-
-                    if (previousResult != null && previousResult.RecognizedTime)
-                    {
-                        /* Checking that the recognized time is correct (at least to some degree).
-                         * If the time decreased, or if it increased by too much, we just ignore that.
-                         * We want to recover from errors, so we also introduce a margin of error. */
-                        long timeElapsed = result.FrameTime - previousResult.FrameTime;
-                        long marginOfError = timeElapsed / 5;
-                        long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
-
-                        if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
-                            || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
-                                > timeElapsed + timerAccuracy + marginOfError)
-                        {
-                            HandleUnrecognizedFrame(result.FrameTime);
+                        if (!CheckAnalysisResult(result))
                             return;
-                        }
                     }
 
                     if (previousResult != null && previousResult.IsBlackScreen && state.CurrentSplitIndex != -1)
                     {
                         /* This is the first recognized frame after a black transition screen.
                          * We may have skipped the first frame after the transition, so we go and find it. */
-                        AnalysisResult frameAfterTransition = FindFirstRecognizedFrameAfter(previousResult.FrameTime);
+                        AnalysisResult frameAfterTransition = 
+                            FindFirstRecognizedFrame(after: true, previousResult.FrameTime,fallback:result);
                         gameTimeOnSegmentStart = gameTime;
                         ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
                         previousResult = frameAfterTransition;
@@ -214,7 +198,8 @@ namespace SonicVisualSplit
                          * stage -> special stage (white), special stage -> stage (black),
                          * final stage -> game ending (depends on the game).
                          * We find the last frame before the transition to find out the time. */
-                        AnalysisResult frameBeforeTransition = FindFirstRecognizedFrameBefore(result.FrameTime);
+                        AnalysisResult frameBeforeTransition = 
+                            FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
                         UpdateGameTime(frameBeforeTransition);
 
                         if (state.CurrentSplitIndex == state.Run.Count - 1)
@@ -262,28 +247,72 @@ namespace SonicVisualSplit
             });
         }
 
-        private AnalysisResult FindFirstRecognizedFrameAfter(long startFrameTime)
-        {
-            return FindFirstRecognizedFrame(true, startFrameTime);
-        }
-
-        private AnalysisResult FindFirstRecognizedFrameBefore(long startFrameTime)
-        {
-            return FindFirstRecognizedFrame(false, startFrameTime);
-        }
-
-        private AnalysisResult FindFirstRecognizedFrame(bool after, long startFrameTime)
+        /* Finds the first recognized frame before or after a certain frame.
+         * If no recognized frames are found, returns the fallback frame. */
+        private AnalysisResult FindFirstRecognizedFrame(bool after, long startFrameTime, AnalysisResult fallback)
         {
             int increment = after ? 1 : -1;
-            int startingIndex = frameTimes.IndexOf(startFrameTime) + increment;
-            for (int frameIndex = startingIndex; ; frameIndex += increment)
+            int startingIndex = savedFrameTimes.IndexOf(startFrameTime) + increment;
+            int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
+
+            for (int frameIndex = startingIndex; frameIndex != fallbackIndex; frameIndex += increment)
             {
-                long frameTime = frameTimes[frameIndex];
-                AnalysisResult frameBeforeTransition = nativeFrameAnalyzer.AnalyzeFrame(frameTime,
+                long frameTime = savedFrameTimes[frameIndex];
+                AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(frameTime,
                     checkForScoreScreen: false, visualize: false);
-                if (frameBeforeTransition.RecognizedTime)
-                    return frameBeforeTransition;
+                if (result.RecognizedTime)
+                {
+                    if (!CheckAnalysisResult(result))
+                    {
+                        SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
+                    }
+                    else
+                    {
+                        return result;
+                    }
+                }
             }
+
+            /* Haven't found anything.
+             * This probably happened because we reset the precalculated digits positions,
+             * and nothing was found with the new ones. */
+            return fallback;
+        }
+
+        // Checks a frame with recognized digits. Returns true if the result is (presumably) correct.
+        bool CheckAnalysisResult(AnalysisResult result)
+        {
+            if (!result.IsSuccessful())
+            {
+                HandleUnrecognizedFrame(result.FrameTime);
+                return false;
+            }
+
+            if (result.RecognizedTime)
+            {
+                if (isAfterSplit)
+                {
+                    return result.TimeInMilliseconds < 10000;
+                }
+                else if (previousResult != null && previousResult.RecognizedTime)
+                {
+                    /* Checking that the recognized time is correct (at least to some degree).
+                     * If the time decreased, or if it increased by too much, we just ignore that.
+                     * We want to recover from errors, so we also introduce a margin of error. */
+                    long timeElapsed = result.FrameTime - previousResult.FrameTime;
+                    long marginOfError = timeElapsed / 5;
+                    long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
+
+                    if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
+                        || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
+                            > timeElapsed + timerAccuracy + marginOfError)
+                    {
+                        HandleUnrecognizedFrame(result.FrameTime);
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         private void HandleUnrecognizedFrame(long frameTime)

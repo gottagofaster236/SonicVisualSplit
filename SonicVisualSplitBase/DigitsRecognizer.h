@@ -55,6 +55,13 @@ private:
      * in order to make it a less or more preferable option when choosing between symbols. */
     double getSymbolSimilarityMultiplier(char symbol);
 
+    cv::UMat cropToDigitsRoiAndCorrectColor(cv::UMat img);
+
+    /* Finds the highest and lowest pixel values, and corrects the brightness accordingly.
+     * Needed in order to recognize digits better on a frame before a transition
+     * (as the frames before a transition are either too dark or too bright). */
+    void applyColorCorrection(cv::UMat img);
+
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
 
     std::string gameName;

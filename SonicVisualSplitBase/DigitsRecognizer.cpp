@@ -23,7 +23,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
     if (bestScale != -1 && !digitsRoi.empty()) {
         cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
         if (!checkForScoreScreen)  // if we look for digits only, we can speed everything up
-            frame = frame(digitsRoi);
+            frame = cropToDigitsRoiAndCorrectColor(frame);
     }
     else { // we need to find the TIME label to calculate the digits ROI
         checkForScoreScreen = true;
@@ -91,7 +91,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             if (digitsRoi.empty())
                 return {};
             int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
-            frame = frame(digitsRoi);
+            frame = cropToDigitsRoiAndCorrectColor(frame);
 
             relativeDigitsRoi = {(float) digitsRoi.x / oldWidth, (float) digitsRoi.y / oldHeight,
                 (float) digitsRoi.width / oldWidth, (float) digitsRoi.height / oldHeight};
@@ -315,6 +315,27 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Three is often confused with eight, make it more preferable.
     case '3':
         return 0.8;
+    }
+}
+
+
+cv::UMat DigitsRecognizer::cropToDigitsRoiAndCorrectColor(cv::UMat img) {
+    img = img(digitsRoi);
+    applyColorCorrection(img);
+    return img;
+}
+
+
+void DigitsRecognizer::applyColorCorrection(cv::UMat img) {
+    double minBrightness, maxBrightness;
+    cv::minMaxLoc(img, &minBrightness, &maxBrightness);
+    float difference = (float) (maxBrightness - minBrightness);
+
+    // Make the minimum brightness equal to 0 and the maximum brightness equal to 255.
+    cv::subtract(img, cv::Scalar((float) minBrightness), img);
+    if (difference != 0) {
+        // Make sure we don't divide by zero.
+        cv::multiply(img, cv::Scalar(255 / difference), img);
     }
 }
 

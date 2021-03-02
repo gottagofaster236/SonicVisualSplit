@@ -288,28 +288,21 @@ namespace SonicVisualSplit
                 return false;
             }
 
-            if (result.RecognizedTime)
+            if (!isAfterSplit && result.RecognizedTime && previousResult != null && previousResult.RecognizedTime)
             {
-                if (isAfterSplit)
-                {
-                    return result.TimeInMilliseconds < 10000;
-                }
-                else if (previousResult != null && previousResult.RecognizedTime)
-                {
-                    /* Checking that the recognized time is correct (at least to some degree).
-                     * If the time decreased, or if it increased by too much, we just ignore that.
-                     * We want to recover from errors, so we also introduce a margin of error. */
-                    long timeElapsed = result.FrameTime - previousResult.FrameTime;
-                    long marginOfError = timeElapsed / 5;
-                    long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
+                /* Checking that the recognized time is correct (at least to some degree).
+                    * If the time decreased, or if it increased by too much, we just ignore that.
+                    * We want to recover from errors, so we also introduce a margin of error. */
+                long timeElapsed = result.FrameTime - previousResult.FrameTime;
+                long marginOfError = timeElapsed / 5;
+                long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
 
-                    if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
-                        || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
-                            > timeElapsed + timerAccuracy + marginOfError)
-                    {
-                        HandleUnrecognizedFrame(result.FrameTime);
-                        return false;
-                    }
+                if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
+                    || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
+                        > timeElapsed + timerAccuracy + marginOfError)
+                {
+                    HandleUnrecognizedFrame(result.FrameTime);
+                    return false;
                 }
             }
             return true;

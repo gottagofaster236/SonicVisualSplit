@@ -289,7 +289,10 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
         return 3.25;
     // We use "TIME" to detect the score screen, so we want to be sure.
     case TIME: case SCORE:
-        return 2;
+        if (isComposite)
+            return 2;
+        else
+            return 1.5;
     /* One is really small, so it can be misdetected, thus the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':

@@ -31,7 +31,6 @@ namespace SonicVisualSplit
             gamesComboBox.Items.AddRange(new string[] {
                 "Sonic 1",
                 "Sonic 2",
-                "Sonic 3 & Knuckles",
                 "Sonic CD"
             });
             gamesComboBox.SelectedIndex = 0;

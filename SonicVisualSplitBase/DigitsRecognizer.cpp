@@ -102,6 +102,16 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 }
 
 
+cv::UMat DigitsRecognizer::convertFrameToGray(cv::UMat frame) {
+    // Getting the yellow color intensity by adding green and red channels (BGR).
+    std::vector<cv::UMat> channels(4);
+    cv::split(frame, channels);
+    cv::UMat result;
+    cv::addWeighted(channels[1], 0.5, channels[2], 0.5, 0, result);
+    return result;
+}
+
+
 void DigitsRecognizer::resetDigitsPlacement() {
     FrameAnalyzer::lockFrameAnalyzationMutex();
     if (instance) {
@@ -288,7 +298,9 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     default:
         return 3.25;
     // We use "TIME" to detect the score screen, so we want to be sure.
-    case TIME: case SCORE:
+    case SCORE:
+        return 2;
+    case TIME:
         if (isComposite)
             return 2;
         else
@@ -356,13 +368,13 @@ std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(c
     cv::imdecode(templateBuffer, cv::IMREAD_UNCHANGED).copyTo(templateWithAlpha);
     cv::resize(templateWithAlpha, templateWithAlpha, cv::Size(), 2, 2, cv::INTER_NEAREST);
     // We double the size of the image, as then matching is more accurate.
-
-    cv::UMat templateImage;
-    cv::cvtColor(templateWithAlpha, templateImage, cv::COLOR_BGRA2GRAY);
+    
+    cv::UMat templateImage = convertFrameToGray(templateWithAlpha);
     templateImage.convertTo(templateImage, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
 
     std::vector<cv::UMat> templateChannels(4);
     cv::split(templateWithAlpha, templateChannels);
+
     cv::UMat templateMask = templateChannels[3];  // get the alpha channel
     cv::threshold(templateMask, templateMask, 0, 1.0, cv::THRESH_BINARY);
     templateMask.convertTo(templateMask, CV_32F);

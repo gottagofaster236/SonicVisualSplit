@@ -79,8 +79,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
-    cv::UMat frame;
-    cv::cvtColor(originalFrame, frame, cv::COLOR_BGR2GRAY);
+    cv::UMat frame = DigitsRecognizer::convertFrameToGray(originalFrame);
     if (isStretchedTo16By9) {
         cv::resize(frame, frame, cv::Size(), scaleFactorTo4By3, 1, cv::INTER_AREA);
     }

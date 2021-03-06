@@ -97,6 +97,8 @@ namespace SonicVisualSplit
             this.settings.SetSettings(settings);
         }
 
+        public bool VisualizeAnalysisResult => false;
+
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
             if (result.RecognizedTime)
@@ -117,6 +119,9 @@ namespace SonicVisualSplit
             return true;
         }
 
-        public bool VisualizeAnalysisResult => false;
+        private void TogglePracticeMode()
+        {
+            settings.IsPracticeMode = !settings.IsPracticeMode;
+        }
     }
 }

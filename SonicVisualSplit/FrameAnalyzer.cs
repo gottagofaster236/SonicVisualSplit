@@ -65,10 +65,6 @@ namespace SonicVisualSplit
             this.state = state;
             model = new TimerModel() { CurrentState = state };
 
-            state.OnReset += OnReset;
-            state.CurrentTimingMethod = TimingMethod.GameTime;
-            state.IsGameTimePaused = true;  // stop the timer from automatically counting up
-
             this.settings = settings;
             this.settings.FrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
@@ -326,6 +322,10 @@ namespace SonicVisualSplit
 
         public void StartAnalyzingFrames()
         {
+            state.CurrentTimingMethod = TimingMethod.GameTime;
+            state.IsGameTimePaused = true;  // stop the timer from automatically counting up
+            state.OnReset += OnReset;
+
             FrameStorage.StartSavingFrames();
             frameAnalyzerTaskToken = new CancellationTokenSource();
             CancellationToken cancellationToken = frameAnalyzerTaskToken.Token;

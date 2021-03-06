@@ -13,6 +13,18 @@ namespace SonicVisualSplit
         public bool RGB { get; set; }
         public bool Stretched { get; set; }
         public string Game { get; set; }
+        public bool HasOpenedSettingsBefore { get; set; }
+
+        private bool _isPracticeMode;
+        public bool IsPracticeMode
+        {
+            get { return _isPracticeMode; }
+            set
+            {
+                _isPracticeMode = value;
+                OnSettingsChanged();
+            }
+        }
 
         public event EventHandler SettingsChanged;
         public FrameAnalyzer FrameAnalyzer { get; set; }
@@ -47,10 +59,11 @@ namespace SonicVisualSplit
 
         public int CreateSettingsNode(XmlDocument document, XmlElement parent)
         {
-            return SettingsHelper.CreateSetting(document, parent, "Version", "0.1") ^
+            return SettingsHelper.CreateSetting(document, parent, "Version", "1.0") ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
-                SettingsHelper.CreateSetting(document, parent, "Game", Game);
+                SettingsHelper.CreateSetting(document, parent, "Game", Game) ^
+                SettingsHelper.CreateSetting(document, parent, "HasOpenedSettingsBefore", HasOpenedSettingsBefore);
         }
 
         public void SetSettings(XmlNode settings)
@@ -72,6 +85,8 @@ namespace SonicVisualSplit
                 Game = "Sonic 1";
             }
             gamesComboBox.SelectedIndex = gameIndex;
+
+            HasOpenedSettingsBefore = SettingsHelper.ParseBool(settings["HasOpenedSettingsBefore"]);
         }
 
         private void OnVideoConnectorChanged(object sender, EventArgs e)
@@ -114,6 +129,11 @@ namespace SonicVisualSplit
             if (Parent.Visible)
             {
                 FrameAnalyzer.AddResultConsumer(this);
+                if (!HasOpenedSettingsBefore)
+                {
+                    HasOpenedSettingsBefore = true;
+                    OnSettingsChanged();
+                }
             }
             else
             {
@@ -197,6 +217,11 @@ namespace SonicVisualSplit
         {
             var startInfo = new ProcessStartInfo("http://www.google.com");
             Process.Start(startInfo);
+        }
+
+        public bool ShouldAnalyzeFrames()
+        {
+            return HasOpenedSettingsBefore && !IsPracticeMode;
         }
     }
 }

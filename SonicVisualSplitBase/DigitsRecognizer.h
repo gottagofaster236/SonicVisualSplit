@@ -15,6 +15,7 @@ public:
     // Find locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
+    // Converts a frame to a grayscale, call this before passing the frame to findAllSymbolsLocations.
     static cv::UMat convertFrameToGray(cv::UMat frame);
 
     /* We precalculate the rectangle where all of the digits are located.

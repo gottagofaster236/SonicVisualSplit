@@ -53,6 +53,8 @@ static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
                                           bool isStretchedTo16By9, bool isComposite) {
+    std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
+
     if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
             || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isComposite != isComposite) {
         delete instance;

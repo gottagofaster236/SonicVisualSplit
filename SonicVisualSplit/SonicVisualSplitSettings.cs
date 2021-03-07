@@ -110,6 +110,13 @@ namespace SonicVisualSplit
         private void OnSettingsChanged()
         {
             SettingsChanged?.Invoke(this, null);
+
+            if (IsPracticeMode)
+            {
+                recognitionResultsLabel.Text = "Practice mode. Turn it off to see preview";
+                recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
+                recognitionResultsLabel.ForeColor = Color.Black;
+            }
         }
 
         // Code that shows the preview of digits recognition results.

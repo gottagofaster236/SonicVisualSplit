@@ -68,7 +68,6 @@ namespace SonicVisualSplit
             this.settings = settings;
             this.settings.FrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
-            OnSettingsChanged();
         }
 
         private void AnalyzeFrame()
@@ -361,17 +360,31 @@ namespace SonicVisualSplit
             state.OnReset -= OnReset;
         }
 
-        private void OnSettingsChanged(object sender = null, EventArgs e = null)
-        {
+        private void OnSettingsChanged(object sender, EventArgs e)
+        {   
             lock (frameAnalyzationLock)
             {
-                // finding the path with template images for the game
-                string livesplitComponents = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
-                string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
+                if (settings.ShouldAnalyzeFrames())
+                {
+                    // finding the path with template images for the game
+                    string livesplitComponents = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
+                    string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
 
-                nativeFrameAnalyzer = new SonicVisualSplitWrapper.FrameAnalyzer(settings.Game, templatesDirectory,
-                    settings.Stretched, isComposite: !settings.RGB);
+                    bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
+                    nativeFrameAnalyzer = new SonicVisualSplitWrapper.FrameAnalyzer(settings.Game, templatesDirectory,
+                        settings.Stretched, isComposite: !settings.RGB);
+
+                    if (!wasAnalyzingFrames)
+                    {
+                        StartAnalyzingFrames();
+                    }
+                }
+                else if (nativeFrameAnalyzer != null)
+                {
+                    StopAnalyzingFrames();
+                    nativeFrameAnalyzer = null;
+                }
             }
         }
 

@@ -35,7 +35,8 @@ namespace SonicVisualSplit
 
             frameAnalyzer = new FrameAnalyzer(state, settings);
             frameAnalyzer.AddResultConsumer(this);
-            frameAnalyzer.StartAnalyzingFrames();
+
+            settings += OnSettingsChanged;
         }
 
         void IComponent.Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
@@ -122,6 +123,22 @@ namespace SonicVisualSplit
         private void TogglePracticeMode()
         {
             settings.IsPracticeMode = !settings.IsPracticeMode;
+        }
+
+        private void OnSettingsChanged(object sender, EventArgs e)
+        {
+            if (settings.HasOpenedSettingsBefore)
+            {
+                internalComponent.InformationValue = "Open Layout settings ➔ SVS";
+            }
+            else if (settings.IsPracticeMode)
+            {
+                internalComponent.InformationValue = "Practice mode";
+            }
+            else
+            {
+                internalComponent.InformationValue = "Wait..";
+            }
         }
     }
 }

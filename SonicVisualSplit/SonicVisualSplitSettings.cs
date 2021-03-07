@@ -10,21 +10,10 @@ namespace SonicVisualSplit
 {
     public partial class SonicVisualSplitSettings : UserControl, FrameAnalyzer.IResultConsumer
     {
-        public bool RGB { get; set; }
-        public bool Stretched { get; set; }
-        public string Game { get; set; }
-        public bool HasOpenedSettingsBefore { get; set; }
-
-        private bool _isPracticeMode;
-        public bool IsPracticeMode
-        {
-            get { return _isPracticeMode; }
-            set
-            {
-                _isPracticeMode = value;
-                OnSettingsChanged();
-            }
-        }
+        public bool RGB { get; private set; }
+        public bool Stretched { get; private set; }
+        public string Game { get; private set; }
+        public bool IsPracticeMode { get; private set; }
 
         public event EventHandler SettingsChanged;
         public FrameAnalyzer FrameAnalyzer { get; set; }
@@ -62,8 +51,7 @@ namespace SonicVisualSplit
             return SettingsHelper.CreateSetting(document, parent, "Version", "1.0") ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
-                SettingsHelper.CreateSetting(document, parent, "Game", Game) ^
-                SettingsHelper.CreateSetting(document, parent, "HasOpenedSettingsBefore", HasOpenedSettingsBefore);
+                SettingsHelper.CreateSetting(document, parent, "Game", Game);
         }
 
         public void SetSettings(XmlNode settings)
@@ -86,7 +74,7 @@ namespace SonicVisualSplit
             }
             gamesComboBox.SelectedIndex = gameIndex;
 
-            HasOpenedSettingsBefore = SettingsHelper.ParseBool(settings["HasOpenedSettingsBefore"]);
+            OnSettingsChanged();
         }
 
         private void OnVideoConnectorChanged(object sender, EventArgs e)
@@ -107,18 +95,6 @@ namespace SonicVisualSplit
             OnSettingsChanged();
         }
 
-        private void OnSettingsChanged()
-        {
-            SettingsChanged?.Invoke(this, null);
-
-            if (IsPracticeMode)
-            {
-                recognitionResultsLabel.Text = "Practice mode. Turn it off to see preview";
-                recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
-                recognitionResultsLabel.ForeColor = Color.Black;
-            }
-        }
-
         // Code that shows the preview of digits recognition results.
 
         protected override void OnParentChanged(EventArgs e)
@@ -136,11 +112,7 @@ namespace SonicVisualSplit
             if (Parent.Visible)
             {
                 FrameAnalyzer.AddResultConsumer(this);
-                if (!HasOpenedSettingsBefore)
-                {
-                    HasOpenedSettingsBefore = true;
-                    OnSettingsChanged();
-                }
+                CheckForPracticeMode();  // Updating the text when the control appears.
             }
             else
             {
@@ -193,7 +165,7 @@ namespace SonicVisualSplit
                     }
 
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                        linkArea = new LinkArea(49, 9);
+                        linkArea = new LinkArea(57, 9);
                     else
                         linkArea = new LinkArea(0, 0);
 
@@ -220,15 +192,39 @@ namespace SonicVisualSplit
             return true;
         }
 
+        private void OnSettingsChanged()
+        {
+            SettingsChanged?.Invoke(this, null);
+            CheckForPracticeMode();
+        }
+
+        private void CheckForPracticeMode()
+        {
+            if (IsPracticeMode)
+            {
+                try
+                {
+                    BeginInvoke((MethodInvoker)delegate
+                    {
+                        recognitionResultsLabel.Text = "Practice mode. Turn it off to see preview";
+                        recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
+                        recognitionResultsLabel.ForeColor = Color.Black;
+                    });
+                }
+                catch (InvalidOperationException) { }
+            }
+        }
+
         private void ShowHelp(object sender, LinkLabelLinkClickedEventArgs e)
         {
             var startInfo = new ProcessStartInfo("http://www.google.com");
             Process.Start(startInfo);
         }
 
-        public bool ShouldAnalyzeFrames()
+        public void TogglePracticeMode(object sender = null, EventArgs e = null)
         {
-            return HasOpenedSettingsBefore && !IsPracticeMode;
+            IsPracticeMode = !IsPracticeMode;
+            OnSettingsChanged();
         }
     }
 }

@@ -23,7 +23,7 @@ namespace SonicVisualSplit
 
         string IComponent.ComponentName => "SonicVisualSplit";
 
-        IDictionary<string, Action> IComponent.ContextMenuControls => null;
+        public IDictionary<string, Action> ContextMenuControls { get; private set; }
 
         public bool Disposed { get; private set; } = false;
         
@@ -31,12 +31,17 @@ namespace SonicVisualSplit
         {
             this.state = state;
             internalComponent = new InfoTextComponent("Time on screen (SVS)", "Wait..");
+
+            ContextMenuControls = new Dictionary<String, Action>();
+            ContextMenuControls.Add("Toggle practice mode",
+                () => { settings.TogglePracticeMode(); });
+
             settings = new SonicVisualSplitSettings();
 
             frameAnalyzer = new FrameAnalyzer(state, settings);
             frameAnalyzer.AddResultConsumer(this);
 
-            settings += OnSettingsChanged;
+            settings.SettingsChanged += OnSettingsChanged;
         }
 
         void IComponent.Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
@@ -120,18 +125,9 @@ namespace SonicVisualSplit
             return true;
         }
 
-        private void TogglePracticeMode()
-        {
-            settings.IsPracticeMode = !settings.IsPracticeMode;
-        }
-
         private void OnSettingsChanged(object sender, EventArgs e)
         {
-            if (settings.HasOpenedSettingsBefore)
-            {
-                internalComponent.InformationValue = "Open Layout settings ➔ SVS";
-            }
-            else if (settings.IsPracticeMode)
+            if (settings.IsPracticeMode)
             {
                 internalComponent.InformationValue = "Practice mode";
             }

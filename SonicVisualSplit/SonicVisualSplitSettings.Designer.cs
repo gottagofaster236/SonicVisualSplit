@@ -213,10 +213,11 @@ namespace SonicVisualSplit
             // 
             this.togglePracticeModeButton.Location = new System.Drawing.Point(13, 524);
             this.togglePracticeModeButton.Name = "togglePracticeModeButton";
-            this.togglePracticeModeButton.Size = new System.Drawing.Size(118, 37);
+            this.togglePracticeModeButton.Size = new System.Drawing.Size(118, 23);
             this.togglePracticeModeButton.TabIndex = 15;
-            this.togglePracticeModeButton.Text = "Toggle practice mode (turns off the ASL)";
+            this.togglePracticeModeButton.Text = "Toggle practice mode";
             this.togglePracticeModeButton.UseVisualStyleBackColor = true;
+            this.togglePracticeModeButton.Click += new System.EventHandler(this.TogglePracticeMode);
             // 
             // SonicVisualSplitSettings
             // 
@@ -235,7 +236,7 @@ namespace SonicVisualSplit
             this.Controls.Add(this.gameCapturePreview);
             this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "SonicVisualSplitSettings";
-            this.Size = new System.Drawing.Size(474, 566);
+            this.Size = new System.Drawing.Size(474, 558);
             ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).EndInit();
             this.videoConnectorGroup.ResumeLayout(false);
             this.videoConnectorGroup.PerformLayout();

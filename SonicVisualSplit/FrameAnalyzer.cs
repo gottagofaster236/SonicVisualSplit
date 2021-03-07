@@ -52,7 +52,7 @@ namespace SonicVisualSplit
         List<long> savedFrameTimes;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
-        private CancellationTokenSource frameAnalyzerTaskToken;
+        private CancellationTokenSource cancellationTokenSource;
         private object analyzationThreadRunningLock = new object();
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
 
@@ -326,8 +326,12 @@ namespace SonicVisualSplit
             state.OnReset += OnReset;
 
             FrameStorage.StartSavingFrames();
-            frameAnalyzerTaskToken = new CancellationTokenSource();
-            CancellationToken cancellationToken = frameAnalyzerTaskToken.Token;
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Dispose();
+            }
+            cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             Task.Run(() =>
             {
@@ -348,23 +352,24 @@ namespace SonicVisualSplit
 
         public void StopAnalyzingFrames()
         {
-            if (frameAnalyzerTaskToken != null)
-                frameAnalyzerTaskToken.Cancel();
+            if (cancellationTokenSource != null)
+                cancellationTokenSource.Cancel();
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();
             // Making sure that the frame analyzer thread stops.
             lock (analyzationThreadRunningLock) { }
 
-            // Restoring the LiveSplit state to the original.
-            state.IsGameTimePaused = false;
             state.OnReset -= OnReset;
+            OnReset();
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
-        {   
+        {
+            bool haveToStopAnalyzingFrames = false;
+
             lock (frameAnalyzationLock)
             {
-                if (settings.ShouldAnalyzeFrames())
+                if (!settings.IsPracticeMode)
                 {
                     // finding the path with template images for the game
                     string livesplitComponents = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -382,13 +387,19 @@ namespace SonicVisualSplit
                 }
                 else if (nativeFrameAnalyzer != null)
                 {
-                    StopAnalyzingFrames();
-                    nativeFrameAnalyzer = null;
+                    haveToStopAnalyzingFrames = true;
+                    // Stopping the thread outside
                 }
+            }
+
+            if (haveToStopAnalyzingFrames)
+            {
+                StopAnalyzingFrames();
+                nativeFrameAnalyzer = null;
             }
         }
 
-        private void OnReset(object sender, TimerPhase value)
+        private void OnReset(object sender = null, TimerPhase value = 0)
         {
             Task.Run(() =>
             {

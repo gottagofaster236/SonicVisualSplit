@@ -32,7 +32,7 @@ namespace SonicVisualSplit
             this.state = state;
             internalComponent = new InfoTextComponent("Time on screen (SVS)", "Wait..");
 
-            ContextMenuControls = new Dictionary<String, Action>();
+            ContextMenuControls = new Dictionary<string, Action>();
             ContextMenuControls.Add("Toggle practice mode",
                 () => { settings.TogglePracticeMode(); });
 

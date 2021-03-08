@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Reflection;
 using System.Windows.Forms;
+using System.IO.Compression;
 
 namespace SonicVisualSplit
 {
@@ -68,6 +69,8 @@ namespace SonicVisualSplit
             this.settings = settings;
             this.settings.FrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
+
+            UnpackTemplatesArrayIfNeeded();
         }
 
         private void AnalyzeFrame()
@@ -373,7 +376,7 @@ namespace SonicVisualSplit
                 if (!settings.IsPracticeMode)
                 {
                     // finding the path with template images for the game
-                    string livesplitComponents = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string livesplitComponents = GetLivesplitComponentsDirectory();
                     string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
                     string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
 
@@ -398,6 +401,25 @@ namespace SonicVisualSplit
                 StopAnalyzingFrames();
                 nativeFrameAnalyzer = null;
             }
+        }
+
+        private static void UnpackTemplatesArrayIfNeeded()
+        {
+            string livesplitComponents = GetLivesplitComponentsDirectory();
+            string zipLocation = Path.Combine(livesplitComponents, "SVS Templates.zip");
+            if (File.Exists(zipLocation))
+            {
+                string destinationDirectory = Path.Combine(livesplitComponents, "SVS Templates");
+                if (File.Exists(destinationDirectory))
+                    Directory.Delete(destinationDirectory, recursive: true);
+                ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
+                File.Delete(zipLocation);
+            }
+        }
+
+        private static string GetLivesplitComponentsDirectory()
+        {
+            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         }
 
         private void OnReset(object sender = null, TimerPhase value = 0)

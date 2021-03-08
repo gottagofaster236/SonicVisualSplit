@@ -50,6 +50,12 @@
       <Private>True</Private>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.IO.Compression.ZipFile, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IO.Compression.ZipFile.4.3.0\lib\net46\System.IO.Compression.ZipFile.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Runtime, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.4.3.1\lib\net462\System.Runtime.dll</HintPath>
       <Private>True</Private>
@@ -129,12 +135,12 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>REM You can select "C:\Program Files\LiveSplit\LiveSplit.exe"
-REM In the "Start external program" action at "Debug" tab.
+REM in the "Start external program" action at "Debug" tab.
 
 set LivesplitLocation=C:\Program Files\LiveSplit\Components\
 
 REM Copying the missing DLL's and resources.
-xcopy "$(SolutionDir)x64\$(Configuration)\*.dll" "$(TargetDir)" /Y
+xcopy /y "$(SolutionDir)$(PlatformName)\$(Configuration)\*.dll" "$(TargetDir)"
 
 REM Deleting unneeded DLLs (and PDBs)
 del "$(TargetDir)LiveSplit.View.*"
@@ -142,7 +148,7 @@ del "$(TargetDir)LiveSplit.Core.*"
 del "$(TargetDir)UpdateManager.*"
 
 REM Copying the build results to LiveSplit.
-xcopy "$(TargetDir)" "%25LivesplitLocation%25" /Y
-xcopy "$(SolutionDir)SVS Templates" "%25LivesplitLocation%25SVS Templates\" /E /Y</PostBuildEvent>
+xcopy /y "$(TargetDir)" "%25LivesplitLocation%25"
+echo f|xcopy /y "$(SolutionDir)SVS Templates\SVS Templates.zip" "%25LivesplitLocation%25SVS Templates.zip"</PostBuildEvent>
   </PropertyGroup>
 </Project>

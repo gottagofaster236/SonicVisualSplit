@@ -257,7 +257,7 @@ namespace SonicVisualSplit
                     checkForScoreScreen: false, visualize: false);
                 if (result.RecognizedTime)
                 {
-                    if (!CheckAnalysisResult(result))
+                    if (!CheckAnalysisResult(result, deleteFramesOnFailure: false))
                     {
                         SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
                     }
@@ -275,11 +275,12 @@ namespace SonicVisualSplit
         }
 
         // Checks a frame with recognized digits. Returns true if the result is (presumably) correct.
-        bool CheckAnalysisResult(AnalysisResult result)
+        bool CheckAnalysisResult(AnalysisResult result, bool deleteFramesOnFailure = true)
         {
             if (!result.IsSuccessful())
             {
-                HandleUnrecognizedFrame(result.FrameTime);
+                if (deleteFramesOnFailure)
+                    HandleUnrecognizedFrame(result.FrameTime);
                 return false;
             }
 

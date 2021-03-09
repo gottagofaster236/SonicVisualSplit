@@ -18,22 +18,26 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 }
 
 
-// Find locations of all digits, "SCORE" and "TIME" labels.
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
-    if (bestScale != -1 && !digitsRoi.empty()) {
+    if (bestScale != -1 && !digitsRect.empty()) {
         cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
-        if (!checkForScoreScreen)  // if we look for digits only, we can speed everything up
-            frame = cropToDigitsRoiAndCorrectColor(frame);
+        if (!checkForScoreScreen) {
+            // We are looking for digits only, so cropping the frame do the rectangle where digits are located.
+            frame = cropToDigitsRectAndCorrectColor(frame);
+        }
     }
-    else { // we need to find the TIME label to calculate the digits ROI
+    else {
+        /* We need to find the digits rectangle. It is relative to the TIME label, so we need to find it.
+         * Since we check for score screen by finding the positions of TIME label (as in TIME BONUS), we'll do exactly that. */
         checkForScoreScreen = true;
     }
 
-    if (checkForScoreScreen)
-        digitsRoi = {0, 0, 0, 0};  // we're gonna recalculate it
-    // ROI stands for region of interest.
+    if (checkForScoreScreen) {
+        // We're gonna recalculate digits rectangle when we're checking for score screen.
+        digitsRect = {0, 0, 0, 0};
+    }
 
-    std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;   // {location, digit, similarity coefficient}
+    std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;  // {location, digit, similarity coefficient}
 
     std::vector<char> symbolsToSearch;
     if (checkForScoreScreen) {
@@ -49,26 +53,26 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
         for (auto [location, similarity] : matches) {
             similarity *= getSymbolSimilarityMultiplier(symbol);
-            // we've changed the ROI to speed up the search. Now we have to compensate for that.
-            location += cv::Point2f((float) (digitsRoi.x / bestScale), (float) (digitsRoi.y / bestScale));
+            // We've cropped the frame to speed up the search. Now we have to compensate for that.
+            location += cv::Point2f((float) (digitsRect.x / bestScale), (float) (digitsRect.y / bestScale));
             digitLocations.push_back({location, symbol, similarity});
         }
 
         if (symbol == TIME) {
-            if (matches.empty())  // cannot find the "TIME" label - but it should be there!
+            if (matches.empty())  // Cannot find the "TIME" label, but it should be there on a correct frame.
                 return {};
-            /* We search the whole screen for the "TIME" label.
-             * For other symbols we will speed up the calculation by scaling the image down to the best scale. */
+            // Checking only the top half of the frame, so that "SCORE" is searched faster.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
-            frame = frame(topHalf);  // so that "SCORE" is searched faster
+            frame = frame(topHalf);
             if (recalculateDigitsPlacement) {
+                // bestScale is calculated already after we found "TIME".
                 cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
             }
         }
         else if (symbol == SCORE) {
             /* We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
-             * We'll look for the digits only in the horizontal stripe containing the word "TIME".
-             * To "crop" the frame to that horizontal stripe, we simply change the ROI (region of interest). */
+             * We'll look for digits only in the rectangle to the right of "TIME".
+             * That's why we'll crop the frame to that rectangle. */
             if (matches.empty())
                 return {};
             std::vector<std::pair<cv::Rect2f, char>> curRecognized = removeOverlappingLocations(digitLocations);
@@ -79,22 +83,22 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             }
 
             double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.55);
-            int roiLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
-            int roiRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
-            int roiTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
-            int roiBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
-            roiLeft = std::max(roiLeft, 0);
-            roiRight = std::min(roiRight, frame.cols);
-            roiTop = std::max(roiTop, 0);
-            roiBottom = std::min(roiBottom, frame.rows);
-            digitsRoi = {roiLeft, roiTop, roiRight - roiLeft, roiBottom - roiTop};
-            if (digitsRoi.empty())
+            int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
+            int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
+            int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
+            int digitsRectBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
+            digitsRectLeft = std::max(digitsRectLeft, 0);
+            digitsRectRight = std::min(digitsRectRight, frame.cols);
+            digitsRectTop = std::max(digitsRectTop, 0);
+            digitsRectBottom = std::min(digitsRectBottom, frame.rows);
+            digitsRect = {digitsRectLeft, digitsRectTop, digitsRectRight - digitsRectLeft, digitsRectBottom - digitsRectTop};
+            if (digitsRect.empty())
                 return {};
             int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
-            frame = cropToDigitsRoiAndCorrectColor(frame);
+            frame = cropToDigitsRectAndCorrectColor(frame);
 
-            relativeDigitsRoi = {(float) digitsRoi.x / oldWidth, (float) digitsRoi.y / oldHeight,
-                (float) digitsRoi.width / oldWidth, (float) digitsRoi.height / oldHeight};
+            relativeDigitsRect = {(float) digitsRect.x / oldWidth, (float) digitsRect.y / oldHeight,
+                (float) digitsRect.width / oldWidth, (float) digitsRect.height / oldHeight};
         }
     }
 
@@ -103,7 +107,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
 
 cv::UMat DigitsRecognizer::convertFrameToGray(cv::UMat frame) {
-    // Getting the yellow color intensity by adding green and red channels (BGR).
+    /* Getting the yellow color intensity by adding green and red channels (BGR).
+     * TIME and SCORE are yellow, so it's probably a good way to convert a frame to grayscale. 
+     * (In the first place it is done to speed up the template matching by reducing the number of channels to 1). */
     std::vector<cv::UMat> channels(4);
     cv::split(frame, channels);
     cv::UMat result;
@@ -116,7 +122,7 @@ void DigitsRecognizer::resetDigitsPlacement() {
     FrameAnalyzer::lockFrameAnalyzationMutex();
     if (instance) {
         instance->bestScale = -1;
-        instance->digitsRoi = {0, 0, 0, 0};
+        instance->digitsRect = {0, 0, 0, 0};
     }
     FrameAnalyzer::unlockFrameAnalyzationMutex();
 }
@@ -141,8 +147,8 @@ DigitsRecognizer* DigitsRecognizer::getCurrentInstance() {
 }
 
 
-cv::Rect2f DigitsRecognizer::getRelativeDigitsRoi() {
-    return relativeDigitsRoi;
+cv::Rect2f DigitsRecognizer::getRelativeDigitsRect() {
+    return relativeDigitsRect;
 }
 
 
@@ -334,10 +340,10 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
 }
 
 
-cv::UMat DigitsRecognizer::cropToDigitsRoiAndCorrectColor(cv::UMat img) {
-    img = img(digitsRoi);
-    applyColorCorrection(img);
-    return img;
+cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
+    frame = frame(digitsRect);
+    applyColorCorrection(frame);
+    return frame;
 }
 
 

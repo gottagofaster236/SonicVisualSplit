@@ -12,10 +12,10 @@ class DigitsRecognizer {
 public:
     static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
-    // Find locations of all digits, "SCORE" and "TIME" labels.
+    // Finds locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
-    // Converts a frame to a grayscale, call this before passing the frame to findAllSymbolsLocations.
+    // Converts a frame to grayscale. Call this before passing the frame to findAllSymbolsLocations.
     static cv::UMat convertFrameToGray(cv::UMat frame);
 
     /* We precalculate the rectangle where all of the digits are located.
@@ -25,12 +25,13 @@ public:
     // Same as resetDigitsPlacement, but non-blocking.
     static void resetDigitsPlacementAsync();
 
+    // Returns whether in the last call to findAllSymbolsLocations the digits placement was recalculated.
     bool recalculatedDigitsPlacementLastTime();
 
-    // See bestScale.
+    // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
     double getBestScale();
 
-    /* There is never more than instance of DigitsRecognizer, so we use a pseudo-singleton pattern to manage the memory easier.
+    /* There is never more than instance of DigitsRecognizer.
      * This function gets the current instance, or returns nullptr if there's no current instance. */
     static DigitsRecognizer* getCurrentInstance();
 
@@ -38,7 +39,7 @@ public:
      * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
      * This value is never reset, so that it's possible to estimate 
      * the position of time digits ROI almost all the time. */
-    cv::Rect2f getRelativeDigitsRoi();
+    cv::Rect2f getRelativeDigitsRect();
 
     // We search for symbols in our code (hack hack).
     static const char SCORE = 'S';
@@ -58,9 +59,11 @@ private:
      * in order to make it a less or more preferable option when choosing between symbols. */
     double getSymbolSimilarityMultiplier(char symbol);
 
-    cv::UMat cropToDigitsRoiAndCorrectColor(cv::UMat img);
+    /* Crops the frame to the region of interest where the digits are located,
+     * and increases the contrast for the resulting image. */
+    cv::UMat cropToDigitsRectAndCorrectColor(cv::UMat frame);
 
-    /* Finds the highest and lowest pixel values, and corrects the brightness accordingly.
+    /* Increases the contrast for an image.
      * Needed in order to recognize digits better on a frame before a transition
      * (as the frames before a transition are either too dark or too bright). */
     void applyColorCorrection(cv::UMat img);
@@ -74,8 +77,9 @@ private:
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     double bestScale = -1;
 
-    // The region of interest (ROI) where the time digits are located (i.e. we don't search the whole frame)
-    cv::Rect digitsRoi;
+    /* The rectangle where the time digits are located (i.e. we don't search the whole frame).
+     * (This rectangle is valid after the frame has been scaled down to bestScale). */
+    cv::Rect digitsRect;
 
     // Similarity coefficient of the best match
     double bestSimilarity;
@@ -85,8 +89,8 @@ private:
     // map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
-    // See getRelativeDigitsRoi().
-    cv::Rect2f relativeDigitsRoi;
+    // See getRelativeDigitsRect().
+    cv::Rect2f relativeDigitsRect;
 
     inline static DigitsRecognizer* instance = nullptr;
 };

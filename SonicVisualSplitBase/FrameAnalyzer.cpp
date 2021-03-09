@@ -313,14 +313,14 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
         if (instance == nullptr)
             return SingleColor::NOT_SINGLE_COLOR;
 
-        cv::Rect2f relativeDigitsRoi = instance->getRelativeDigitsRoi();
-        cv::Rect digitsRoi = {(int) (relativeDigitsRoi.x * frame.cols), (int) (relativeDigitsRoi.y * frame.rows),
-            (int) (relativeDigitsRoi.width * frame.cols), (int) (relativeDigitsRoi.height * frame.rows)};
-        if (digitsRoi.empty())
+        cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
+        cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
+            (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
+        if (digitsRect.empty())
             return SingleColor::NOT_SINGLE_COLOR;
 
         // Check that every pixel's brightness is low enough.
-        frameRead = frameRead(digitsRoi);
+        frameRead = frameRead(digitsRect);
         double maximumBrightness;
         cv::minMaxLoc(frameRead, nullptr, &maximumBrightness);
         if (maximumBrightness > 40)

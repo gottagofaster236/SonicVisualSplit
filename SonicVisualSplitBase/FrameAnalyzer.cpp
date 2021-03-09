@@ -9,43 +9,6 @@
 
 namespace SonicVisualSplitBase {
 
-// TODO
-// Fix bug with "open layout"
-// Test Sonic 3 and/or K runs
-// Make OBS not restore, but minimize! Also, if OBS was maximized before, you should maximize it after restoring (not urgent).
-// Game-specific ROIs to increase success rates
-// Force user to open settings at least once.
-// Option to set the autosplitter to practice mode, it will show "Practice" in the menu.
-// (remember to fix that Begin/Stop AnalyzingFrames() works only once).
-// Test EVERY option (including 16:9)
-// Add a pythonanywhere server to check the current version. (OR think about adding it as a component).
-
-/* README thoughts
- * Note: this is an early version. I've tested it on hours of footage, but it may contain bugs. So feel free to report an issue.
- * 
- * Troubleshooting: if it says "OBS Disconnected", read <link>this</link>.
- * If it has too many failed frames (when it writes a dash instead of recognized time), check your settings.
- * Make sure you've selected the correct video mode (sometimes Composite may work better than RGB).
- * If your capture card outputs a too dark image, you may have to apply a color correction filter in OBS.
- * In general, the better your video capture is, the more accurate the SVS will be.
- * Try maximizing OBS (so that the video feed has higher resolution).
- * If it's sometimes displaying wrong time, but splits correctly - that's thanks to the error checking, it's fine.
- * 
- * BUILDING:
- * VS 2019
- * vcpkg, integrate, install opencv:x64-windows
- * install LiveSplit to C:/Program Files/LiveSplit
- * Clone LiveSplit in Visual Studio
- * Clone this repository in Visual Studio
- * Copy/Paste the output dlls of LiveSplit?
- * Select the external program
- */
-
-// ATEXIT: restore OBS, stop all threads.
-// FUTURE:
-// Auto reset option (which can be turned off for sonic 3 and stuff)
-// Option to hide the component.
-
 static std::recursive_mutex frameAnalyzationMutex;
 
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
@@ -228,7 +191,7 @@ void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>
     });
 
     if (timeRects.size() >= 2) {
-        // make sure that the other recognized TIME rectangles are valid
+        // Make sure that the other recognized TIME rectangles are valid.
         for (int i = timeRects.size() - 1; i >= 0; i--) {
             if (timeRects[i] == timeRect)
                 continue;
@@ -238,8 +201,8 @@ void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>
         }
     }
 
-    // There's always a "TIME" label on top of the screen
-    // But there's a second one during the score countdown screen ("TIME BONUS")
+    /* There's always a "TIME" label on top of the screen.
+     * But there's a second one during the score countdown screen ("TIME BONUS"). */
     result.isScoreScreen = (timeRects.size() >= 2);
 }
 

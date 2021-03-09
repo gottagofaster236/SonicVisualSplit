@@ -163,8 +163,9 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 }
 
 
-// Returns all found positions of a digit. If recalculateDigitsPlacement is set to true, goes through different scales of the original frame (see the link below).
-// Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv
+/* Returns all found positions of a digit. If recalculateDigitsPlacement is set to true,
+ * goes through different scales of the original frame (see the link below).
+ * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
 std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
     auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
 
@@ -172,12 +173,12 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
     double minScale, maxScale;
 
     if (recalculateDigitsPlacement) {
-        // Sega Genesis resolution is 320×224 (height = 224)
-        // we scale up the template images 2x, so we have to do the same for the resolution.
+        /* Sega Genesis resolution is 320×224 (height = 224).
+         * We double the size of the template images, so we have to do the same for the resolution. */
         const int minHeight = 200 * 2;
         const int maxHeight = 320 * 2;
-        // 224 / 320 ≈ 0.75
-        // Thus the frame should take at least 75% of stream's height.
+        /* 224 / 320 = 0.7
+         * Thus the frame should take at least 70% of stream's height. (80% for safety). */
         minScale = ((double) minHeight) / frame.rows;
         maxScale = ((double) maxHeight) / frame.rows;
     }
@@ -190,7 +191,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         bestSimilarity = MIN_SIMILARITY / getSymbolMinSimilarityCoefficient('0');
     }
 
-    std::vector<std::pair<cv::Rect2f, double>> matches;  // pairs: {supposed digit location, similarity coefficient}
+    std::vector<std::pair<cv::Rect2f, double>> matches;  // Pairs: {supposed digit location, similarity coefficient}.
 
     for (double scale = maxScale; scale >= minScale; scale *= 0.96) {
         cv::UMat resized;
@@ -207,13 +208,13 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         if (recalculateDigitsPlacement) {
             double minimumSqdiff;
             cv::minMaxLoc(matchResult, &minimumSqdiff);
-            double maxSimilarityForScale = -minimumSqdiff / opaquePixels;
-            if (bestSimilarity < maxSimilarityForScale) {
-                bestSimilarity = maxSimilarityForScale;
+            double bestSimilarityForScale = -minimumSqdiff / opaquePixels;
+            if (bestSimilarity < bestSimilarityForScale) {
+                bestSimilarity = bestSimilarityForScale;
                 bestScale = scale;
             }
             else {
-                // this is not the best scale
+                // This is not the best scale.
                 continue;
             }
         }
@@ -221,12 +222,12 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         matches.clear();
 
         double similarityCoefficient = getSymbolMinSimilarityCoefficient(symbol);
-        double maximumSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
-        if (maximumSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
-            maximumSqdiff = -bestSimilarity / 10 * opaquePixels;
+        double maximumAcceptableSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
+        if (maximumAcceptableSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
+            maximumAcceptableSqdiff = -bestSimilarity / 10 * opaquePixels;
 
         cv::UMat matchResultBinary;
-        cv::threshold(matchResult, matchResultBinary, maximumSqdiff, 1, cv::THRESH_BINARY_INV);
+        cv::threshold(matchResult, matchResultBinary, maximumAcceptableSqdiff, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);
 
@@ -234,24 +235,20 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
         for (const cv::Point& match : matchPoints) {
             int x = match.x, y = match.y;
-            // If the method of template matching is square difference (TM_SQDIFF), then less is better.
-            // We want less to be worse, so we make it negative.
+            /* If the method of template matching is square difference (TM_SQDIFF),
+             * then the lower value is a better match.
+             * We want the higher similarity to be a better match, so we negate the square difference. */
             double similarity = -matchResultRead.at<float>(y, x) / opaquePixels;
 
-            // After the scale brute force, we resize the image to the best scale
-            // So the rectangle of match will be different too
-            double actualScale;
-            if (!recalculateDigitsPlacement)
-                actualScale = bestScale;
-            else
-                actualScale = scale;
-
-            if (symbol == '1')  // We want the right edge to be aligned with the 8x8 tile of the digit.
+            if (symbol == '1') {
+                // We want the right edge to be aligned with the 8x8 tile of the digit.
                 x += 2;
+            }
 
-            cv::Rect2f matchRect((float) (x / actualScale), (float) (y / actualScale),
-                                 (float) (templateImage.cols / actualScale),
-                                 (float) (templateImage.rows / actualScale));
+            // The frame is resized to the bestScale, so the match rectangle will be different.
+            cv::Rect2f matchRect((float) (x / bestScale), (float) (y / bestScale),
+                                 (float) (templateImage.cols / bestScale),
+                                 (float) (templateImage.rows / bestScale));
             matches.push_back({matchRect, similarity});
         }
     }
@@ -264,7 +261,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
 
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations) {
-    // Sort the matches by similarity in descending order, and remove the overlapping ones.
+    // Sorting the matches by similarity in descending order, and removing the overlapping ones.
     std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
     std::sort(digitLocations.begin(), digitLocations.end(), [this](const auto& lhs, const auto& rhs) {
@@ -303,9 +300,9 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     switch (symbol) {
     default:
         return 3.25;
-    // We use "TIME" to detect the score screen, so we want to be sure.
     case SCORE:
         return 2;
+    // We use "TIME" to detect the score screen, so we want to be sure.
     case TIME:
         if (isComposite)
             return 2;
@@ -352,7 +349,7 @@ void DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     cv::minMaxLoc(img, &minBrightness, &maxBrightness);
     float difference = (float) (maxBrightness - minBrightness);
 
-    // Make the minimum brightness equal to 0 and the maximum brightness equal to 255.
+    // Making the minimum brightness equal to 0 and the maximum brightness equal to 255.
     cv::subtract(img, cv::Scalar((float) minBrightness), img);
     if (difference != 0) {
         // Make sure we don't divide by zero.
@@ -381,7 +378,7 @@ std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(c
     std::vector<cv::UMat> templateChannels(4);
     cv::split(templateWithAlpha, templateChannels);
 
-    cv::UMat templateMask = templateChannels[3];  // get the alpha channel
+    cv::UMat templateMask = templateChannels[3];  // Get the alpha channel.
     cv::threshold(templateMask, templateMask, 0, 1.0, cv::THRESH_BINARY);
     templateMask.convertTo(templateMask, CV_32F);
 

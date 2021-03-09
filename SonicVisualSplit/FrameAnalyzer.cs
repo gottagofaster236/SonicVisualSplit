@@ -410,7 +410,7 @@ namespace SonicVisualSplit
             if (File.Exists(zipLocation))
             {
                 string destinationDirectory = Path.Combine(livesplitComponents, "SVS Templates");
-                if (File.Exists(destinationDirectory))
+                if (Directory.Exists(destinationDirectory))
                     Directory.Delete(destinationDirectory, recursive: true);
                 ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
                 File.Delete(zipLocation);

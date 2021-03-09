@@ -14,7 +14,7 @@ namespace SonicVisualSplit
 
         public string Description => "Auto-Splitter for people who play Sonic on console.";
 
-        public ComponentCategory Category => ComponentCategory.Timer;
+        public ComponentCategory Category => ComponentCategory.Control;
 
         public IComponent Create(LiveSplitState state)
         {
@@ -38,7 +38,7 @@ namespace SonicVisualSplit
 
         public string UpdateURL => "http://livesplit.org/update/";
 
-        public Version Version => Version.Parse("0.1.0");
+        public Version Version => Version.Parse("1.0.0");
 
     }
 }

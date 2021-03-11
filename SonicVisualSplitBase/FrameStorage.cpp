@@ -1,5 +1,6 @@
 #include "FrameStorage.h"
-#include "GameCapture.h"
+#include "GameVideoCapture.h"
+#include "ObsWindowCapture.h"
 #include <chrono>
 #include <thread>
 #include <atomic>
@@ -9,8 +10,10 @@
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
 
-static std::map<long long, cv::Mat> savedFrames;
-static std::mutex savedFramesMutex;
+static GameVideoCapture* gameVideoCapture = new ObsWindowCapture();
+
+static std::map<long long, cv::UMat> savedRawFrames;
+static std::mutex savedRawFramesMutex;
 
 static std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
@@ -26,10 +29,10 @@ void startSavingFrames() {
         while (*framesThreadCancelledCopy) {
             auto startTime = system_clock::now();
             long long currentMilliseconds = duration_cast<milliseconds>(startTime.time_since_epoch()).count();
-            cv::Mat screenshot = GameCapture::getObsScreenshot();
+            cv::UMat rawFrame = gameVideoCapture->captureRawFrame();
             {
-                std::lock_guard<std::mutex> guard(savedFramesMutex);
-                savedFrames[currentMilliseconds] = screenshot;
+                std::lock_guard<std::mutex> guard(savedRawFramesMutex);
+                savedRawFrames[currentMilliseconds] = rawFrame;
             }
             auto nextIteration = startTime + milliseconds(16);  // 60 fps
             std::this_thread::sleep_until(nextIteration);
@@ -44,16 +47,16 @@ void stopSavingFrames() {
         *framesThreadCancelledFlag = false;
         framesThreadCancelledFlag = nullptr;
     }
-    // make sure the frame thread stops writing to savedFrames
-    std::lock_guard<std::mutex> guard(savedFramesMutex);
+    // make sure the frame thread stops writing to savedRawFrames
+    std::lock_guard<std::mutex> guard(savedRawFramesMutex);
 }
 
 
 std::vector<long long> getSavedFramesTimes() {
     std::vector<long long> savedFramesTimes;
     {
-        std::lock_guard<std::mutex> guard(savedFramesMutex);
-        for (const auto& [frameTime, frame] : savedFrames)
+        std::lock_guard<std::mutex> guard(savedRawFramesMutex);
+        for (const auto& [frameTime, frame] : savedRawFrames)
             savedFramesTimes.push_back(frameTime);
     }
     return savedFramesTimes;
@@ -61,20 +64,20 @@ std::vector<long long> getSavedFramesTimes() {
 
 
 cv::UMat getSavedFrame(long long frameTime) {
-    cv::Mat obsScreenshot;
+    cv::UMat rawFrame;
     {
-        std::lock_guard<std::mutex> guard(savedFramesMutex);
-        obsScreenshot = savedFrames[frameTime];
+        std::lock_guard<std::mutex> guard(savedRawFramesMutex);
+        rawFrame = savedRawFrames[frameTime];
     }
-    return GameCapture::getGameFrameFromObsScreenshot(obsScreenshot);
+    return gameVideoCapture->processFrame(rawFrame);
 }
 
 
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) {
-    std::lock_guard<std::mutex> guard(savedFramesMutex);
+    std::lock_guard<std::mutex> guard(savedRawFramesMutex);
     /* Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime).
      * std::map is sorted by key (i.e. frame time). */
-    savedFrames.erase(savedFrames.lower_bound(beginFrameTime), savedFrames.lower_bound(endFrameTime));
+    savedRawFrames.erase(savedRawFrames.lower_bound(beginFrameTime), savedRawFrames.lower_bound(endFrameTime));
 }
 
 }  // namespace SonicVisualSplitBase

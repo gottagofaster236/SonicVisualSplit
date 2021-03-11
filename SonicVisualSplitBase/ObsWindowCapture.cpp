@@ -1,31 +1,21 @@
-#include "GameCapture.h"
-#define NOMINMAX  // fighting defines from Windows.h
+#include "ObsWindowCapture.h"
 #include "WindowCapture.h"
 #include "DigitsRecognizer.h"
 #include <opencv2/imgproc.hpp>
+#define NOMINMAX  // fighting defines from Windows.h
 #include <Windows.h>
 #include <Tlhelp32.h>
 #include <functional>
+#include <opencv2/imgcodecs.hpp>
 
 
 namespace SonicVisualSplitBase {
-namespace GameCapture {
 
-static WindowCapture* obsCapture = nullptr;
-static HWND obsHwnd = nullptr;
-static int lastGameFrameWidth, lastGameFrameHeight;
-
-static int obsVerticalMargin;  // difference between the client rect and window rect
 static const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
-static int minimumObsHeight = 720;  // the minimum acceptable height of the OBS window (initialized with 720 when not calculated)
-
-bool updateOBSHwnd();
-DWORD getOBSProcessId();
-BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam);
 
 
-cv::Mat getObsScreenshot() {
-    cv::Mat screenshot;
+cv::UMat ObsWindowCapture::captureRawFrame() {
+    cv::UMat screenshot;
     if (!updateOBSHwnd())
         return screenshot;  // return an empty image in case of error
     obsCapture->getScreenshot();
@@ -36,14 +26,15 @@ cv::Mat getObsScreenshot() {
 }
 
 
-cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
+cv::UMat ObsWindowCapture::processFrame(cv::UMat screenshotUmat) {
     /* In OBS, the stream preview has a light-gray border around it.
      * It is adjacent to the sides of the screen. We start from the right side. */
     cv::UMat streamPreview;
-    if (screenshot.empty())
-        return streamPreview;  // return an empty image in case of error
-    
-    // Find the border rectangle
+    if (screenshotUmat.empty())
+        return streamPreview;  // Return an empty image in case of error.
+    cv::Mat screenshot = screenshotUmat.getMat(cv::ACCESS_READ);
+    cv::imwrite("C:/tmp/screenshot.png", screenshotUmat);
+    // Find the border rectangle.
     int borderRight = screenshot.cols - 1;
     cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);
     int borderTop = screenshot.rows / 2;
@@ -76,18 +67,19 @@ cv::UMat getGameFrameFromObsScreenshot(cv::Mat screenshot) {
         DigitsRecognizer::resetDigitsPlacementAsync();
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
-        minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
+        int minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
+        obsCapture->setMinimumWindowHeight(minimumObsHeight);
     }
     return streamPreview;
 }
 
 
-int getMinimumObsHeight() {
-    return minimumObsHeight;
+ObsWindowCapture::~ObsWindowCapture() {
+    delete obsCapture;
 }
 
 
-bool updateOBSHwnd() {
+bool ObsWindowCapture::updateOBSHwnd() {
     if (IsWindow(obsHwnd) && !IsIconic(obsHwnd)) {
         // checking that the size of the window hasn't changed
         RECT windowSize;
@@ -111,16 +103,19 @@ bool updateOBSHwnd() {
     DWORD processId = getOBSProcessId();
     if (processId == 0)
         return false;
-    EnumWindows(checkIfWindowIsOBS, processId);
+    std::tuple<DWORD&, HWND&> pidAndObsHwnd = std::tie(processId, obsHwnd);
+    EnumWindows(checkIfWindowIsOBS, reinterpret_cast<LPARAM>(&pidAndObsHwnd));
     if (!obsHwnd)
         return false;
+
     delete obsCapture;
     obsCapture = new WindowCapture(obsHwnd);
+    obsCapture->setMinimumWindowHeight(720);  // Default value.
     return true;
 }
 
 
-DWORD getOBSProcessId() {
+DWORD ObsWindowCapture::getOBSProcessId() {
     PROCESSENTRY32 entry;
     entry.dwSize = sizeof(PROCESSENTRY32);
 
@@ -138,18 +133,20 @@ DWORD getOBSProcessId() {
 }
 
 
-BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
-    if (GetWindowTextLength(hwnd) == 0) {
+BOOL CALLBACK ObsWindowCapture::checkIfWindowIsOBS(HWND hwnd, LPARAM pidAndObsHwndPtr) {
+    auto& [processId, obsHwnd] = *reinterpret_cast<std::tuple<DWORD&, HWND&>*>(pidAndObsHwndPtr);
+
+    int textLength = GetWindowTextLength(hwnd);
+    if (textLength == 0) {
         return TRUE;
     }
 
-    DWORD processId;
-    GetWindowThreadProcessId(hwnd, &processId);
-    if (processId == lparam) {
+    DWORD windowProcessId;
+    GetWindowThreadProcessId(hwnd, &windowProcessId);
+    if (windowProcessId == processId) {
         // Checking the window title. The main window's title starts with "OBS".
-        int textLen = GetWindowTextLength(hwnd);
-        TCHAR* titleBuffer = new TCHAR[textLen + 1];
-        GetWindowText(hwnd, titleBuffer, textLen + 1);
+        TCHAR* titleBuffer = new TCHAR[textLength + 1];
+        GetWindowText(hwnd, titleBuffer, textLength + 1);
         if (wcsncmp(titleBuffer, TEXT("OBS"), 3) == 0) {
             obsHwnd = hwnd;
             return FALSE;
@@ -158,15 +155,4 @@ BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM lparam) {
     return TRUE;
 }
 
-}  // namespace GameCapture
 }  // namespace SonicVisualSplitBase
-
-
-/* Debug code for game capture.
-#include "FrameStorage.h"
-
-int main() {
-    SonicVisualSplitBase::FrameStorage::startSavingFrames();
-    system("pause");
-    SonicVisualSplitBase::FrameStorage::stopSavingFrames();
-}*/

@@ -360,7 +360,7 @@ namespace SonicVisualSplit
                 cancellationTokenSource.Cancel();
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();
-            // Making sure that the frame analyzer thread stops.
+            // Make sure that the frame analyzer thread stops.
             lock (analyzationThreadRunningLock) { }
 
             state.OnReset -= OnReset;

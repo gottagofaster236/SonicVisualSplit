@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX  // fighting defines from Windows.h
 #include <Windows.h>
 #include <opencv2/core.hpp>
 #include <mutex>
@@ -15,8 +16,12 @@ public:
 
     ~WindowCapture();
 
-    // Capture the window and write the result to the <code>image</code> field.
+    // Capture the window and write the result to the image field.
     void getScreenshot();
+
+    /* Sets the minimum acceptable height of the window that's being captured.
+     * The window will get resized if its height is lower than that value. */
+    void setMinimumWindowHeight(int minimumWindowHeight);
 
     cv::Mat image;
     int width, height;
@@ -29,6 +34,7 @@ private:
     bool isWindowBeingMoved();
 
     HWND hwnd;
+    int minimumWindowHeight = 0;
     DWORD processId;
     HDC hwindowDC, hwindowCompatibleDC;
     HBITMAP hbwindow;

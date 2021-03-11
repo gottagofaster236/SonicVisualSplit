@@ -120,15 +120,16 @@
   <ItemGroup>
     <ClCompile Include="DigitsRecognizer.cpp" />
     <ClCompile Include="FrameStorage.cpp" />
-    <ClCompile Include="GameCapture.cpp" />
     <ClCompile Include="FrameAnalyzer.cpp" />
+    <ClCompile Include="ObsWindowCapture.cpp" />
     <ClCompile Include="WindowCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DigitsRecognizer.h" />
     <ClInclude Include="FrameStorage.h" />
-    <ClInclude Include="GameCapture.h" />
     <ClInclude Include="FrameAnalyzer.h" />
+    <ClInclude Include="GameVideoCapture.h" />
+    <ClInclude Include="ObsWindowCapture.h" />
     <ClInclude Include="WindowCapture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

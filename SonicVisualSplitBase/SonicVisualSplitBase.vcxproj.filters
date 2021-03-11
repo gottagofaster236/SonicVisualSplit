@@ -18,9 +18,6 @@
     <ClCompile Include="DigitsRecognizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameCapture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="WindowCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,6 +25,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FrameStorage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ObsWindowCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,10 +41,13 @@
     <ClInclude Include="FrameAnalyzer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameCapture.h">
+    <ClInclude Include="FrameStorage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FrameStorage.h">
+    <ClInclude Include="GameVideoCapture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObsWindowCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

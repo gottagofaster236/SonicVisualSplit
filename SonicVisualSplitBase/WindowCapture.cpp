@@ -1,5 +1,4 @@
 #include "WindowCapture.h"
-#include "GameCapture.h"
 #include <cassert>
 
 namespace SonicVisualSplitBase {
@@ -21,7 +20,7 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     width = windowSize.right;
     height = windowSize.bottom;
 
-    // create a bitmap
+    // Create a bitmap.
     hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
     bmpInfo.biSize = sizeof(BITMAPINFOHEADER);  // http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
     bmpInfo.biWidth = width;
@@ -35,7 +34,7 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     bmpInfo.biClrUsed = 0;
     bmpInfo.biClrImportant = 0;
 
-    // use the previously created device context with the bitmap
+    // Use the previously created device context with the bitmap.
     SelectObject(hwindowCompatibleDC, hbwindow);
 };
 
@@ -50,16 +49,22 @@ WindowCapture::~WindowCapture() {
 
 void WindowCapture::getScreenshot() {
     if (!ensureWindowReadyForCapture()) {
-        image = cv::Mat();  // set the result to an empty image in case of error
+        image = cv::Mat();  // Set the result to an empty image in case of error.
         return;
     }
 
-    // ensure the correct size is set
+    // Ensure the correct size is set.
     image.create(height, width, CV_8UC4);
-    // copy from the window device context to the bitmap device context
+    // Copy from the window device context to the bitmap device context.
     BitBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, SRCCOPY);
-    GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, image.data, (BITMAPINFO*) &bmpInfo, DIB_RGB_COLORS);  // copy from hwindowCompatibleDC to hbwindow
-};
+    // Copy from hwindowCompatibleDC to hbwindow.
+    GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, image.data, (BITMAPINFO*) &bmpInfo, DIB_RGB_COLORS);
+}
+
+
+void WindowCapture::setMinimumWindowHeight(int value) {
+    minimumWindowHeight = value;
+}
 
 
 // Make sure the window isn't minimized; check that the window is large enough and not off-screen.
@@ -87,9 +92,8 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     GetMonitorInfo(hMonitor, &mi);
     RECT rc = mi.rcMonitor;
     // check the size of the window (i.e. stream preview isn't too small)
-    int minHeight = GameCapture::getMinimumObsHeight();
-    if (height < minHeight)
-        height = minHeight;
+    if (height < minimumWindowHeight)
+        height = minimumWindowHeight;
     height = std::min<int>(height, rc.bottom - rc.top);
 
     windowPos.left = std::max(rc.left, std::min(rc.right - width, windowPos.left));

@@ -12,7 +12,7 @@ namespace FrameStorage {
 
 static GameVideoCapture* gameVideoCapture = new ObsWindowCapture();
 
-static std::map<long long, cv::UMat> savedRawFrames;
+static std::map<long long, cv::Mat> savedRawFrames;
 static std::mutex savedRawFramesMutex;
 
 static std::atomic_bool* framesThreadCancelledFlag = nullptr;
@@ -29,7 +29,7 @@ void startSavingFrames() {
         while (*framesThreadCancelledCopy) {
             auto startTime = system_clock::now();
             long long currentMilliseconds = duration_cast<milliseconds>(startTime.time_since_epoch()).count();
-            cv::UMat rawFrame = gameVideoCapture->captureRawFrame();
+            cv::Mat rawFrame = gameVideoCapture->captureRawFrame();
             {
                 std::lock_guard<std::mutex> guard(savedRawFramesMutex);
                 savedRawFrames[currentMilliseconds] = rawFrame;
@@ -64,7 +64,7 @@ std::vector<long long> getSavedFramesTimes() {
 
 
 cv::UMat getSavedFrame(long long frameTime) {
-    cv::UMat rawFrame;
+    cv::Mat rawFrame;
     {
         std::lock_guard<std::mutex> guard(savedRawFramesMutex);
         rawFrame = savedRawFrames[frameTime];

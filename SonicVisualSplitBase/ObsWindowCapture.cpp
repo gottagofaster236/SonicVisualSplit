@@ -14,8 +14,8 @@ namespace SonicVisualSplitBase {
 static const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
 
 
-cv::UMat ObsWindowCapture::captureRawFrame() {
-    cv::UMat screenshot;
+cv::Mat ObsWindowCapture::captureRawFrame() {
+    cv::Mat screenshot;
     if (!updateOBSHwnd())
         return screenshot;  // return an empty image in case of error
     obsCapture->getScreenshot();
@@ -26,14 +26,13 @@ cv::UMat ObsWindowCapture::captureRawFrame() {
 }
 
 
-cv::UMat ObsWindowCapture::processFrame(cv::UMat screenshotUmat) {
+cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
     /* In OBS, the stream preview has a light-gray border around it.
      * It is adjacent to the sides of the screen. We start from the right side. */
     cv::UMat streamPreview;
-    if (screenshotUmat.empty())
-        return streamPreview;  // Return an empty image in case of error.
-    cv::Mat screenshot = screenshotUmat.getMat(cv::ACCESS_READ);
-    cv::imwrite("C:/tmp/screenshot.png", screenshotUmat);
+    if (screenshot.empty())
+        return streamPreview;  // Return an empty image in case of error
+    cv::imwrite("C:/tmp/screenshot.png", screenshot);
     // Find the border rectangle.
     int borderRight = screenshot.cols - 1;
     cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);

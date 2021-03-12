@@ -7,13 +7,10 @@ namespace SonicVisualSplitBase {
 class GameVideoCapture {
 public:
     // Captures a game frame, which may need additional processing.
-    virtual cv::UMat captureRawFrame() = 0;
+    virtual cv::Mat captureRawFrame() = 0;
 
     // Process the frame if needed. Returns an empty UMat in case of an error.
-    virtual cv::UMat processFrame(cv::UMat rawFrame) {
-        // Default implementation which does nothing.
-        return rawFrame;
-    }
+    virtual cv::UMat processFrame(cv::Mat rawFrame) = 0;
 
     virtual ~GameVideoCapture() {}
 };

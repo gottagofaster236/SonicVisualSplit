@@ -14,8 +14,11 @@ void startSavingFrames();
 
 void stopSavingFrames();
 
+// Returns the save times of the frames that are currently stored.
 std::vector<long long> getSavedFramesTimes();
 
+/* Returns a saved frame by the frame save time,
+ * or an empty cv::UMat if video was disconnected at the time of capture. */
 cv::UMat getSavedFrame(long long frameTime);
 
 // Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)

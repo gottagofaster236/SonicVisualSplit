@@ -12,6 +12,9 @@ namespace FrameStorage {
 
 static GameVideoCapture* gameVideoCapture = new ObsWindowCapture();
 
+/* Map: frame save time in milliseconds -> the frame itself.
+ * It is crucial to use cv::Mat instead of cv::UMat here,
+ * because saving frames in VRAM can cause the app to get out of VRAM and start corrupting itself. */
 static std::map<long long, cv::Mat> savedRawFrames;
 static std::mutex savedRawFramesMutex;
 

@@ -112,7 +112,6 @@ namespace SonicVisualSplit
             if (Parent.Visible)
             {
                 FrameAnalyzer.AddResultConsumer(this);
-                CheckForPracticeMode();  // Updating the text when the control appears.
             }
             else
             {
@@ -196,6 +195,12 @@ namespace SonicVisualSplit
         {
             SettingsChanged?.Invoke(this, null);
             CheckForPracticeMode();
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            CheckForPracticeMode();  // Updating the text when the control appears.
         }
 
         private void CheckForPracticeMode()

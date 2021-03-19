@@ -35,7 +35,6 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
     cv::UMat streamPreview;
     if (screenshot.empty())
         return streamPreview;  // Return an empty image in case of error
-    cv::imwrite("C:/tmp/screenshot.png", screenshot);
     // Find the border rectangle.
     int borderRight = screenshot.cols - 1;
     cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);

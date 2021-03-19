@@ -24,5 +24,9 @@ cv::UMat getSavedFrame(long long frameTime);
 // Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 
-}  // namespace SonicVisualSplitBase
+/* The maximum amount of frames that can be saved in the storage.
+ * When this limit is reached, no new frames are saved until deleteSavedFramesInRange is called. */
+const int MAX_CAPACITY = 500;
+
 }  // namespace FrameStorage
+}  // namespace SonicVisualSplitBase

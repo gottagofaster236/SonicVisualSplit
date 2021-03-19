@@ -80,8 +80,16 @@ namespace SonicVisualSplit
                 savedFrameTimes = FrameStorage.GetSavedFramesTimes();
                 if (savedFrameTimes.Count == 0)
                     return;
+
                 long lastFrameTime = savedFrameTimes.Last();
 
+                if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
+                {
+                    /* The frames are not saved if there are too many saved already (to prevent an OOM).
+                     * In this case we unfortunately have to delete the old frames, even if we need them. */
+                    FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+                }
+                
                 bool visualize;
                 lock (resultConsumers)
                 {
@@ -203,7 +211,7 @@ namespace SonicVisualSplit
                         if (state.CurrentSplitIndex == state.Run.Count - 1)
                         {
                             /* If we were on the last split, that means the run has finished.
-                             * (Or it was a death on the final stage. In this case the timer we'll undo the split automatically.) */
+                             * (Or it was a death on the final stage. In this case we'll undo the split automatically.) */
                             Split();
                         }
                         else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
@@ -300,7 +308,8 @@ namespace SonicVisualSplit
                     || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
                         > timeElapsed + timerAccuracy + marginOfError)
                 {
-                    HandleUnrecognizedFrame(result.FrameTime);
+                    if (deleteFramesOnFailure)
+                        HandleUnrecognizedFrame(result.FrameTime);
                     return false;
                 }
             }

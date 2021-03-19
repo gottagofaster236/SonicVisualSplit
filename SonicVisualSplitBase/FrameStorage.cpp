@@ -6,6 +6,7 @@
 #include <atomic>
 #include <map>
 #include <set>
+using namespace std::chrono;
 
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
@@ -20,10 +21,9 @@ static std::mutex savedRawFramesMutex;
 
 static std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
+static void saveOneFrame();
 
 void startSavingFrames() {
-    using namespace std::chrono;
-
     stopSavingFrames();
     framesThreadCancelledFlag = new std::atomic_bool(true);
     std::atomic_bool* framesThreadCancelledCopy = framesThreadCancelledFlag;  // can't capture a global variable
@@ -31,17 +31,24 @@ void startSavingFrames() {
     std::thread([framesThreadCancelledCopy]() {
         while (*framesThreadCancelledCopy) {
             auto startTime = system_clock::now();
-            long long currentMilliseconds = duration_cast<milliseconds>(startTime.time_since_epoch()).count();
-            cv::Mat rawFrame = gameVideoCapture->captureRawFrame();
-            {
-                std::lock_guard<std::mutex> guard(savedRawFramesMutex);
-                savedRawFrames[currentMilliseconds] = rawFrame;
-            }
+            saveOneFrame();
             auto nextIteration = startTime + milliseconds(16);  // 60 fps
             std::this_thread::sleep_until(nextIteration);
         }
         delete framesThreadCancelledCopy;
     }).detach();
+}
+
+
+void saveOneFrame() {
+    if (savedRawFrames.size() == MAX_CAPACITY)
+        return;
+    long long currentMilliseconds = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    cv::Mat rawFrame = gameVideoCapture->captureRawFrame();
+    {
+        std::lock_guard<std::mutex> guard(savedRawFramesMutex);
+        savedRawFrames[currentMilliseconds] = rawFrame;
+    }
 }
 
 

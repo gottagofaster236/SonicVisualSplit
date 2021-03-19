@@ -64,8 +64,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 }
 
 
-void FrameAnalyzer::ResetDigitsPlacement()
-{
+void FrameAnalyzer::ResetDigitsPlacement() {
     SonicVisualSplitBase::DigitsRecognizer::resetDigitsPlacement();
 }
 
@@ -111,6 +110,11 @@ void FrameStorage::DeleteAllSavedFrames() {
 
 void FrameStorage::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
     SonicVisualSplitBase::FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
+}
+
+
+int FrameStorage::GetMaxCapacity() {
+    return SonicVisualSplitBase::FrameStorage::MAX_CAPACITY;
 }
 
 }  // namespace SonicVisualSplitWrapper

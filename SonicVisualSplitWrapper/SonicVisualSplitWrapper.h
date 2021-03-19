@@ -56,6 +56,8 @@ public:
     static void DeleteAllSavedFrames();
 
     static void DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime);
+
+    static int GetMaxCapacity();
 };
 
 }  // namespace SonicVisualSplitWrapper

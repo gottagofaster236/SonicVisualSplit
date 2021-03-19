@@ -339,10 +339,7 @@ namespace SonicVisualSplit
             state.OnReset += OnReset;
 
             FrameStorage.StartSavingFrames();
-            if (cancellationTokenSource != null)
-            {
-                cancellationTokenSource.Dispose();
-            }
+
             cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
@@ -367,10 +364,15 @@ namespace SonicVisualSplit
         {
             if (cancellationTokenSource != null)
                 cancellationTokenSource.Cancel();
+            lock (analyzationThreadRunningLock) { }  // Make sure that the frame analyzer thread stops.
+            if (cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
+            }
+
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();
-            // Make sure that the frame analyzer thread stops.
-            lock (analyzationThreadRunningLock) { }
 
             state.OnReset -= OnReset;
             OnReset();

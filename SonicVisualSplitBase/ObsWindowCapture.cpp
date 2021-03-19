@@ -18,10 +18,13 @@ cv::Mat ObsWindowCapture::captureRawFrame() {
     cv::Mat screenshot;
     if (!updateOBSHwnd())
         return screenshot;  // return an empty image in case of error
-    obsCapture->getScreenshot();
-    if (obsCapture->image.empty())
-        return screenshot;
-    cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
+    {
+        std::lock_guard<std::mutex> guard(obsCaptureMutex);
+        obsCapture->getScreenshot();
+        if (obsCapture->image.empty())
+            return screenshot;
+        cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
+    }
     return screenshot;
 }
 
@@ -67,7 +70,11 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
         int minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
-        obsCapture->setMinimumWindowHeight(minimumObsHeight);
+        {
+            std::lock_guard<std::mutex> guard(obsCaptureMutex);
+            if (obsCapture)
+                obsCapture->setMinimumWindowHeight(minimumObsHeight);
+        }
     }
     return streamPreview;
 }
@@ -80,7 +87,7 @@ ObsWindowCapture::~ObsWindowCapture() {
 
 bool ObsWindowCapture::updateOBSHwnd() {
     if (IsWindow(obsHwnd) && !IsIconic(obsHwnd)) {
-        // checking that the size of the window hasn't changed
+        // Checking that the size of the window hasn't changed.
         RECT windowSize;
         GetClientRect(obsHwnd, &windowSize);
 
@@ -92,8 +99,11 @@ bool ObsWindowCapture::updateOBSHwnd() {
         int windowHeight = windowRect.bottom - windowRect.top;
         obsVerticalMargin = windowHeight - height;
 
-        if (width == obsCapture->width && height == obsCapture->height)
-            return true;
+        {
+            std::lock_guard<std::mutex> guard(obsCaptureMutex);
+            if (obsCapture && width == obsCapture->width && height == obsCapture->height)
+                return true;
+        }
     }
     // reset the scale for the DigitRecognizer, as the video stream changed
     DigitsRecognizer::resetDigitsPlacementAsync();
@@ -106,10 +116,12 @@ bool ObsWindowCapture::updateOBSHwnd() {
     EnumWindows(checkIfWindowIsOBS, reinterpret_cast<LPARAM>(&pidAndObsHwnd));
     if (!obsHwnd)
         return false;
-
-    delete obsCapture;
-    obsCapture = new WindowCapture(obsHwnd);
-    obsCapture->setMinimumWindowHeight(720);  // Default value.
+    {
+        std::lock_guard<std::mutex> guard(obsCaptureMutex);
+        delete obsCapture;
+        obsCapture = new WindowCapture(obsHwnd);
+        obsCapture->setMinimumWindowHeight(720);  // Default value.
+    }
     return true;
 }
 

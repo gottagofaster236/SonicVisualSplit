@@ -26,6 +26,7 @@ private:
     static BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM pidAndObsHwndPtr);
 
     WindowCapture* obsCapture = nullptr;
+    std::mutex obsCaptureMutex;
     HWND obsHwnd = nullptr;
     int lastGameFrameWidth, lastGameFrameHeight;
     

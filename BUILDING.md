@@ -10,8 +10,10 @@
 7. Then, clone [this](https://github.com/gottagofaster236/SonicVisualSplit) repository (also with Visual Studio).
 8. In order for LiveSplit to be launched when you click the "Start" button in Visual Studio, you have to do the following.
 In Visual Studio, open Solution Explorer (with Ctrl+Alt+L), right-click SonicVisualSplit project, select Properties. On the left pane, click "Debug". Select "All configurations" instead of "Active configuration" in the "Configuration:" dropdown list. Select "Start external program" action, and click "Browse".
-Then select `C:\Program Files\LiveSplit\LiveSplit.exe`. Press `Ctrl+S` to save the changes.
+Then select `C:\Program Files\LiveSplit\LiveSplit.exe`.
+You also have to check the "Enable native code debugging" checkbox at the bottom, in order to debug the C++ part of the project.
+Press `Ctrl+S` to save the changes.
 
-   ![Start external program illustration](https://user-images.githubusercontent.com/55288842/111871943-c735e180-899d-11eb-9fdb-74860e6aa6bb.png)
+   ![Start external program illustration](https://user-images.githubusercontent.com/55288842/111886733-0afe0a80-89e1-11eb-8276-696b1c9b34ed.png)
 9. Now you're good to go. When you'll click the "Start" button, the build script will copy the build results to `C:/Program Files/LiveSplit/Components`, and LiveSplit will start automatically. If you haven't already, you'll have to follow the steps from [README.md](README.md).
 10. To build a new release of SonicVisualSplit, for now you can just copy the needed files from `C:/Program Files/LiveSplit/Components` and wrap them in a zip archive.

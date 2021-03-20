@@ -7,7 +7,6 @@
 #include <Tlhelp32.h>
 #include <functional>
 #include <opencv2/imgcodecs.hpp>
-#include "VirtualCamCapture.h"
 
 
 namespace SonicVisualSplitBase {

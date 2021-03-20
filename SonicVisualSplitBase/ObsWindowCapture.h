@@ -8,6 +8,8 @@
 
 namespace SonicVisualSplitBase {
 
+/* A class that captures the stream preview from the currently opened OBS window.
+ * See REAME.md for more information. */
 class ObsWindowCapture : public GameVideoCapture {
 public:
     // Returns a full screenshot of the OBS window.
@@ -16,7 +18,7 @@ public:
     // Returns the stream preview.
     cv::UMat processFrame(cv::Mat screenshot) override;
 
-    ~ObsWindowCapture();
+    ~ObsWindowCapture() override;
 
 private:
     bool updateOBSHwnd();
@@ -32,8 +34,5 @@ private:
     
     int obsVerticalMargin;  // Difference between the client rect and window rect.
 };
-
-
-
 
 }  // namespace SonicVisualSplitBase

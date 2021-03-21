@@ -26,6 +26,7 @@ public:
     Boolean IsSuccessful();
 };
 
+
 public ref class FrameAnalyzer {
 public:
     FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
@@ -41,8 +42,11 @@ private:
     Boolean isComposite;
 };
 
+
 public ref class FrameStorage {
 public:
+    static void SetVideoCapture(int sourceIndex);
+
     static void StartSavingFrames();
 
     static void StopSavingFrames();
@@ -58,6 +62,13 @@ public:
     static void DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime);
 
     static int GetMaxCapacity();
+};
+
+
+public ref class VirtualCamCapture {
+    static List<String^>^ GetVideoDevicesList();
+
+    static void Uninitialize();
 };
 
 }  // namespace SonicVisualSplitWrapper

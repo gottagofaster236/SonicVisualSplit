@@ -3,6 +3,7 @@
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
 #include "../SonicVisualSplitBase/DigitsRecognizer.h"
 #include "../SonicVisualSplitBase/FrameStorage.h"
+#include "../SonicVisualSplitBase/VirtualCamCapture.h"
 #pragma managed(pop)
 #include <msclr/marshal_cppstd.h>
 #include <algorithm>
@@ -73,6 +74,12 @@ Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
 
+
+void FrameStorage::SetVideoCapture(int sourceIndex) {
+    SonicVisualSplitBase::FrameStorage::setVideoCapture(sourceIndex);
+}
+
+
 void FrameStorage::StartSavingFrames() {
     SonicVisualSplitBase::FrameStorage::startSavingFrames();
 }
@@ -115,6 +122,21 @@ void FrameStorage::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrame
 
 int FrameStorage::GetMaxCapacity() {
     return SonicVisualSplitBase::FrameStorage::MAX_CAPACITY;
+}
+
+
+List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
+    std::vector<std::wstring> devices = SonicVisualSplitBase::VirtualCamCapture::getVideoDevicesList();
+    List<String^>^ converted = gcnew List<String^>(devices.size());
+    for (const std::wstring& deviceName : devices) {
+        converted->Add(gcnew String(deviceName.c_str()));
+    }
+    return converted;
+}
+
+
+void VirtualCamCapture::Uninitialize() {
+    SonicVisualSplitBase::VirtualCamCapture::uninitialize();
 }
 
 }  // namespace SonicVisualSplitWrapper

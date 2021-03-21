@@ -9,6 +9,16 @@ namespace FrameStorage {
 /* This module saves frames from OBS for further usage (as we can't process all of them in real-time).
  * To distinguish between the frames, we use the time of capture (in milliseconds from epoch). */
 
+
+ /* Sets the video source.
+  * If sourceIndex is non-negative, it'll treated as the index of a video source (i.e. webcam) in the system.
+  * You can also pass NO_VIDEO_CAPTURE or OBS_WINDOW_CAPTURE. */
+void setVideoCapture(int sourceIndex);
+
+const int NO_VIDEO_CAPTURE = -1;  // No video capture is needed
+const int OBS_WINDOW_CAPTURE = -2;  // Capture the stream preview from currently opened OBS window.
+
+
 // Creates a thread which saves a screenshot of OBS every 16 milliseconds.
 void startSavingFrames();
 
@@ -24,14 +34,6 @@ cv::UMat getSavedFrame(long long frameTime);
 
 // Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
-
-/* Sets the video source.
- * If sourceIndex is non-negative, it'll treated as the index of a video source (i.e. webcam) in the system. 
- * You can also pass NO_VIDEO_CAPTURE or OBS_WINDOW_CAPTURE. */
-void setVideoCapture(int sourceIndex);
-
-const int NO_VIDEO_CAPTURE = -1;  // No video capture is needed
-const int OBS_WINDOW_CAPTURE = -2;  // Capture the stream preview from currently opened OBS window.
 
 /* The maximum amount of frames that can be saved in the storage.
  * When this limit is reached, no new frames are saved until deleteSavedFramesInRange is called. */

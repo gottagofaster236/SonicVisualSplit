@@ -110,7 +110,7 @@ std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
 }
 
 
-void VirtualCamCapture::uninitializeCom() {
+void VirtualCamCapture::uninitialize() {
     CoUninitialize();
     hasInitializedCom = false;
 }

@@ -15,7 +15,7 @@ public:
     static std::vector<std::wstring> getVideoDevicesList();
 
     // Should be called to cleanup the COM library, that is used by getVideoDevicesList.
-    static void uninitializeCom();
+    static void uninitialize();
 
 private:
     // Grabs a frame from the video capture, or returns an empty Mat on error.

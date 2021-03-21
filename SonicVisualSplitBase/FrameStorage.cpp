@@ -14,6 +14,7 @@ namespace FrameStorage {
 
 static GameVideoCapture* gameVideoCapture = nullptr;
 static int currentVideoSourceIndex;
+static bool registeredAtexitCleanup = false;
 
 /* Map: frame save time in milliseconds -> the frame itself.
  * It is crucial to use cv::Mat instead of cv::UMat here,
@@ -93,6 +94,12 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
 }
 
 
+// This function is called at exit to prevent a memory leak.
+static void deleteVideoCapture() {
+    delete gameVideoCapture;
+}
+
+
 void setVideoCapture(int sourceIndex) {
     if (currentVideoSourceIndex == sourceIndex) {
         // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
@@ -107,6 +114,11 @@ void setVideoCapture(int sourceIndex) {
         gameVideoCapture = new ObsWindowCapture();
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = nullptr;
+
+    if (!registeredAtexitCleanup) {
+        std::atexit(deleteVideoCapture);
+        registeredAtexitCleanup = true;
+    }
 }
 
 }  // namespace SonicVisualSplitBase

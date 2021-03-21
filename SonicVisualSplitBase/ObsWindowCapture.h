@@ -12,15 +12,15 @@ namespace SonicVisualSplitBase {
  * See REAME.md for more information. */
 class ObsWindowCapture : public GameVideoCapture {
 public:
-    // Returns a full screenshot of the OBS window.
-    cv::Mat captureRawFrame() override;
-
     // Returns the stream preview.
     cv::UMat processFrame(cv::Mat screenshot) override;
 
     ~ObsWindowCapture() override;
 
 private:
+    // Returns a full screenshot of the OBS window.
+    cv::Mat captureRawFrameImpl() override;
+
     bool updateOBSHwnd();
 
     DWORD getOBSProcessId();

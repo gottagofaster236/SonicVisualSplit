@@ -14,7 +14,7 @@ namespace SonicVisualSplitBase {
 static const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
 
 
-cv::Mat ObsWindowCapture::captureRawFrame() {
+cv::Mat ObsWindowCapture::captureRawFrameImpl() {
     cv::Mat screenshot;
     if (!updateOBSHwnd())
         return screenshot;  // return an empty image in case of error

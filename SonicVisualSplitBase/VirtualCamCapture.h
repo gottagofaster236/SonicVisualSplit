@@ -10,9 +10,6 @@ public:
     // Initializes the capture with a camera index.
     VirtualCamCapture(int deviceIndex);
 
-    // Grabs a frame from the video capture, or returns an empty Mat on error.
-    cv::Mat captureRawFrame() override;
-
     ~VirtualCamCapture() override;
 
     static std::vector<std::wstring> getVideoDevicesList();
@@ -21,6 +18,9 @@ public:
     static void uninitializeCom();
 
 private:
+    // Grabs a frame from the video capture, or returns an empty Mat on error.
+    cv::Mat captureRawFrameImpl() override;
+
     cv::VideoCapture videoCapture;
 
     // Returns the list of device names, which may contain duplicate names.

@@ -33,6 +33,9 @@
     <ClCompile Include="VirtualCamCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GameVideoCapture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DigitsRecognizer.h">

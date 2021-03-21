@@ -1,6 +1,7 @@
 #include "FrameStorage.h"
 #include "GameVideoCapture.h"
 #include "ObsWindowCapture.h"
+#include "VirtualCamCapture.h"
 #include <chrono>
 #include <thread>
 #include <atomic>
@@ -11,7 +12,8 @@ using namespace std::chrono;
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
 
-static GameVideoCapture* gameVideoCapture = new ObsWindowCapture();
+static GameVideoCapture* gameVideoCapture = nullptr;
+static int currentVideoSourceIndex;
 
 /* Map: frame save time in milliseconds -> the frame itself.
  * It is crucial to use cv::Mat instead of cv::UMat here,
@@ -88,6 +90,23 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
     /* Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime).
      * std::map is sorted by key (i.e. frame time). */
     savedRawFrames.erase(savedRawFrames.lower_bound(beginFrameTime), savedRawFrames.lower_bound(endFrameTime));
+}
+
+
+void setVideoCapture(int sourceIndex) {
+    if (currentVideoSourceIndex == sourceIndex) {
+        // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
+        if (sourceIndex < 0 || gameVideoCapture->getUnsuccessfulFramesStreak() < 5)
+            return;
+    }
+
+    delete gameVideoCapture;
+    if (sourceIndex >= 0)
+        gameVideoCapture = new VirtualCamCapture(sourceIndex);
+    else if (sourceIndex == OBS_WINDOW_CAPTURE)
+        gameVideoCapture = new ObsWindowCapture();
+    else  // NO_VIDEO_CAPTURE
+        gameVideoCapture = nullptr;
 }
 
 }  // namespace SonicVisualSplitBase

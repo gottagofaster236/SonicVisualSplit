@@ -53,8 +53,7 @@ namespace SonicVisualSplit
         List<long> savedFrameTimes;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
-        private volatile bool shouldAnalyzeFrames = false;
-        private object analyzationThreadRunningLock = new object();
+        private CancellableLoopTask frameAnalyzationTask;
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
     
         private LiveSplitState state;
@@ -65,12 +64,14 @@ namespace SonicVisualSplit
         {
             this.state = state;
             model = new TimerModel() { CurrentState = state };
-
+            
             this.settings = settings;
             this.settings.FrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
 
             UnpackTemplatesArrayIfNeeded();
+
+            frameAnalyzationTask = new CancellableLoopTask(AnalyzeFrame, ANALYZE_FRAME_PERIOD);
         }
 
         private void AnalyzeFrame()
@@ -339,30 +340,12 @@ namespace SonicVisualSplit
             state.OnReset += OnReset;
 
             FrameStorage.StartSavingFrames();
-
-            shouldAnalyzeFrames = true;
-
-            Task.Run(() =>
-            {
-                while (shouldAnalyzeFrames)
-                {
-                    lock (analyzationThreadRunningLock)
-                    {
-                        DateTime start = DateTime.Now;
-                        DateTime nextIteration = start + ANALYZE_FRAME_PERIOD;
-                        AnalyzeFrame();
-                        TimeSpan waitTime = nextIteration - DateTime.Now;
-                        if (waitTime > TimeSpan.Zero)
-                            Thread.Sleep(waitTime);
-                    }
-                }
-            });
+            frameAnalyzationTask.Start();
         }
 
         public void StopAnalyzingFrames()
         {
-            shouldAnalyzeFrames = false;
-            lock (analyzationThreadRunningLock) { }  // Make sure that the frame analyzer thread stops.
+            frameAnalyzationTask.Stop();
 
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();

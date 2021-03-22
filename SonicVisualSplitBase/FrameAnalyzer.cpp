@@ -192,7 +192,7 @@ void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>
 
     if (timeRects.size() >= 2) {
         // Make sure that the other recognized TIME rectangles are valid.
-        for (int i = timeRects.size() - 1; i >= 0; i--) {
+        for (int i = (int) timeRects.size() - 1; i >= 0; i--) {
             if (timeRects[i] == timeRect)
                 continue;
             if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 3 * originalFrame.rows / 4) {

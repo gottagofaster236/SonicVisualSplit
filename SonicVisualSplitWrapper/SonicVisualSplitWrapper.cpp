@@ -92,7 +92,7 @@ void FrameStorage::StopSavingFrames() {
 
 List<Int64>^ FrameStorage::GetSavedFramesTimes() {
     std::vector<long long> savedFramesTimes = SonicVisualSplitBase::FrameStorage::getSavedFramesTimes();
-    List<Int64>^ converted = gcnew List<Int64>(savedFramesTimes.size());
+    List<Int64>^ converted = gcnew List<Int64>((int) savedFramesTimes.size());
     for (long long frameTime : savedFramesTimes) {
         converted->Add(frameTime);
     }
@@ -127,7 +127,7 @@ int FrameStorage::GetMaxCapacity() {
 
 List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
     std::vector<std::wstring> devices = SonicVisualSplitBase::VirtualCamCapture::getVideoDevicesList();
-    List<String^>^ converted = gcnew List<String^>(devices.size());
+    List<String^>^ converted = gcnew List<String^>((int) devices.size());
     for (const std::wstring& deviceName : devices) {
         converted->Add(gcnew String(deviceName.c_str()));
     }

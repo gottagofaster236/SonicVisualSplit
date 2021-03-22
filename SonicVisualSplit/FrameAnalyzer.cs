@@ -53,10 +53,10 @@ namespace SonicVisualSplit
         List<long> savedFrameTimes;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
-        private CancellationTokenSource cancellationTokenSource;
+        private volatile bool shouldAnalyzeFrames = false;
         private object analyzationThreadRunningLock = new object();
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
-
+    
         private LiveSplitState state;
         private ITimerModel model;
         private SonicVisualSplitSettings settings;
@@ -340,12 +340,11 @@ namespace SonicVisualSplit
 
             FrameStorage.StartSavingFrames();
 
-            cancellationTokenSource = new CancellationTokenSource();
-            CancellationToken cancellationToken = cancellationTokenSource.Token;
+            shouldAnalyzeFrames = true;
 
             Task.Run(() =>
             {
-                while (!cancellationToken.IsCancellationRequested)
+                while (shouldAnalyzeFrames)
                 {
                     lock (analyzationThreadRunningLock)
                     {
@@ -357,19 +356,13 @@ namespace SonicVisualSplit
                             Thread.Sleep(waitTime);
                     }
                 }
-            }, cancellationToken);
+            });
         }
 
         public void StopAnalyzingFrames()
         {
-            if (cancellationTokenSource != null)
-                cancellationTokenSource.Cancel();
+            shouldAnalyzeFrames = false;
             lock (analyzationThreadRunningLock) { }  // Make sure that the frame analyzer thread stops.
-            if (cancellationTokenSource != null)
-            {
-                cancellationTokenSource.Dispose();
-                cancellationTokenSource = null;
-            }
 
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();

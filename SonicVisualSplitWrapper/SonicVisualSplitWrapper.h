@@ -62,6 +62,8 @@ public:
     static void DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime);
 
     static int GetMaxCapacity();
+
+    literal int NO_VIDEO_CAPTURE = -1, OBS_WINDOW_CAPTURE = -2;
 };
 
 

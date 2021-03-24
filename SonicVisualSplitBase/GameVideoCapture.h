@@ -1,6 +1,7 @@
 #pragma once
 #include <opencv2/core.hpp>
 
+
 namespace SonicVisualSplitBase {
 
 // An abstract class for video capture.

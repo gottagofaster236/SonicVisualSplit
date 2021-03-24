@@ -10,9 +10,8 @@
 namespace SonicVisualSplitBase {
 
 DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite) {
-    if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory) {
-        delete instance;
-        instance = new DigitsRecognizer(gameName, templatesDirectory, isComposite);
+    if (!instance || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory) {
+        instance = std::unique_ptr<DigitsRecognizer>(new DigitsRecognizer(gameName, templatesDirectory, isComposite));
     }
     return *instance;
 }
@@ -132,17 +131,17 @@ void DigitsRecognizer::resetDigitsPlacementAsync() {
     std::thread(resetDigitsPlacement).detach();
 }
 
-bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() {
+bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() const {
     return recalculateDigitsPlacement;
 }
 
 
-double DigitsRecognizer::getBestScale() {
+double DigitsRecognizer::getBestScale() const {
     return bestScale;
 }
 
 
-DigitsRecognizer* DigitsRecognizer::getCurrentInstance() {
+const std::unique_ptr<DigitsRecognizer>& DigitsRecognizer::getCurrentInstance() {
     return instance;
 }
 

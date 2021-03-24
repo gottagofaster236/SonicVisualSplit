@@ -1,6 +1,7 @@
 #include "WindowCapture.h"
 #include <cassert>
 
+
 namespace SonicVisualSplitBase {
 
 // WindowCapture is based on https://github.com/sturkmen72/opencv_samples/blob/master/Screen-Capturing.cpp

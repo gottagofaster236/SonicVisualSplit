@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <memory>
 #undef NO_ERROR
 
 
@@ -62,7 +63,7 @@ private:
     std::vector<std::pair<cv::Rect2f, char>> recognizedSymbols;
     cv::UMat originalFrame;
 
-    inline static FrameAnalyzer* instance = nullptr;
+    inline static std::unique_ptr<FrameAnalyzer> instance;
 };
 
 }  // namespace SonicVisualSplitBase

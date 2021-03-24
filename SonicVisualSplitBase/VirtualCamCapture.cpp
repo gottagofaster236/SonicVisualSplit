@@ -1,6 +1,7 @@
 #include "VirtualCamCapture.h"
 #include <dshow.h>
 
+
 namespace SonicVisualSplitBase {
 
 VirtualCamCapture::VirtualCamCapture(int deviceIndex) {

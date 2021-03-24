@@ -5,6 +5,7 @@
 #include <mutex>
 #include <map>
 
+
 namespace SonicVisualSplitBase {
 
 class FakeMinimize;

@@ -7,14 +7,12 @@
 #include <atomic>
 #include <map>
 #include <set>
+#include <memory>
 using namespace std::chrono;
+
 
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
-
-static GameVideoCapture* gameVideoCapture = nullptr;
-static int currentVideoSourceIndex;
-static bool registeredAtexitCleanup = false;
 
 /* Map: frame save time in milliseconds -> the frame itself.
  * It is crucial to use cv::Mat instead of cv::UMat here,
@@ -22,6 +20,10 @@ static bool registeredAtexitCleanup = false;
 static std::map<long long, cv::Mat> savedRawFrames;
 static std::mutex savedRawFramesMutex;
 
+static std::unique_ptr<GameVideoCapture> gameVideoCapture;
+static int currentVideoSourceIndex;
+
+static std::thread framesThread;
 static std::atomic_bool* framesThreadCancelledFlag = nullptr;
 
 static void saveOneFrame();
@@ -31,7 +33,7 @@ void startSavingFrames() {
     framesThreadCancelledFlag = new std::atomic_bool(true);
     std::atomic_bool* framesThreadCancelledCopy = framesThreadCancelledFlag;  // can't capture a global variable
 
-    std::thread([framesThreadCancelledCopy]() {
+    framesThread = std::thread([framesThreadCancelledCopy]() {
         while (*framesThreadCancelledCopy) {
             auto startTime = system_clock::now();
             saveOneFrame();
@@ -39,7 +41,7 @@ void startSavingFrames() {
             std::this_thread::sleep_until(nextIteration);
         }
         delete framesThreadCancelledCopy;
-    }).detach();
+    });
 }
 
 
@@ -60,8 +62,8 @@ void stopSavingFrames() {
         *framesThreadCancelledFlag = false;
         framesThreadCancelledFlag = nullptr;
     }
-    // make sure the frame thread stops writing to savedRawFrames
-    std::lock_guard<std::mutex> guard(savedRawFramesMutex);
+    // Make sure the frame thread stops.
+    framesThread.join();
 }
 
 
@@ -94,12 +96,6 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
 }
 
 
-// This function is called at exit to prevent a memory leak.
-static void deleteVideoCapture() {
-    delete gameVideoCapture;
-}
-
-
 void setVideoCapture(int sourceIndex) {
     if (currentVideoSourceIndex == sourceIndex) {
         // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
@@ -107,18 +103,12 @@ void setVideoCapture(int sourceIndex) {
             return;
     }
 
-    delete gameVideoCapture;
     if (sourceIndex >= 0)
-        gameVideoCapture = new VirtualCamCapture(sourceIndex);
+        gameVideoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
     else if (sourceIndex == OBS_WINDOW_CAPTURE)
-        gameVideoCapture = new ObsWindowCapture();
+        gameVideoCapture = std::make_unique<ObsWindowCapture>();
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = nullptr;
-
-    if (!registeredAtexitCleanup) {
-        std::atexit(deleteVideoCapture);
-        registeredAtexitCleanup = true;
-    }
 }
 
 }  // namespace SonicVisualSplitBase

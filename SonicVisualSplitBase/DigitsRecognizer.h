@@ -5,6 +5,8 @@
 #include <string>
 #include <tuple>
 #include <filesystem>
+#include <memory>
+
 
 namespace SonicVisualSplitBase {
 
@@ -26,14 +28,14 @@ public:
     static void resetDigitsPlacementAsync();
 
     // Returns whether in the last call to findAllSymbolsLocations the digits placement was recalculated.
-    bool recalculatedDigitsPlacementLastTime();
+    bool recalculatedDigitsPlacementLastTime() const;
 
     // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
-    double getBestScale();
+    double getBestScale() const;
 
     /* There is never more than instance of DigitsRecognizer.
      * This function gets the current instance, or returns nullptr if there's no current instance. */
-    static DigitsRecognizer* getCurrentInstance();
+    static const std::unique_ptr<DigitsRecognizer>& getCurrentInstance();
 
     /* Returns the region of interest where the time digits were located last time,
      * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
@@ -92,7 +94,7 @@ private:
     // See getRelativeDigitsRect().
     cv::Rect2f relativeDigitsRect;
 
-    inline static DigitsRecognizer* instance = nullptr;
+    inline static std::unique_ptr<DigitsRecognizer> instance;
 };
 
 }  // namespace SonicVisualSplitBase

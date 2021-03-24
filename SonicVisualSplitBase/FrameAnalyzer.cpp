@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <numeric>
 
+
 namespace SonicVisualSplitBase {
 
 static std::recursive_mutex frameAnalyzationMutex;
@@ -15,20 +16,20 @@ static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
 FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
-                                          bool isStretchedTo16By9, bool isComposite) {
+        bool isStretchedTo16By9, bool isComposite) {
     std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
 
-    if (instance == nullptr || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
+    if (!instance || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
             || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isComposite != isComposite) {
-        delete instance;
-        instance = new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite);
+        instance = std::unique_ptr<FrameAnalyzer>(
+            new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite));
     }
     return *instance;
 }
 
 
 FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory,
-                             bool isStretchedTo16By9, bool isComposite)
+        bool isStretchedTo16By9, bool isComposite)
     : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
 
 
@@ -272,8 +273,8 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
         /* This is a black frame, supposedly.
          * Sonic 1's Star Light zone is dark enough to trick the algorithm, so we make another check:
          * if we precalculated the area with digits, it must dark (i.e. black frame shouldn't contain digits). */
-        DigitsRecognizer* instance = DigitsRecognizer::getCurrentInstance();
-        if (instance == nullptr)
+        const std::unique_ptr<DigitsRecognizer>& instance = DigitsRecognizer::getCurrentInstance();
+        if (!instance)
             return SingleColor::NOT_SINGLE_COLOR;
 
         cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();

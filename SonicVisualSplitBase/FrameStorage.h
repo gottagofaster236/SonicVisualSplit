@@ -3,12 +3,12 @@
 #include <vector>
 #include "FrameAnalyzer.h"
 
+
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
 
 /* This module saves frames from OBS for further usage (as we can't process all of them in real-time).
  * To distinguish between the frames, we use the time of capture (in milliseconds from epoch). */
-
 
  /* Sets the video source.
   * If sourceIndex is non-negative, it'll treated as the index of a video source (i.e. webcam) in the system.

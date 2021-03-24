@@ -3,6 +3,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 
+
 namespace SonicVisualSplitBase {
 
 class VirtualCamCapture : public GameVideoCapture {

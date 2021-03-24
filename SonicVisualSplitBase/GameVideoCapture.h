@@ -8,7 +8,7 @@ namespace SonicVisualSplitBase {
 class GameVideoCapture {
 public:
     /* Captures a game frame, which may need additional processing.
-     * Increments unsuccessfulFramesStreak on error. */
+     * Increments unsuccessfulFramesStreak in case of error. */
     cv::Mat captureRawFrame();
 
     /* Process the frame if needed. Returns an empty UMat in case of an error.

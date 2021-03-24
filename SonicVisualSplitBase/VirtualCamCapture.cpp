@@ -15,7 +15,7 @@ VirtualCamCapture::VirtualCamCapture(int deviceIndex) {
 cv::Mat VirtualCamCapture::captureRawFrameImpl() {
     cv::Mat frame;
     if (!videoCapture.isOpened())
-        return frame;  // Return an empty cv::Mat on error.
+        return frame;  // Return an empty cv::Mat in case of error.
     videoCapture >> frame;
     return frame;
 }

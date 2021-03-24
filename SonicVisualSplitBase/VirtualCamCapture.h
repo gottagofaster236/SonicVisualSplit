@@ -16,7 +16,7 @@ public:
     static std::vector<std::wstring> getVideoDevicesList();
 
 private:
-    // Grabs a frame from the video capture, or returns an empty Mat on error.
+    // Grabs a frame from the video capture, or returns an empty Mat in case of error.
     cv::Mat captureRawFrameImpl() override;
 
     cv::VideoCapture videoCapture;

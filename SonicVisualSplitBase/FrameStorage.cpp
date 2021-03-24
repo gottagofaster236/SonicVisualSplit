@@ -4,10 +4,10 @@
 #include "VirtualCamCapture.h"
 #include <chrono>
 #include <thread>
-#include <atomic>
+#include <mutex>
+#include <memory>
 #include <map>
 #include <set>
-#include <memory>
 using namespace std::chrono;
 
 
@@ -21,26 +21,23 @@ static std::map<long long, cv::Mat> savedRawFrames;
 static std::mutex savedRawFramesMutex;
 
 static std::unique_ptr<GameVideoCapture> gameVideoCapture;
+static std::mutex gameVideoCaptureMutex;
 static int currentVideoSourceIndex;
 
-static std::thread framesThread;
-static std::atomic_bool* framesThreadCancelledFlag = nullptr;
+static std::jthread framesThread;
 
 static void saveOneFrame();
 
 void startSavingFrames() {
     stopSavingFrames();
-    framesThreadCancelledFlag = new std::atomic_bool(true);
-    std::atomic_bool* framesThreadCancelledCopy = framesThreadCancelledFlag;  // can't capture a global variable
 
-    framesThread = std::thread([framesThreadCancelledCopy]() {
-        while (*framesThreadCancelledCopy) {
+    framesThread = std::jthread([](std::stop_token stopToken) {
+        while (!stopToken.stop_requested()) {
             auto startTime = system_clock::now();
             saveOneFrame();
             auto nextIteration = startTime + milliseconds(16);  // 60 fps
             std::this_thread::sleep_until(nextIteration);
         }
-        delete framesThreadCancelledCopy;
     });
 }
 
@@ -49,7 +46,12 @@ void saveOneFrame() {
     if (savedRawFrames.size() == MAX_CAPACITY)
         return;
     long long currentMilliseconds = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    cv::Mat rawFrame = gameVideoCapture->captureRawFrame();
+    cv::Mat rawFrame;
+    {
+        std::lock_guard<std::mutex> guard(gameVideoCaptureMutex);
+        if (gameVideoCapture)
+            gameVideoCapture->captureRawFrame();
+    }
     {
         std::lock_guard<std::mutex> guard(savedRawFramesMutex);
         savedRawFrames[currentMilliseconds] = rawFrame;
@@ -58,12 +60,8 @@ void saveOneFrame() {
 
 
 void stopSavingFrames() {
-    if (framesThreadCancelledFlag) {
-        *framesThreadCancelledFlag = false;
-        framesThreadCancelledFlag = nullptr;
-    }
-    // Make sure the frame thread stops.
-    framesThread.join();
+    framesThread.request_stop();
+    framesThread.join();  // Make sure the frame thread stops.
 }
 
 
@@ -84,7 +82,13 @@ cv::UMat getSavedFrame(long long frameTime) {
         std::lock_guard<std::mutex> guard(savedRawFramesMutex);
         rawFrame = savedRawFrames[frameTime];
     }
-    return gameVideoCapture->processFrame(rawFrame);
+    {
+        std::lock_guard<std::mutex> guard(gameVideoCaptureMutex);
+        if (gameVideoCapture)
+            return gameVideoCapture->processFrame(rawFrame);
+        else
+            return cv::UMat();  // Return an empty mat in case of error.
+    }
 }
 
 
@@ -97,6 +101,8 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
 
 
 void setVideoCapture(int sourceIndex) {
+    std::lock_guard<std::mutex> guard(gameVideoCaptureMutex);
+
     if (currentVideoSourceIndex == sourceIndex) {
         // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
         if (sourceIndex < 0 || gameVideoCapture->getUnsuccessfulFramesStreak() < 5)

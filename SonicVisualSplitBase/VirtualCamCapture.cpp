@@ -46,12 +46,8 @@ static HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum) {
 
 
 std::vector<std::wstring> VirtualCamCapture::getVideoDevicesListWithDuplicates() {
-    if (!hasInitializedCom) {
-        HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-        if (FAILED(hr))
-            return {};
-        hasInitializedCom = true;
-    }
+    if (!initializeCom())
+        return {};
 
     std::vector<std::wstring> devices;
     IEnumMoniker* pEnum;
@@ -111,9 +107,24 @@ std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
 }
 
 
-void VirtualCamCapture::uninitialize() {
-    CoUninitialize();
-    hasInitializedCom = false;
+class ComInitializer {
+public:
+    ComInitializer() {
+        HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+        succeded = SUCCEEDED(hr);
+    }
+
+    ~ComInitializer() {
+        CoUninitialize();
+    }
+
+    bool succeded = false;
+};
+
+
+bool VirtualCamCapture::initializeCom() {
+    thread_local ComInitializer comInitializer;
+    return comInitializer.succeded;
 }
 
 }  // namespace SonicVisualSplitBase

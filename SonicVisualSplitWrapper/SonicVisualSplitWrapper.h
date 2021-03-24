@@ -70,8 +70,6 @@ public:
 public ref class VirtualCamCapture {
 public:
     static List<String^>^ GetVideoDevicesList();
-
-    static void Uninitialize();
 };
 
 }  // namespace SonicVisualSplitWrapper

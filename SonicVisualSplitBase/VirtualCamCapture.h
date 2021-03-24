@@ -15,9 +15,6 @@ public:
 
     static std::vector<std::wstring> getVideoDevicesList();
 
-    // Should be called to cleanup the COM library, that is used by getVideoDevicesList.
-    static void uninitialize();
-
 private:
     // Grabs a frame from the video capture, or returns an empty Mat on error.
     cv::Mat captureRawFrameImpl() override;
@@ -27,7 +24,7 @@ private:
     // Returns the list of device names, which may contain duplicate names.
     static std::vector<std::wstring> getVideoDevicesListWithDuplicates();
 
-    static inline bool hasInitializedCom = false;
+    static bool initializeCom();
 };
 
 }  // namespace SonicVisualSplitBase

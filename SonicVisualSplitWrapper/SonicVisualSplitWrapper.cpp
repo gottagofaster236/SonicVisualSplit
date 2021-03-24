@@ -134,9 +134,4 @@ List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
     return converted;
 }
 
-
-void VirtualCamCapture::Uninitialize() {
-    SonicVisualSplitBase::VirtualCamCapture::uninitialize();
-}
-
 }  // namespace SonicVisualSplitWrapper

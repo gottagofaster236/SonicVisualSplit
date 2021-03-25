@@ -13,6 +13,8 @@ public:
 
     ~VirtualCamCapture() override;
 
+    /* Returns the list of device names.
+     * May contain duplicate names, if there are several devices with the same name. */
     static std::vector<std::wstring> getVideoDevicesList();
 
 private:
@@ -21,7 +23,6 @@ private:
 
     cv::VideoCapture videoCapture;
 
-    // Returns the list of device names, which may contain duplicate names.
     static std::vector<std::wstring> getVideoDevicesListWithDuplicates();
 
     static bool initializeCom();

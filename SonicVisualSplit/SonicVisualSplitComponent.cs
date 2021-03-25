@@ -17,9 +17,10 @@ namespace SonicVisualSplit
     class SonicVisualSplitComponent : IComponent, FrameAnalyzer.IResultConsumer
     {
         private InfoTextComponent internalComponent;
-        private SonicVisualSplitSettings settings;
         private LiveSplitState state;
+        private SonicVisualSplitSettings settings;
         private FrameAnalyzer frameAnalyzer;
+        private VideoSourcesManager videoSourcesManager;
 
         string IComponent.ComponentName => "SonicVisualSplit";
 
@@ -37,11 +38,12 @@ namespace SonicVisualSplit
                 () => { settings.TogglePracticeMode(); });
 
             settings = new SonicVisualSplitSettings();
-
             frameAnalyzer = new FrameAnalyzer(state, settings);
             frameAnalyzer.AddResultConsumer(this);
-
             settings.SettingsChanged += OnSettingsChanged;
+
+            videoSourcesManager = new VideoSourcesManager(settings);
+            videoSourcesManager.StartScanningSources();
         }
 
         void IComponent.Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
@@ -56,6 +58,7 @@ namespace SonicVisualSplit
             Disposed = true;
             frameAnalyzer.StopAnalyzingFrames();
             state.IsGameTimePaused = false;
+            videoSourcesManager.StopScanningSources();
         }
 
         void IComponent.DrawHorizontal(Graphics g, LiveSplitState state, float height, Region clipRegion)
@@ -115,7 +118,7 @@ namespace SonicVisualSplit
             {
                 if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
-                    internalComponent.InformationValue = "OBS Disconnected";
+                    internalComponent.InformationValue = "Video Disconnected";
                 }
                 else
                 {

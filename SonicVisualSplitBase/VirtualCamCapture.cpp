@@ -45,7 +45,7 @@ static HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum) {
 }
 
 
-std::vector<std::wstring> VirtualCamCapture::getVideoDevicesListWithDuplicates() {
+std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
     if (!initializeCom())
         return {};
 
@@ -84,24 +84,6 @@ std::vector<std::wstring> VirtualCamCapture::getVideoDevicesListWithDuplicates()
         }
 
         pEnum->Release();
-    }
-    return devices;
-}
-
-
-std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
-    // Removing the duplicates by adding the duplicate number.
-    std::vector<std::wstring> devicesWithDuplicates = getVideoDevicesListWithDuplicates();
-    std::vector<std::wstring> devices;
-
-    for (const std::wstring& name : devicesWithDuplicates) {
-        std::wstring addName = name;
-        int repetition = 1;
-        while (std::find(devices.begin(), devices.end(), addName) != devices.end()) {
-            repetition++;
-            addName = name + L" (" + std::to_wstring(repetition) + L")";
-        }
-        devices.push_back(addName);
     }
     return devices;
 }

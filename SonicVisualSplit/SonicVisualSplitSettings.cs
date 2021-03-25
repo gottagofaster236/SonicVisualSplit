@@ -10,14 +10,18 @@ namespace SonicVisualSplit
 {
     public partial class SonicVisualSplitSettings : UserControl, FrameAnalyzer.IResultConsumer
     {
+        public string VideoSource { get; private set; }
         public bool RGB { get; private set; }
         public bool Stretched { get; private set; }
         public string Game { get; private set; }
         public bool IsPracticeMode { get; private set; }
 
         public event EventHandler SettingsChanged;
+
         public FrameAnalyzer FrameAnalyzer { get; set; }
         public bool VisualizeAnalysisResult => true;
+
+        public VideoSourcesManager VideoSourcesManager { get; set; }
 
         public SonicVisualSplitSettings()
         {
@@ -49,6 +53,7 @@ namespace SonicVisualSplit
         public int CreateSettingsNode(XmlDocument document, XmlElement parent)
         {
             return SettingsHelper.CreateSetting(document, parent, "Version", "1.0") ^
+                SettingsHelper.CreateSetting(document, parent, "VideoSource", VideoSource) ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
                 SettingsHelper.CreateSetting(document, parent, "Game", Game);
@@ -56,6 +61,9 @@ namespace SonicVisualSplit
 
         public void SetSettings(XmlNode settings)
         {
+            VideoSource = SettingsHelper.ParseString(settings["VideoSource"]);
+            videoSourceComboBox.SelectedText = VideoSource;
+
             RGB = SettingsHelper.ParseBool(settings["RGB"]);
             rgbButton.Checked = RGB;
             compositeButton.Checked = !RGB;
@@ -74,6 +82,34 @@ namespace SonicVisualSplit
             }
             gamesComboBox.SelectedIndex = gameIndex;
 
+            OnSettingsChanged();
+        }
+
+        public void OnVideoSourcesListUpdated()
+        {
+            if (!IsHandleCreated)
+                return;
+            try
+            {
+                // Calling BeginInvoke to update the everything from the UI thread.
+                BeginInvoke((MethodInvoker)delegate
+                {
+                    videoSourceComboBox.Items.Clear();
+                    videoSourceComboBox.Items.AddRange(VideoSourcesManager.VideoSources.ToArray());
+                });
+            }
+            catch (InvalidOperationException) { }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            OnVideoSourcesListUpdated();
+        }
+
+        private void OnVideoSourceChanged(object sender, EventArgs e)
+        {
+            VideoSource = videoSourceComboBox.Text;
             OnSettingsChanged();
         }
 
@@ -131,7 +167,7 @@ namespace SonicVisualSplit
 
             try
             {
-                // Calling Invoke to update the everything from UI thread.
+                // Calling BeginInvoke to update the everything from the UI thread.
                 BeginInvoke((MethodInvoker)delegate
                 {
                     gameCapturePreview.Image = result.VisualizedFrame;
@@ -141,7 +177,7 @@ namespace SonicVisualSplit
 
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                     {
-                        resultText = "You have to open OBS with the game capture. Read more at this link";
+                        resultText = "Video disconnected. Read more at this link";
                     }
                     else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
                     {
@@ -164,7 +200,7 @@ namespace SonicVisualSplit
                     }
 
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                        linkArea = new LinkArea(57, 9);
+                        linkArea = new LinkArea(33, 9);
                     else
                         linkArea = new LinkArea(0, 0);
 
@@ -197,39 +233,26 @@ namespace SonicVisualSplit
             CheckForPracticeMode();
         }
 
-        protected override void OnHandleCreated(EventArgs e)
-        {
-            base.OnHandleCreated(e);
-            CheckForPracticeMode();  // Updating the text when the control appears.
-        }
-
         private void CheckForPracticeMode()
         {
             if (IsPracticeMode)
             {
-                try
-                {
-                    BeginInvoke((MethodInvoker)delegate
-                    {
-                        recognitionResultsLabel.Text = "Practice mode. Turn it off to see preview";
-                        recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
-                        recognitionResultsLabel.ForeColor = Color.Black;
-                    });
-                }
-                catch (InvalidOperationException) { }
+                recognitionResultsLabel.Text = "Practice mode. Turn it off to see preview";
+                recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
+                recognitionResultsLabel.ForeColor = Color.Black;
             }
-        }
-
-        private void ShowHelp(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            var startInfo = new ProcessStartInfo("http://www.google.com");
-            Process.Start(startInfo);
         }
 
         public void TogglePracticeMode(object sender = null, EventArgs e = null)
         {
             IsPracticeMode = !IsPracticeMode;
             OnSettingsChanged();
+        }
+
+        private void ShowHelp(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            var startInfo = new ProcessStartInfo("https://github.com/gottagofaster236/SonicVisualSplit");
+            Process.Start(startInfo);
         }
     }
 }

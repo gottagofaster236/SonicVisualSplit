@@ -60,8 +60,10 @@ void saveOneFrame() {
 
 
 void stopSavingFrames() {
-    framesThread.request_stop();
-    framesThread.join();  // Make sure the frame thread stops.
+    if (framesThread.joinable()) {
+        framesThread.request_stop();
+        framesThread.join();  // Make sure the frame thread stops.
+    }
 }
 
 

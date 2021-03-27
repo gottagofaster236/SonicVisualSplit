@@ -14,6 +14,13 @@ cv::Mat GameVideoCapture::captureRawFrame() {
 }
 
 
+cv::UMat SonicVisualSplitBase::GameVideoCapture::processFrame(cv::Mat rawFrame) {
+    cv::UMat frame;
+    rawFrame.copyTo(frame);
+    return frame;
+}
+
+
 int GameVideoCapture::getUnsuccessfulFramesStreak() {
     return unsuccessfulFramesStreak;
 }

@@ -2,7 +2,6 @@
 #include "GameVideoCapture.h"
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
-#define NOMINMAX
 #include <dshow.h>
 #include <vector>
 #include <utility>
@@ -14,8 +13,6 @@ class VirtualCamCapture : public GameVideoCapture {
 public:
     // Initializes the capture with a camera index.
     VirtualCamCapture(int deviceIndex);
-
-    cv::UMat processFrame(cv::Mat rawFrame) override;
 
     ~VirtualCamCapture() override;
 

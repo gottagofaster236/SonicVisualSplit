@@ -75,11 +75,6 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
                 obsCapture->setMinimumWindowHeight(minimumObsHeight);
         }
     }
-
-    if (streamPreview.rows > MAXIMUM_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double) MAXIMUM_ACCEPTABLE_FRAME_HEIGHT) / streamPreview.rows;
-        cv::resize(streamPreview, streamPreview, cv::Size(), scaleFactor, scaleFactor, cv::INTER_AREA);
-    }
     return streamPreview;
 }
 

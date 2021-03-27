@@ -1,5 +1,5 @@
 #include "VirtualCamCapture.h"
-#include <opencv2/imgproc.hpp>
+#include <dshow.h>
 
 
 namespace SonicVisualSplitBase {
@@ -17,18 +17,6 @@ cv::Mat VirtualCamCapture::captureRawFrameImpl() {
     if (!videoCapture.isOpened())
         return frame;  // Return an empty cv::Mat in case of error.
     videoCapture >> frame;
-    if (frame.rows > MAXIMUM_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double) MAXIMUM_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
-        cv::resize(frame, frame, cv::Size(), scaleFactor, scaleFactor, cv::INTER_AREA);
-    }
-    return frame;
-}
-
-
-cv::UMat SonicVisualSplitBase::VirtualCamCapture::processFrame(cv::Mat rawFrame) {
-    // Simply convert cv::Mat to a cv::UMat.
-    cv::UMat frame;
-    rawFrame.copyTo(frame);
     return frame;
 }
 

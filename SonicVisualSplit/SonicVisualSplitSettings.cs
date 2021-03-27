@@ -177,7 +177,7 @@ namespace SonicVisualSplit
 
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                     {
-                        resultText = "Video disconnected. Read more at this link";
+                        resultText = "Video disconnected. Read more at this link.";
                     }
                     else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
                     {

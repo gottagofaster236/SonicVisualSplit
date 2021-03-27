@@ -2,6 +2,9 @@
 #include "GameVideoCapture.h"
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+#include <dshow.h>
+#include <vector>
+#include <utility>
 
 
 namespace SonicVisualSplitBase {
@@ -23,8 +26,11 @@ private:
 
     cv::VideoCapture videoCapture;
 
-    static std::vector<std::wstring> getVideoDevicesListWithDuplicates();
+    inline static std::vector<cv::Size> maximumCaptureResolutions;
 
+    static HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum);
+    static std::wstring getName(IMoniker* pMoniker);
+    static cv::Size getMaxResolution(IMoniker* pMoniker);
     static bool initializeCom();
 };
 

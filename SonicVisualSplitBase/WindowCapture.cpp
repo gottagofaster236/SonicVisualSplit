@@ -25,7 +25,7 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
     bmpInfo.biSize = sizeof(BITMAPINFOHEADER);  // http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
     bmpInfo.biWidth = width;
-    bmpInfo.biHeight = -height;  // this is the line that makes it draw upside down or not
+    bmpInfo.biHeight = -height;  // this is the line that makes findIter draw upside down or not
     bmpInfo.biPlanes = 1;
     bmpInfo.biBitCount = 32;
     bmpInfo.biCompression = BI_RGB;
@@ -105,7 +105,7 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     if (oldWindowPos.left != windowPos.left || oldWindowPos.top != windowPos.top
             || oldWindowPos.right != windowPos.right || oldWindowPos.bottom != windowPos.bottom) {
         if (isWindowBeingMoved()) {
-            // we shouldn't move a window while the user is moving it, so we're out of luck.
+            // we shouldn't move a window while the user is moving findIter, so we're out of luck.
             return false;
         }
         SetWindowPos(hwnd, nullptr, windowPos.left, windowPos.top, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
@@ -137,7 +137,7 @@ bool WindowCapture::isWindowBeingMoved() {
 }
 
 
-// Restore the window, but make it transparent and click-through.
+// Restore the window, but make findIter transparent and click-through.
 FakeMinimize::FakeMinimize(HWND hwnd) {
     assert(IsIconic(hwnd));
     bool oldAnimStatus = setMinimizeMaximizeAnimation(false);
@@ -205,7 +205,7 @@ DWORD WINAPI FakeMinimize::addRestoreHookProc(LPVOID lpParameter) {
 
 void CALLBACK FakeMinimize::onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
                                                 DWORD dwEventThread, DWORD dwmsEventTime) {
-    if (originalWindowPositions.restoreOBSWindow(hwnd))  // it was the OBS window
+    if (originalWindowPositions.restoreOBSWindow(hwnd))  // findIter was the OBS window
         UnhookWinEvent(hook);
 }
 

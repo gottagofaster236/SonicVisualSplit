@@ -216,7 +216,7 @@ namespace SonicVisualSplit
             this.videoSourceComboBox.Name = "videoSourceComboBox";
             this.videoSourceComboBox.Size = new System.Drawing.Size(177, 24);
             this.videoSourceComboBox.TabIndex = 16;
-            this.videoSourceComboBox.TextUpdate += new System.EventHandler(this.OnVideoSourceChanged);
+            this.videoSourceComboBox.TextChanged += new System.EventHandler(this.OnVideoSourceChanged);
             // 
             // SonicVisualSplitSettings
             // 

@@ -45,6 +45,14 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
+
+    // Make sure the frame isn't too large (that'll slow down the calculations).
+    const int MAX_ACCEPTABLE_HEIGHT = 640;
+    if (originalFrame.rows > MAX_ACCEPTABLE_HEIGHT) {
+        double scaleFactor = ((double) MAX_ACCEPTABLE_HEIGHT) / originalFrame.rows;
+        cv::resize(originalFrame, originalFrame, cv::Size(), scaleFactor, scaleFactor, cv::INTER_AREA);
+    }
+
     cv::UMat frame = DigitsRecognizer::convertFrameToGray(originalFrame);
     if (isStretchedTo16By9) {
         cv::resize(frame, frame, cv::Size(), scaleFactorTo4By3, 1, cv::INTER_AREA);

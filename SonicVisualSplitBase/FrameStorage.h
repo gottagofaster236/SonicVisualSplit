@@ -38,7 +38,7 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 
 /* The maximum amount of frames that can be saved in the storage.
  * When this limit is reached, no new frames are saved until deleteSavedFramesInRange is called. */
-const int MAX_CAPACITY = 500;
+const int MAX_CAPACITY = 200;
 
 }  // namespace FrameStorage
 }  // namespace SonicVisualSplitBase

@@ -172,34 +172,35 @@ bool FakeMinimize::setMinimizeMaximizeAnimation(bool enabled) {
 
 
 FakeMinimize::~FakeMinimize() {
-    std::lock_guard<std::mutex> guard(threadTerminationMutex);
-    // Terminating the thread, as GetMessage() is a blocking call.
-    TerminateThread(messageLoopThread, 0);
+    if (messageLoopThread.joinable()) {
+        HANDLE nativeHandle = messageLoopThread.native_handle();
+        DWORD threadId = GetThreadId(nativeHandle);
+        PostThreadMessage(threadId, WM_QUIT, 0, 0);
+        messageLoopThread.join();
+    }
 }
 
 
 void FakeMinimize::addRestoreHook() {
-    messageLoopThread = CreateThread(0, 0, addRestoreHookProc, 0, 0, 0);
+    messageLoopThread = std::thread(addRestoreHookProc);
 }
 
 
-DWORD WINAPI FakeMinimize::addRestoreHookProc(LPVOID lpParameter) {
+void FakeMinimize::addRestoreHookProc() {
     SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZEEND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
     SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
     MSG msg;
     BOOL bRet;
 
     while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0) {
-        std::lock_guard<std::mutex> guard(threadTerminationMutex);
         if (bRet == -1) {  // error
-            return 0;
+            return;
         }
         else {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
     }
-    return 0;
 }
 
 

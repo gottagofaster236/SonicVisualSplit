@@ -2,6 +2,7 @@
 #define NOMINMAX  // fighting defines from Windows.h
 #include <Windows.h>
 #include <opencv2/core.hpp>
+#include <thread>
 #include <mutex>
 #include <map>
 
@@ -81,14 +82,13 @@ private:
 
     void addRestoreHook();
 
-    static DWORD WINAPI addRestoreHookProc(LPVOID lpParameter);
+    static void addRestoreHookProc();
 
     static void CALLBACK onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
                                              DWORD dwEventThread, DWORD dwmsEventTime);
     HWND hwnd;
-    HANDLE messageLoopThread = nullptr;
+    std::thread messageLoopThread;
     inline static OriginalWindowPositions originalWindowPositions;
-    inline static std::mutex threadTerminationMutex;
 };
 
 }  // namespace SonicVisualSplitBase

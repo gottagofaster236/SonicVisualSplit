@@ -259,11 +259,12 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 }
 
 
-std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations) {
+std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLocations(
+        std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations) {
     // Sorting the matches by similarity in descending order, and removing the overlapping ones.
     std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
-    std::sort(digitLocations.begin(), digitLocations.end(), [this](const auto& lhs, const auto& rhs) {
+    std::ranges::sort(digitLocations, [this](const auto& lhs, const auto& rhs) {
         return std::get<2>(lhs) > std::get<2>(rhs);
     });
     for (const auto& [location, symbol, similarity] : digitLocations) {

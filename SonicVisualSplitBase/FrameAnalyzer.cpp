@@ -104,7 +104,7 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         if (symbol != DigitsRecognizer::TIME && symbol != DigitsRecognizer::SCORE)
             timeDigits.push_back({position, symbol});
     }
-    sort(timeDigits.begin(), timeDigits.end(), [](const auto& lhs, const auto& rhs) {
+    std::ranges::sort(timeDigits, [](const auto& lhs, const auto& rhs) {
         return lhs.first.x < rhs.first.x;
     });
 
@@ -195,7 +195,7 @@ void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>
         return;
     }
     std::vector<cv::Rect2f>& timeRects = scoreAndTimePositions[DigitsRecognizer::TIME];
-    cv::Rect2f timeRect = *std::min_element(timeRects.begin(), timeRects.end(), [](const auto& rect1, const auto& rect2) {
+    cv::Rect2f timeRect = *std::ranges::min_element(timeRects, [](const auto& rect1, const auto& rect2) {
         return rect1.y < rect2.y;
     });
 

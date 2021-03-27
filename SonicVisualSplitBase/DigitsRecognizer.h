@@ -43,6 +43,9 @@ public:
      * the position of time digits ROI almost all the time. */
     cv::Rect2f getRelativeDigitsRect();
 
+    DigitsRecognizer(DigitsRecognizer& other) = delete;
+    void operator=(const DigitsRecognizer&) = delete;
+
     // We search for symbols in our code (hack hack).
     static const char SCORE = 'S';
     static const char TIME = 'T';
@@ -71,7 +74,8 @@ private:
     void applyColorCorrection(cv::UMat img);
 
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
-
+    
+    // Settings.
     std::string gameName;
     std::filesystem::path templatesDirectory;
     bool isComposite;

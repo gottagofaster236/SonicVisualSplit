@@ -22,7 +22,7 @@ struct AnalysisResult {
     bool isBlackScreen = false;  // e.g. transition screen between levels
     bool isWhiteScreen = false;  // e.g. transition screen to a special stage
     cv::Mat visualizedFrame;
-    long long frameTime;
+    long long frameTime = 0;
     ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
 };
 
@@ -39,6 +39,9 @@ public:
     static void lockFrameAnalyzationMutex();
 
     static void unlockFrameAnalyzationMutex();
+
+    FrameAnalyzer(FrameAnalyzer& other) = delete;
+    void operator=(const FrameAnalyzer&) = delete;
 
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isComposite);

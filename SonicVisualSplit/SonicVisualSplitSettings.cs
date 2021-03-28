@@ -62,7 +62,7 @@ namespace SonicVisualSplit
         public void SetSettings(XmlNode settings)
         {
             VideoSource = SettingsHelper.ParseString(settings["VideoSource"]);
-            videoSourceComboBox.SelectedText = VideoSource;
+            videoSourceComboBox.Text = VideoSource;
 
             RGB = SettingsHelper.ParseBool(settings["RGB"]);
             rgbButton.Checked = RGB;
@@ -113,7 +113,7 @@ namespace SonicVisualSplit
             OnSettingsChanged();
         }
 
-        private void OnVideoConnectorChanged(object sender, EventArgs e)
+        private void OnVideoConnectorTypeChanged(object sender, EventArgs e)
         {
             RGB = rgbButton.Checked;
             OnSettingsChanged();

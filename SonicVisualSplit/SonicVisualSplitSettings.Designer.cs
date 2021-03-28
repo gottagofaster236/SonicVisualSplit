@@ -110,7 +110,7 @@ namespace SonicVisualSplit
             this.compositeButton.TabStop = true;
             this.compositeButton.Text = "Composite/RF";
             this.compositeButton.UseVisualStyleBackColor = true;
-            this.compositeButton.CheckedChanged += new System.EventHandler(this.OnVideoConnectorChanged);
+            this.compositeButton.CheckedChanged += new System.EventHandler(this.OnVideoConnectorTypeChanged);
             // 
             // rgbButton
             // 
@@ -122,7 +122,7 @@ namespace SonicVisualSplit
             this.rgbButton.TabIndex = 1;
             this.rgbButton.Text = "RGB";
             this.rgbButton.UseVisualStyleBackColor = true;
-            this.rgbButton.CheckedChanged += new System.EventHandler(this.OnVideoConnectorChanged);
+            this.rgbButton.CheckedChanged += new System.EventHandler(this.OnVideoConnectorTypeChanged);
             // 
             // fourByThreeButton
             // 

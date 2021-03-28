@@ -217,7 +217,7 @@ void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>
 
 
 void FrameAnalyzer::visualizeResult() {
-    int lineThickness = 1 + result.visualizedFrame.rows / 700;
+    int lineThickness = 1 + result.visualizedFrame.rows / 500;
     for (auto& [position, symbol] : recognizedSymbols) {
         if (isStretchedTo16By9) {
             position.x /= scaleFactorTo4By3;

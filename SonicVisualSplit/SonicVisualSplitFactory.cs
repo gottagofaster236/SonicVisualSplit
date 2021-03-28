@@ -12,7 +12,7 @@ namespace SonicVisualSplit
 
         public string ComponentName => "SonicVisualSplit";
 
-        public string Description => "Auto-Splitter for people who play Sonic on console.";
+        public string Description => "An auto-splitter for people who play classic Sonic on console.";
 
         public ComponentCategory Category => ComponentCategory.Control;
 

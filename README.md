@@ -44,7 +44,7 @@ You'll have to use one of the two methods to set everything up.
      Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
  
     In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
-    that the **<u>game capture takes at least 80% of the height</u>** of your stream layout.
+    that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
     
 - After you've setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
@@ -55,12 +55,12 @@ So, click "yes" when LiveSplit will ask you whether you want to save the layout 
 
 ## Troubleshooting
 - If LiveSplit crashes on startup, run it as administrator.
-- If the component has too many failed frames (when it writes a dash instead of a recognized time),
+- If the component fails to recognize too many frames (when it writes a dash instead of a recognized time),
 check your settings.
 Make sure you've selected the correct video mode and the correct game.
 Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
 - If your capture card outputs a too dark image, you'll have to apply a color correction filter (in your streaming software).
-- If the game preview shows a blank screen on the settings page,
+- If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.
 - If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
 - If you couldn't solve your problem or have other questions, feel free to ask a question using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).

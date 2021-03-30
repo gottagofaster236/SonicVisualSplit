@@ -111,7 +111,7 @@ void _FreeMediaType(AM_MEDIA_TYPE& mt) {
 
 // Delete a media type structure that was allocated on the heap.
 void _DeleteMediaType(AM_MEDIA_TYPE* pmt) {
-    if (pmt != nullptr)     {
+    if (pmt != nullptr) {
         _FreeMediaType(*pmt);
         CoTaskMemFree(pmt);
     }

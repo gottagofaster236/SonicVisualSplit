@@ -79,11 +79,6 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
 }
 
 
-ObsWindowCapture::~ObsWindowCapture() {
-    delete obsCapture;
-}
-
-
 bool ObsWindowCapture::updateOBSHwnd() {
     if (IsWindow(obsHwnd) && !IsIconic(obsHwnd)) {
         // Checking that the size of the window hasn't changed.
@@ -117,8 +112,7 @@ bool ObsWindowCapture::updateOBSHwnd() {
         return false;
     {
         std::lock_guard<std::mutex> guard(obsCaptureMutex);
-        delete obsCapture;
-        obsCapture = new WindowCapture(obsHwnd);
+        obsCapture = std::make_unique<WindowCapture>(obsHwnd);
         obsCapture->setMinimumWindowHeight(720);  // Default value.
     }
     return true;

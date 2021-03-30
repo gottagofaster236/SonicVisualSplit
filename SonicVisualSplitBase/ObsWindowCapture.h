@@ -4,6 +4,7 @@
 #include <opencv2/core.hpp>
 #define NOMINMAX  // fighting defines from Windows.h
 #include <Windows.h>
+#include <memory>
 
 
 namespace SonicVisualSplitBase {
@@ -15,8 +16,6 @@ public:
     // Returns the stream preview.
     cv::UMat processFrame(cv::Mat screenshot) override;
 
-    ~ObsWindowCapture() override;
-
 private:
     // Returns a full screenshot of the OBS window.
     cv::Mat captureRawFrameImpl() override;
@@ -27,7 +26,7 @@ private:
 
     static BOOL CALLBACK checkIfWindowIsOBS(HWND hwnd, LPARAM pidAndObsHwndPtr);
 
-    WindowCapture* obsCapture = nullptr;
+    std::unique_ptr<WindowCapture> obsCapture;
     std::mutex obsCaptureMutex;
     HWND obsHwnd = nullptr;
     int lastGameFrameWidth, lastGameFrameHeight;

@@ -6,7 +6,6 @@
 #include <Windows.h>
 #include <Tlhelp32.h>
 #include <functional>
-#include <opencv2/imgcodecs.hpp>
 
 
 namespace SonicVisualSplitBase {
@@ -58,6 +57,11 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
         streamRight--;
     while (streamBottom > 0 && screenshot.at<cv::Vec3b>(streamBottom - 1, (borderLeft + borderRight) / 2) == borderColor)
         streamBottom--;
+
+    if (abs((streamLeft + streamRight) / 2 - screenshot.cols / 2) > 10) {
+        // The stream preview isn't centered. That's probably because OBS hasn't finished drawing.
+        return cv::UMat();
+    }
 
     cv::Rect streamRectangle(streamLeft, streamTop, streamRight - streamLeft, streamBottom - streamTop);
     if (streamRectangle.empty()) {

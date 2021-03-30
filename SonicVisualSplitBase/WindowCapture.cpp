@@ -25,7 +25,7 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
     bmpInfo.biSize = sizeof(BITMAPINFOHEADER);  // http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
     bmpInfo.biWidth = width;
-    bmpInfo.biHeight = -height;  // this is the line that makes findIter draw upside down or not
+    bmpInfo.biHeight = -height;  // this is the line that makes it draw upside down or not
     bmpInfo.biPlanes = 1;
     bmpInfo.biBitCount = 32;
     bmpInfo.biCompression = BI_RGB;
@@ -44,7 +44,6 @@ WindowCapture::~WindowCapture() {
     DeleteObject(hbwindow);
     DeleteDC(hwindowCompatibleDC);
     ReleaseDC(hwnd, hwindowDC);
-    delete fakeMinimize;
 };
 
 
@@ -76,8 +75,7 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     bool redrawWindow = false;
 
     if (IsIconic(hwnd)) {
-        delete fakeMinimize;
-        fakeMinimize = new FakeMinimize(hwnd);
+        FakeMinimize::prepareMinimizedWindowForCapture(hwnd);
         redrawWindow = true;
     }
 
@@ -105,7 +103,7 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     if (oldWindowPos.left != windowPos.left || oldWindowPos.top != windowPos.top
             || oldWindowPos.right != windowPos.right || oldWindowPos.bottom != windowPos.bottom) {
         if (isWindowBeingMoved()) {
-            // we shouldn't move a window while the user is moving findIter, so we're out of luck.
+            // we shouldn't move a window while the user is moving it, so we're out of luck.
             return false;
         }
         SetWindowPos(hwnd, nullptr, windowPos.left, windowPos.top, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
@@ -137,58 +135,32 @@ bool WindowCapture::isWindowBeingMoved() {
 }
 
 
-// Restore the window, but make findIter transparent and click-through.
-FakeMinimize::FakeMinimize(HWND hwnd) {
-    assert(IsIconic(hwnd));
-    bool oldAnimStatus = setMinimizeMaximizeAnimation(false);
+// FakeMinimize (see comments in the header).
 
-    // Enable transparency and make the window click-through.
-    LONG winLong = GetWindowLong(hwnd, GWL_EXSTYLE);
-    SetWindowLong(hwnd, GWL_EXSTYLE, winLong | WS_EX_LAYERED | WS_EX_TRANSPARENT);
-    SetLayeredWindowAttributes(hwnd, 0, 1, LWA_ALPHA);
-
-    ShowWindow(hwnd, SW_RESTORE);
-    originalWindowPositions.saveWindowPosition(hwnd);
-    // place the window at the top-left corner
-    SetWindowPos(hwnd, GetDesktopWindow(), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
-    setMinimizeMaximizeAnimation(oldAnimStatus);
-    addRestoreHook();
-}
-
-// Turns the window minimize/maximize animation on or off. Returns the old animation status.
-bool FakeMinimize::setMinimizeMaximizeAnimation(bool enabled) {
-    ANIMATIONINFO animationInfo;
-    animationInfo.cbSize = sizeof(animationInfo);
-    animationInfo.iMinAnimate = enabled;
-    SystemParametersInfo(SPI_GETANIMATION, animationInfo.cbSize, &animationInfo, 0);
-    bool oldEnabled = animationInfo.iMinAnimate;
-
-    if ((bool) animationInfo.iMinAnimate != enabled) {
-        animationInfo.iMinAnimate = enabled;
-        SystemParametersInfo(SPI_SETANIMATION, animationInfo.cbSize, &animationInfo, SPIF_SENDCHANGE);
-    }
-    return oldEnabled;
+void FakeMinimize::prepareMinimizedWindowForCapture(HWND hwnd) {
+    getInstance().prepareMinimizedWindowForCaptureImpl(hwnd);
 }
 
 
-FakeMinimize::~FakeMinimize() {
-    if (messageLoopThread.joinable()) {
-        HANDLE nativeHandle = messageLoopThread.native_handle();
-        DWORD threadId = GetThreadId(nativeHandle);
-        PostThreadMessage(threadId, WM_QUIT, 0, 0);
-        messageLoopThread.join();
-    }
+FakeMinimize& FakeMinimize::getInstance() {
+    static FakeMinimize fakeMinimize;
+    return fakeMinimize;
 }
 
 
-void FakeMinimize::addRestoreHook() {
-    messageLoopThread = std::thread(addRestoreHookProc);
+FakeMinimize::FakeMinimize() {
+    // Starting a thread that will get the event when a window needs to be restored
+    windowRestoreHookThread = std::thread(windowRestoreHookProc);
 }
 
 
-void FakeMinimize::addRestoreHookProc() {
-    SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZEEND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
-    SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr, onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
+void FakeMinimize::windowRestoreHookProc() {
+    SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZEEND, nullptr,
+        onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
+    SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr,
+        onWindowFakeRestore, 0, 0, WINEVENT_OUTOFCONTEXT);
+
+    // Message loop is needed to receive events from SetWinEventHook.
     MSG msg;
     BOOL bRet;
 
@@ -204,14 +176,57 @@ void FakeMinimize::addRestoreHookProc() {
 }
 
 
-void CALLBACK FakeMinimize::onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
-                                                DWORD dwEventThread, DWORD dwmsEventTime) {
-    if (originalWindowPositions.restoreOBSWindow(hwnd))  // findIter was the OBS window
-        UnhookWinEvent(hook);
+void CALLBACK FakeMinimize::onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd,
+        LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+    getInstance().restoreWindow(hwnd);
 }
 
 
-void OriginalWindowPositions::saveWindowPosition(HWND hwnd) {
+FakeMinimize::~FakeMinimize() {
+    if (windowRestoreHookThread.joinable()) {
+        HANDLE nativeHandle = windowRestoreHookThread.native_handle();
+        DWORD threadId = GetThreadId(nativeHandle);
+        PostThreadMessage(threadId, WM_QUIT, 0, 0);
+        windowRestoreHookThread.join();
+    }
+    restoreAllWindows();
+}
+
+
+void FakeMinimize::prepareMinimizedWindowForCaptureImpl(HWND hwnd) {
+    // Enable transparency and make the window click-through.
+    LONG winLong = GetWindowLong(hwnd, GWL_EXSTYLE);
+    SetWindowLong(hwnd, GWL_EXSTYLE, winLong | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+    SetLayeredWindowAttributes(hwnd, 0, 1, LWA_ALPHA);
+
+    // Restore the window (it's transparent already).
+    // Make sure the window restore animation isn't played.
+    bool oldAnimStatus = setMinimizeMaximizeAnimation(hwnd, false);
+    ShowWindow(hwnd, SW_RESTORE);
+    // Saving the position of the window to show it later at the same position.
+    saveWindowPosition(hwnd);
+    // Place the window at the top-left corner to make sure it's not off screen.
+    SetWindowPos(hwnd, GetDesktopWindow(), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+    setMinimizeMaximizeAnimation(hwnd, oldAnimStatus);
+}
+
+
+bool FakeMinimize::setMinimizeMaximizeAnimation(HWND hwnd, bool enabled) {
+    ANIMATIONINFO animationInfo;
+    animationInfo.cbSize = sizeof(animationInfo);
+    animationInfo.iMinAnimate = enabled;
+    SystemParametersInfo(SPI_GETANIMATION, animationInfo.cbSize, &animationInfo, 0);
+    bool oldEnabled = animationInfo.iMinAnimate;
+
+    if ((bool) animationInfo.iMinAnimate != enabled) {
+        animationInfo.iMinAnimate = enabled;
+        SystemParametersInfo(SPI_SETANIMATION, animationInfo.cbSize, &animationInfo, SPIF_SENDCHANGE);
+    }
+    return oldEnabled;
+}
+
+
+void FakeMinimize::saveWindowPosition(HWND hwnd) {
     RECT position;
     GetWindowRect(hwnd, &position);
     {
@@ -221,23 +236,21 @@ void OriginalWindowPositions::saveWindowPosition(HWND hwnd) {
 }
 
 
-bool OriginalWindowPositions::restoreOBSWindow(HWND hwnd) {
+void FakeMinimize::restoreWindow(HWND hwnd) {
     POINT originalPosition;
     {
         std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
         auto findIter = originalWindowPositions.find(hwnd);
         if (findIter == originalWindowPositions.end())  // hwnd is not the OBS window
-            return false;
+            return;
         originalPosition = findIter->second;
         originalWindowPositions.erase(findIter);
     }
     restoreWindow(hwnd, originalPosition);
-    return true;
 }
 
 
-// Return the window to the original position and remove transparency (as if the user restored the window)
-void OriginalWindowPositions::restoreWindow(HWND hwnd, POINT originalPosition) {
+void FakeMinimize::restoreWindow(HWND hwnd, POINT originalPosition) {
     LONG winLong = GetWindowLong(hwnd, GWL_EXSTYLE);
     SetWindowLong(hwnd, GWL_EXSTYLE, winLong & (~WS_EX_LAYERED) & (~WS_EX_TRANSPARENT));
     SetWindowPos(hwnd, nullptr, originalPosition.x, originalPosition.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
@@ -245,8 +258,7 @@ void OriginalWindowPositions::restoreWindow(HWND hwnd, POINT originalPosition) {
 }
 
 
-// restore all the windows that we've hidden
-OriginalWindowPositions::~OriginalWindowPositions() {
+void FakeMinimize::restoreAllWindows() {
     std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
     for (const auto& [hwnd, originalPosition] : originalWindowPositions) {
         restoreWindow(hwnd, originalPosition);

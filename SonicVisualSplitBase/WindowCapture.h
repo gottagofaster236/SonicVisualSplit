@@ -41,26 +41,6 @@ private:
     HDC hwindowDC, hwindowCompatibleDC;
     HBITMAP hbwindow;
     BITMAPINFOHEADER bmpInfo;
-    FakeMinimize* fakeMinimize = nullptr;
-};
-
-
-// A helper class for FakeMinimize, to restore the window to the same position.
-class OriginalWindowPositions {
-public:
-    void saveWindowPosition(HWND hwnd);
-
-    // Returns false if hwnd is not an OBS window.
-    bool restoreOBSWindow(HWND hwnd);
-
-    ~OriginalWindowPositions();
-
-private:
-    // Return the window to the original position and remove transparency (as if the user restored the window).
-    void restoreWindow(HWND hwnd, POINT originalPosition);
-
-    std::map<HWND, POINT> originalWindowPositions;
-    std::mutex originalWindowPositionsMutex;
 };
 
 
@@ -73,22 +53,41 @@ private:
 
 class FakeMinimize {
 public:
-    FakeMinimize(HWND hwnd);
+    static void prepareMinimizedWindowForCapture(HWND hwnd);
 
     ~FakeMinimize();
 
 private:
-    bool setMinimizeMaximizeAnimation(bool enabled);
+    static FakeMinimize& getInstance();
 
-    void addRestoreHook();
+    FakeMinimize();
 
-    static void addRestoreHookProc();
+    static void windowRestoreHookProc();
 
     static void CALLBACK onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
-                                             DWORD dwEventThread, DWORD dwmsEventTime);
-    HWND hwnd;
-    std::thread messageLoopThread;
-    inline static OriginalWindowPositions originalWindowPositions;
+        DWORD dwEventThread, DWORD dwmsEventTime);
+
+    // Restore the window, but make it transparent and click-through.
+    void prepareMinimizedWindowForCaptureImpl(HWND hwnd);
+
+    // Turns the window minimize/maximize animation on or off. Returns the old animation status.
+    bool setMinimizeMaximizeAnimation(HWND hwnd, bool enabled);
+
+    void saveWindowPosition(HWND hwnd);
+
+    /* Return the window to the original position and remove transparency (as if the user restored the window).
+     * Does nothing if it's not the window we made transparent. */
+    void restoreWindow(HWND hwnd);
+
+    // Return the window to the original position and remove transparency.
+    void restoreWindow(HWND hwnd, POINT originalPosition);
+
+    // Restore all the windows that we've made transparent and click-through.
+    void restoreAllWindows();
+
+    std::thread windowRestoreHookThread;
+    std::map<HWND, POINT> originalWindowPositions;
+    std::mutex originalWindowPositionsMutex;
 };
 
 }  // namespace SonicVisualSplitBase

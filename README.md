@@ -53,6 +53,10 @@ and change the aspect ratio if for some reason your capture card stretches the i
 - The settings are saved with layout.
 So, click "yes" when LiveSplit will ask you whether you want to save the layout settings at exit.
 
+## Known limitations
+- If you die on *Scrap Brain 3* in Sonic 1, you'll have to undo the split manually (the game time will be correct anyways).
+- Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
+
 ## Troubleshooting
 - If LiveSplit crashes on startup, run it as administrator.
 - If the component fails to recognize too many frames (when it writes a dash instead of a recognized time),

@@ -55,8 +55,6 @@ class FakeMinimize {
 public:
     static void prepareMinimizedWindowForCapture(HWND hwnd);
 
-    ~FakeMinimize();
-
 private:
     static FakeMinimize& getInstance();
 
@@ -66,6 +64,8 @@ private:
 
     static void CALLBACK onWindowFakeRestore(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
         DWORD dwEventThread, DWORD dwmsEventTime);
+
+    ~FakeMinimize();
 
     // Restore the window, but make it transparent and click-through.
     void prepareMinimizedWindowForCaptureImpl(HWND hwnd);

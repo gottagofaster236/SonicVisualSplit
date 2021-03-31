@@ -47,9 +47,8 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     }
 
     // Make sure the frame isn't too large (that'll slow down the calculations).
-    const int MAX_ACCEPTABLE_HEIGHT = 640;
-    if (originalFrame.rows > MAX_ACCEPTABLE_HEIGHT) {
-        double scaleFactor = ((double) MAX_ACCEPTABLE_HEIGHT) / originalFrame.rows;
+    if (originalFrame.rows > DigitsRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
+        double scaleFactor = ((double) DigitsRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / originalFrame.rows;
         cv::resize(originalFrame, originalFrame, cv::Size(), scaleFactor, scaleFactor, cv::INTER_AREA);
     }
 
@@ -104,8 +103,8 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         if (symbol != DigitsRecognizer::TIME && symbol != DigitsRecognizer::SCORE)
             timeDigits.push_back({position, symbol});
     }
-    std::ranges::sort(timeDigits, [](const auto& lhs, const auto& rhs) {
-        return lhs.first.x < rhs.first.x;
+    std::ranges::sort(timeDigits, {}, [](const auto& positionAndSymbol) {
+        return positionAndSymbol.first.x;
     });
 
     bool includesMilliseconds = (gameName == "Sonic CD");

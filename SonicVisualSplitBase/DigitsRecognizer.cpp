@@ -264,9 +264,10 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
     // Sorting the matches by similarity in descending order, and removing the overlapping ones.
     std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
 
-    std::ranges::sort(digitLocations, [this](const auto& lhs, const auto& rhs) {
-        return std::get<2>(lhs) > std::get<2>(rhs);
+    std::ranges::sort(digitLocations, std::greater<>(), [](const auto& digitLocation) {
+        return std::get<2>(digitLocation);
     });
+
     for (const auto& [location, symbol, similarity] : digitLocations) {
         bool intersectsWithOthers = false;
 

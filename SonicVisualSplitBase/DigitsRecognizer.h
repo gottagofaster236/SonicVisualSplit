@@ -46,6 +46,8 @@ public:
     DigitsRecognizer(DigitsRecognizer& other) = delete;
     void operator=(const DigitsRecognizer&) = delete;
 
+    static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
+
     // We search for symbols in our code (hack hack).
     static const char SCORE = 'S';
     static const char TIME = 'T';

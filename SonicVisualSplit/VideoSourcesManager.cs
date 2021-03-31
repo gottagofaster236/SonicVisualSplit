@@ -65,7 +65,7 @@ namespace SonicVisualSplit
             if (!VideoSources.SequenceEqual(scannedVideoSources))
             {
                 VideoSources = scannedVideoSources;
-                
+                settings.OnVideoSourcesListUpdated();
             }
         }
 

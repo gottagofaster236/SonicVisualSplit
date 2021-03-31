@@ -2,6 +2,7 @@
 #include "GameVideoCapture.h"
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+#define NOMINMAX
 #include <dshow.h>
 #include <vector>
 #include <utility>
@@ -26,11 +27,12 @@ private:
 
     cv::VideoCapture videoCapture;
 
-    inline static std::vector<cv::Size> maximumCaptureResolutions;
+    inline static std::vector<cv::Size> captureResolutions;
 
     static HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum);
-    static std::wstring getName(IMoniker* pMoniker);
-    static cv::Size getMaxResolution(IMoniker* pMoniker);
+    static std::wstring getName(IMoniker* moniker);
+    static cv::Size getResolution(IMoniker* moniker);
+    static std::vector<cv::Size> getSupportedResolutions(IMoniker* moniker);
     static bool initializeCom();
 };
 

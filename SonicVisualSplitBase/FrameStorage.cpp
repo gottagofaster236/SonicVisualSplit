@@ -2,6 +2,7 @@
 #include "GameVideoCapture.h"
 #include "ObsWindowCapture.h"
 #include "VirtualCamCapture.h"
+#include "DigitsRecognizer.h"
 #include "fair_mutex.h"
 #include <chrono>
 #include <thread>
@@ -120,6 +121,7 @@ void setVideoCapture(int sourceIndex) {
     {
         std::lock_guard<yamc::fair::mutex> guard(savedRawFramesMutex);
         savedRawFrames.clear();
+        DigitsRecognizer::resetDigitsPlacementAsync();
 
         currentVideoSourceIndex = sourceIndex;
 

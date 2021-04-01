@@ -9,7 +9,7 @@ namespace SonicVisualSplit
         private TaskIteration taskIteration;
         private TimeSpan iterationPeriod;
         private volatile bool shouldBeRunning = false;
-        private Task currentTask;
+        private Thread taskThread;
 
         public CancellableLoopTask(TaskIteration taskIteration, TimeSpan iterationPeriod)
         {
@@ -20,7 +20,7 @@ namespace SonicVisualSplit
         public void Start()
         {
             shouldBeRunning = true;
-            currentTask = Task.Run(() =>
+            taskThread = new Thread(new ThreadStart(() =>
             {
                 while (shouldBeRunning)
                 {
@@ -31,13 +31,14 @@ namespace SonicVisualSplit
                     if (waitTime > TimeSpan.Zero)
                         Thread.Sleep(waitTime);
                 }
-            });
+            }));
+            taskThread.Start();
         }
 
         public void Stop()
         {
             shouldBeRunning = false;
-            currentTask.Wait();  // Wait for the thread to finish.
+            taskThread.Join();  // Wait for the thread to finish.
         }
 
         public delegate void TaskIteration();

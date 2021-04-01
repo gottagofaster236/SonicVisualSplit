@@ -6,6 +6,7 @@
 #include <tuple>
 #include <filesystem>
 #include <memory>
+#include <atomic>
 
 
 namespace SonicVisualSplitBase {
@@ -92,13 +93,17 @@ private:
     // Similarity coefficient of the best match
     double bestSimilarity;
 
-    bool recalculateDigitsPlacement;
-
-    // map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}
-    std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
+    // See recalculatedDigitsPlacementLastTime()
+    bool recalculatedDigitsPlacement;
 
     // See getRelativeDigitsRect().
     cv::Rect2f relativeDigitsRect;
+
+    // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
+    std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
+
+    // Flag for resetDigitsPlacementAsync().
+    inline static std::atomic<bool> shouldResetDigitsPlacement;
 
     inline static std::unique_ptr<DigitsRecognizer> instance;
 };

@@ -18,6 +18,11 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 
 
 std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
+    if (shouldResetDigitsPlacement) {
+        shouldResetDigitsPlacement = false;
+        resetDigitsPlacement();
+    }
+
     if (bestScale != -1 && !digitsRect.empty()) {
         cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
         if (!checkForScoreScreen) {
@@ -47,7 +52,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         symbolsToSearch.push_back('0' + i);
 
     for (char symbol : symbolsToSearch) {
-        recalculateDigitsPlacement = (bestScale == -1);
+        bool recalculateDigitsPlacement = (bestScale == -1);
+        recalculatedDigitsPlacement = recalculatedDigitsPlacement;
         std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
@@ -126,13 +132,14 @@ void DigitsRecognizer::resetDigitsPlacement() {
     FrameAnalyzer::unlockFrameAnalyzationMutex();
 }
 
+
 void DigitsRecognizer::resetDigitsPlacementAsync() {
-    // Not waiting for digitsRecognizerMutex.
-    std::thread(resetDigitsPlacement).detach();
+    shouldResetDigitsPlacement = true;
 }
 
+
 bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() const {
-    return recalculateDigitsPlacement;
+    return recalculatedDigitsPlacement;
 }
 
 

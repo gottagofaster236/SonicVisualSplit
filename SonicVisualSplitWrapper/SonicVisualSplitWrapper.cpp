@@ -71,7 +71,12 @@ void FrameAnalyzer::ResetDigitsPlacement() {
 
 
 Boolean AnalysisResult::IsSuccessful() {
-    return ErrorReason == ErrorReasonEnum::NO_ERROR;
+    return ErrorReason == ErrorReasonEnum::NO_ERROR && !incorrectlyRecognized;
+}
+
+
+void AnalysisResult::MarkAsIncorrectlyRecognized() {
+    incorrectlyRecognized = true;
 }
 
 

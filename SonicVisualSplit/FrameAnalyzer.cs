@@ -17,9 +17,9 @@ namespace SonicVisualSplit
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
         private object frameAnalyzationLock = new object();
 
-        // All times are in milliseconds.
-        // A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
-        // for example from respawn on a checkpoint to the end of the level.
+        /* All times are in milliseconds.
+         * A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
+         * for example from respawn on a checkpoint to the end of the level. */
 
         // Game time, i.e. the time displayed in LiveSplit.
         private int gameTime = 0;
@@ -36,7 +36,7 @@ namespace SonicVisualSplit
         // The last frame time that was checked for the score screen.
         private long lastScoreScreenCheckTime = 0;
 
-        /* The time that was reported on the last frame with successful score screen check, or -1 if last frame was not such. */
+        // The time that was reported on the last frame with successful score screen check, or -1 if last frame was not such.
         private int timeOnLastScoreCheck = -1;
 
         // A state when we've split already, but the next stage hasn't started yet.
@@ -81,7 +81,6 @@ namespace SonicVisualSplit
                 savedFrameTimes = FrameStorage.GetSavedFramesTimes();
                 if (savedFrameTimes.Count == 0)
                     return;
-
                 long lastFrameTime = savedFrameTimes.Last();
 
                 if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
@@ -120,117 +119,135 @@ namespace SonicVisualSplit
 
                 if (isAfterSplit)
                 {
-                    /* Check if the next stage has started.
-                     * Timer starts at zero, but we may miss that exact frame,
-                     * so we just check that the timer is less than 10 seconds. */
-                    if (result.RecognizedTime && result.TimeInMilliseconds < Math.Min(ingameTimerOnSplit, 10000))
-                    {
-                        bool isScoreScreen;
-                        if (checkForScoreScreen)
-                        {
-                            isScoreScreen = result.IsScoreScreen;
-                        }
-                        else
-                        {
-                            var scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime,
-                                checkForScoreScreen, visualize: false);
-                            isScoreScreen = scoreScreenCheck.IsScoreScreen;
-                        }
-
-                        if (!isScoreScreen)
-                        {
-                            isAfterSplit = false;
-                            UpdateGameTime(result);
-                        }
-                    }
+                    CheckIfNextStageStarted(result, checkForScoreScreen);
                 }
                 else if (result.RecognizedTime)
                 {
-                    if (previousResult != null && previousResult.IsWhiteScreen)
-                    {
-                        /* This was a transition to a special stage, or time travel in SCD.
-                         * Checking that time too. */
-                        previousResult.RecognizedTime = true;
-                        previousResult.TimeInMilliseconds = gameTime - gameTimeOnSegmentStart;
-                        if (!CheckAnalysisResult(result))
-                            return;
-                    }
+                    CheckIfFrameIsAfterTransition(result);
+                    if (!result.IsSuccessful())  // CheckIfFrameIsAfterTransition checks the analysis result.
+                        return;
 
-                    if (previousResult != null && previousResult.IsBlackScreen && state.CurrentSplitIndex != -1)
-                    {
-                        /* This is the first recognized frame after a black transition screen.
-                         * We may have skipped the first frame after the transition, so we go and find it. */
-                        AnalysisResult frameAfterTransition = 
-                            FindFirstRecognizedFrame(after: true, previousResult.FrameTime,fallback:result);
-                        gameTimeOnSegmentStart = gameTime;
-                        ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
-                        previousResult = frameAfterTransition;
-                    }
-
-                    // If we're splitting, we want to double-check that.
-                    if (result.IsScoreScreen)
-                    {
-                        if (timeOnLastScoreCheck == result.TimeInMilliseconds)
-                        {
-                            Split();
-                            isAfterSplit = true;
-                            gameTimeOnSegmentStart = gameTime;
-                            ingameTimerOnSegmentStart = 0;
-                            ingameTimerOnSplit = result.TimeInMilliseconds;
-                        }
-                        else if (result.TimeInMilliseconds >= 1000)
-                        {
-                            /* Checking that the time is at least a second,
-                             * because in SCD zone title can be recognized as score screen. */
-                            timeOnLastScoreCheck = result.TimeInMilliseconds;
-                            // Recalculating to increase accuracy.
-                            SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
-                        }
-                    }
-                    else if (checkForScoreScreen)
-                    {
-                        timeOnLastScoreCheck = -1;
-                    }
+                    SplitIfNecessary(result, checkForScoreScreen);
 
                     if (!isAfterSplit)
                         UpdateGameTime(result);
                 }
-                else if (previousResult != null && 
+                else if (previousResult != null && previousResult.RecognizedTime &&
                     (result.IsBlackScreen || (result.IsWhiteScreen && state.CurrentSplitIndex == state.Run.Count - 1)))
                 {
-                    if (previousResult.RecognizedTime)
-                    {
-                        /* This is the first frame of a transition.
-                         * Possible transitions: stage -> next stage (black), stage -> same stage in case of death (black),
-                         * stage -> special stage (white), special stage -> stage (black),
-                         * final stage -> game ending (depends on the game).
-                         * We find the last frame before the transition to find out the time. */
-                        AnalysisResult frameBeforeTransition = 
-                            FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
-                        UpdateGameTime(frameBeforeTransition);
-
-                        if (state.CurrentSplitIndex == state.Run.Count - 1)
-                        {
-                            /* If we were on the last split, that means the run has finished.
-                             * (Or it was a death on the final stage. In this case we'll undo the split automatically.) */
-                            Split();
-                        }
-                        else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
-                        {
-                            /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
-                             * If it's actually a death, you have to manually undo the split. */
-                            Split();
-                        }
-                        else if (settings.Game == "Sonic 2" && (state.CurrentSplitIndex == 17 || state.CurrentSplitIndex == 18))
-                        {
-                            // Same for Sonic 2's Sky Chase and Wing Fortress.
-                            Split();
-                        }
-                    }
+                    HandleFirstFrameOfTransition(result);
                 }
 
                 previousResult = result;
                 FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+            }
+        }
+
+        private void CheckIfNextStageStarted(AnalysisResult result, bool checkedForScoreScreen)
+        {
+            /* Check if the next stage has started.
+             * Timer starts at zero, but we may miss that exact frame,
+             * so we just check that the timer is less than 10 seconds. */
+            if (result.RecognizedTime && result.TimeInMilliseconds < Math.Min(ingameTimerOnSplit, 10000))
+            {
+                bool isScoreScreen;
+                if (checkedForScoreScreen)
+                {
+                    isScoreScreen = result.IsScoreScreen;
+                }
+                else
+                {
+                    var scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(result.FrameTime,
+                        checkForScoreScreen: true, visualize: false);
+                    isScoreScreen = scoreScreenCheck.IsScoreScreen;
+                }
+
+                if (!isScoreScreen)
+                {
+                    isAfterSplit = false;
+                    UpdateGameTime(result);
+                }
+            }
+        }
+
+        private void CheckIfFrameIsAfterTransition(AnalysisResult result)
+        {
+            if (previousResult != null && previousResult.IsWhiteScreen)
+            {
+                /* This was a transition to a special stage, or time travel in SCD.
+                 * Checking that time too. */
+                previousResult.RecognizedTime = true;
+                previousResult.TimeInMilliseconds = gameTime - gameTimeOnSegmentStart;
+                if (!CheckAnalysisResult(result))
+                {
+                    return;
+                }
+            }
+
+            if (previousResult != null && previousResult.IsBlackScreen && state.CurrentSplitIndex != -1)
+            {
+                /* This is the first recognized frame after a black transition screen.
+                 * We may have skipped the first frame after the transition, so we go and find it. */
+                AnalysisResult frameAfterTransition =
+                    FindFirstRecognizedFrame(after: true, previousResult.FrameTime, fallback: result);
+                gameTimeOnSegmentStart = gameTime;
+                ingameTimerOnSegmentStart = frameAfterTransition.TimeInMilliseconds;
+                previousResult = frameAfterTransition;
+            }
+        }
+
+        private void SplitIfNecessary(AnalysisResult result, bool checkedForScoreScreen)
+        {
+            // If we're splitting, we want to double-check that.
+            if (result.IsScoreScreen)
+            {
+                if (timeOnLastScoreCheck == result.TimeInMilliseconds)
+                {
+                    Split();
+                    isAfterSplit = true;
+                    gameTimeOnSegmentStart = gameTime;
+                    ingameTimerOnSegmentStart = 0;
+                    ingameTimerOnSplit = result.TimeInMilliseconds;
+                }
+                else if (result.TimeInMilliseconds >= 1000)
+                {
+                    /* Checking that the time is at least a second,
+                     * because in SCD zone title can be recognized as score screen. */
+                    timeOnLastScoreCheck = result.TimeInMilliseconds;
+                    // Recalculating to increase accuracy.
+                    SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
+                }
+            }
+            else if (checkedForScoreScreen)
+            {
+                timeOnLastScoreCheck = -1;
+            }
+        }
+
+        private void HandleFirstFrameOfTransition(AnalysisResult result)
+        {
+            /* This is the first frame of a transition.
+             * We find the last frame before the transition to find out the time. */
+            AnalysisResult frameBeforeTransition =
+                                    FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
+            UpdateGameTime(frameBeforeTransition);
+
+            if (state.CurrentSplitIndex == state.Run.Count - 1)
+            {
+                /* If we were on the last split, that means the run has finished.
+                 * (Or it was a death on the final stage. In this case we'll undo the split automatically.) */
+                Split();
+            }
+            else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
+            {
+                /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
+                 * If it's actually a death, you have to manually undo the split. */
+                Split();
+            }
+            else if (settings.Game == "Sonic 2" && (state.CurrentSplitIndex == 17 || state.CurrentSplitIndex == 18))
+            {
+                // Same for Sonic 2's Sky Chase and Wing Fortress.
+                Split();
             }
         }
 
@@ -311,6 +328,7 @@ namespace SonicVisualSplit
                 {
                     if (deleteFramesOnFailure)
                         HandleUnrecognizedFrame(result.FrameTime);
+                    result.MarkAsIncorrectlyRecognized();
                     return false;
                 }
             }

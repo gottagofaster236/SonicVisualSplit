@@ -24,6 +24,10 @@ public:
     Int64 FrameTime;
 
     Boolean IsSuccessful();
+    void MarkAsIncorrectlyRecognized();
+
+private:
+    Boolean incorrectlyRecognized = false;
 };
 
 

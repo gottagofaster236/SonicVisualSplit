@@ -36,6 +36,7 @@ namespace SonicVisualSplit
         public void StopScanningSources()
         {
             sourcesScanTask.Stop();
+            FrameStorage.SetVideoCapture(FrameStorage.NO_VIDEO_CAPTURE);
         }
 
         private void ScanSources()

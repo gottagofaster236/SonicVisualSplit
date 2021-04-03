@@ -25,9 +25,6 @@ public:
 
     Boolean IsSuccessful();
     void MarkAsIncorrectlyRecognized();
-
-private:
-    Boolean incorrectlyRecognized = false;
 };
 
 

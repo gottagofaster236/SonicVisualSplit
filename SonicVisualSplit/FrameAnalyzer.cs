@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using SonicVisualSplitWrapper;
 using System.IO;
-using System.Threading;
 using System.Reflection;
 using System.Windows.Forms;
 using System.IO.Compression;
@@ -194,13 +193,6 @@ namespace SonicVisualSplit
                     FindFirstRecognizedFrame(after: true, previousResult.FrameTime, fallback: result);
                 SetFirstFrameOfSegment(frameAfterTransition);
                 CorrectFirstFrameOfSegment(result);
-                if (firstFrameTimeOfSegment == frameAfterTransition.FrameTime
-                    && result.FrameTime - frameAfterTransition.FrameTime < 100)
-                {
-                    /* The first frame of a segment is checked using the second frame of that segment (see CorrectFirstFrameOfSegment).
-                     * Thus we make sure result and frameAfterTransition aren't the same frame captured twice. */
-                    result.MarkAsIncorrectlyRecognized();
-                }
             }
         }
 
@@ -337,6 +329,15 @@ namespace SonicVisualSplit
                 else
                     secondFrameOfSegment = newResult;
 
+                if (secondFrameOfSegment.TimeInMilliseconds == previousResult.TimeInMilliseconds &&
+                    secondFrameOfSegment.FrameTime - previousResult.FrameTime < 30)
+                {
+                    /* This frame may be a duplicate of the first frame, as we are
+                     * capturing a frame every 16 ms (which is less than 1/60th of a second). */
+                    DeleteFrame(secondFrameOfSegment, incrementUnsuccessfulStreak: false);
+                    continue;
+                }
+
                 if (CheckAnalysisResult(secondFrameOfSegment))
                 {
                     // The first frame of the segment (which is equal to previousResult) is presumably correct.
@@ -358,7 +359,7 @@ namespace SonicVisualSplit
             if (!result.IsSuccessful())
             {
                 if (isLatestFrame)
-                    DeleteUnrecognizedFrame(result.FrameTime);
+                    DeleteFrame(result);
                 return false;
             }
 
@@ -382,7 +383,7 @@ namespace SonicVisualSplit
                     }
 
                     if (isLatestFrame)
-                        DeleteUnrecognizedFrame(result.FrameTime);
+                        DeleteFrame(result);
                     result.MarkAsIncorrectlyRecognized();
                     return false;
                 }
@@ -391,20 +392,26 @@ namespace SonicVisualSplit
         }
 
 
-        /* Deletes the frame that was not recognized correctly.
-         * This function should be only called for the latest frame that's been analyzed. */
-        private void DeleteUnrecognizedFrame(long frameTime)
+        /* Deletes a frame from the FrameStorage.
+         * With incrementUnsuccessfulStreak being true, this function should be
+         * only called for the latest frame that's been analyzed. */
+        private void DeleteFrame(AnalysisResult result, bool incrementUnsuccessfulStreak = true)
         {
             // Delete the frame so we don't try to analyze it again.
+            long frameTime = result.FrameTime;
             FrameStorage.DeleteSavedFrame(frameTime);
+            result.MarkAsIncorrectlyRecognized();
 
-            if (previousResult != null && !previousResult.IsSuccessful())
+            if (incrementUnsuccessfulStreak)
             {
-                /* If the previous analyzed frame was also a fail, we delete the frames since that moment,
-                 * to save up on memory usage. */
-                FrameStorage.DeleteSavedFramesInRange(previousResult.FrameTime, frameTime);
+                if (previousResult != null && !previousResult.IsSuccessful())
+                {
+                    /* If the previous analyzed frame was also a fail, we delete the frames since that moment,
+                     * to save up on memory usage. */
+                    FrameStorage.DeleteSavedFramesInRange(previousResult.FrameTime, frameTime);
+                }
+                unsuccessfulStreak++;
             }
-            unsuccessfulStreak++;
         }
 
         public void StartAnalyzingFrames()

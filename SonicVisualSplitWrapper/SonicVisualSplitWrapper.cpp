@@ -71,12 +71,12 @@ void FrameAnalyzer::ResetDigitsPlacement() {
 
 
 Boolean AnalysisResult::IsSuccessful() {
-    return ErrorReason == ErrorReasonEnum::NO_ERROR && !incorrectlyRecognized;
+    return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
 
 
 void AnalysisResult::MarkAsIncorrectlyRecognized() {
-    incorrectlyRecognized = true;
+    ErrorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
 }
 
 

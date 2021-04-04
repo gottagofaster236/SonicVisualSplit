@@ -271,7 +271,7 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
         }
     }
 
-    if (maximumOccurrences < pixels.size() * 0.4)
+    if (maximumOccurrences < pixels.size() * 0.35)
         return SingleColor::NOT_SINGLE_COLOR;
 
     if (mostPopularWindow >= 200) {

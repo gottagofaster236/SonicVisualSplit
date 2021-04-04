@@ -194,7 +194,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 
     if (recalculateDigitsPlacement) {
         const double MIN_SIMILARITY = -13000;
-        bestSimilarity = MIN_SIMILARITY / getSymbolMinSimilarityCoefficient('0');
+        bestSimilarity = MIN_SIMILARITY / getSymbolMinSimilarityCoefficient();
     }
 
     std::vector<std::pair<cv::Rect2f, double>> matches;  // Pairs: {supposed digit location, similarity coefficient}.
@@ -325,6 +325,8 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
             return 2.5;
     case '4':
         return 2.5;
+    case '0':
+        return 2.65;
     }
 }
 

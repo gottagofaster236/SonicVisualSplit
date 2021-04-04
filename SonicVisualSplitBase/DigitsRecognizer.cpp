@@ -90,8 +90,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.55);
             int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
             int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
-            int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.2) * bestScale);
-            int digitsRectBottom = (int) ((timeRect.y + timeRect.height * 1.2) * bestScale);
+            int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
+            int digitsRectBottom = (int) ((timeRect.y + timeRect.height * 1.1) * bestScale);
             digitsRectLeft = std::max(digitsRectLeft, 0);
             digitsRectRight = std::min(digitsRectRight, frame.cols);
             digitsRectTop = std::max(digitsRectTop, 0);
@@ -341,6 +341,9 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Three is often confused with eight, make it more preferable.
     case '3':
         return 0.8;
+    // And two is confused with three.
+    case '2':
+        return 0.9;
     }
 }
 

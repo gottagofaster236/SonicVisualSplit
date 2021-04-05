@@ -12,8 +12,9 @@ Required OS version is **Windows 10 64-bit** (2016's Anniversary Update or newer
 If you want to record (or stream) your game footage, you have to have [OBS Studio](https://obsproject.com/) (or an another streaming software) installed.
 
 ## Installation
-1. Unpack the contents of SVS.zip into the Components directory of your LiveSplit installation.
-2. Add the component: right-click LiveSplit, select "Edit layout...", press the big "+" button,
+1. Unpack the contents of [SVS.zip](https://github.com/gottagofaster236/SonicVisualSplit/releases/latest/download/SVS.zip)
+into the Components directory of your LiveSplit installation.
+3. Add the component: right-click LiveSplit, select "Edit layout...", press the big "+" button,
 and find SonicVisualSplit under the "Control" category.
 3. Then you'll have to setup your video capture to work with SonicVisualSplit.
 

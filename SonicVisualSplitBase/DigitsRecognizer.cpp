@@ -28,6 +28,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         if (!checkForScoreScreen) {
             // We are looking for digits only, so cropping the frame do the rectangle where digits are located.
             frame = cropToDigitsRectAndCorrectColor(frame);
+            if (frame.empty())
+                return {};
         }
     }
     else {
@@ -101,6 +103,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                 return {};
             int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
             frame = cropToDigitsRectAndCorrectColor(frame);
+            if (frame.empty())
+                return {};
 
             relativeDigitsRect = {(float) digitsRect.x / oldWidth, (float) digitsRect.y / oldHeight,
                 (float) digitsRect.width / oldWidth, (float) digitsRect.height / oldHeight};
@@ -352,22 +356,24 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
 
 cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
     frame = frame(digitsRect);
-    applyColorCorrection(frame);
+    frame = applyColorCorrection(frame);
     return frame;
 }
 
 
-void DigitsRecognizer::applyColorCorrection(cv::UMat img) {
+cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     double minBrightness, maxBrightness;
     cv::minMaxLoc(img, &minBrightness, &maxBrightness);
-    float difference = (float) (maxBrightness - minBrightness);
+    if (maxBrightness < 180 || minBrightness > 135) {
+        // This is an almost single-color image, there's no point in increasing the contrast.
+        return cv::UMat();
+    }
 
     // Making the minimum brightness equal to 0 and the maximum brightness equal to 255.
+    float difference = (float) (maxBrightness - minBrightness);
     cv::subtract(img, cv::Scalar((float) minBrightness), img);
-    if (difference != 0) {
-        // Make sure we don't divide by zero.
-        cv::multiply(img, cv::Scalar(255 / difference), img);
-    }
+    cv::multiply(img, cv::Scalar(255 / difference), img);
+    return img;
 }
 
 

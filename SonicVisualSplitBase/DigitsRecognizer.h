@@ -69,13 +69,13 @@ private:
     double getSymbolSimilarityMultiplier(char symbol);
 
     /* Crops the frame to the region of interest where the digits are located,
-     * and increases the contrast for the resulting image. */
+     * and increases the contrast for the resulting image. Returns an empty image on error. */
     cv::UMat cropToDigitsRectAndCorrectColor(cv::UMat frame);
 
-    /* Increases the contrast for an image.
+    /* Increases the contrast for an image. Returns an empty image on error.
      * Needed in order to recognize digits better on a frame before a transition
      * (as the frames before a transition are either too dark or too bright). */
-    void applyColorCorrection(cv::UMat img);
+    cv::UMat applyColorCorrection(cv::UMat img);
 
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
     

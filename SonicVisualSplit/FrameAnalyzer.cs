@@ -134,7 +134,7 @@ namespace SonicVisualSplit
                         UpdateGameTime(result);
                 }
                 else if (previousResult != null && previousResult.RecognizedTime &&
-                    (result.IsBlackScreen || (result.IsWhiteScreen && state.CurrentSplitIndex == state.Run.Count - 1)))
+                    (result.IsBlackScreen || result.IsWhiteScreen))
                 {
                     HandleFirstFrameOfTransition(result);
                 }
@@ -234,28 +234,37 @@ namespace SonicVisualSplit
 
         private void HandleFirstFrameOfTransition(AnalysisResult result)
         {
-            /* This is the first frame of a transition.
-             * We find the last frame before the transition to find out the time. */
-            AnalysisResult frameBeforeTransition =
-                FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
-            UpdateGameTime(frameBeforeTransition);
+            bool isLastSplit = state.CurrentSplitIndex == state.Run.Count - 1;
 
-            if (state.CurrentSplitIndex == state.Run.Count - 1)
+            // In Sonic CD the timer stops before the ending transition, no need to update the time.
+            if (!(settings.Game == "Sonic CD" && isLastSplit && result.IsWhiteScreen))
+            {
+                /* This is the first frame of a transition.
+                 * We find the last frame before the transition to find out the time. */
+                AnalysisResult frameBeforeTransition =
+                    FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
+                UpdateGameTime(frameBeforeTransition);
+            }
+
+            if (isLastSplit)
             {
                 /* If we were on the last split, that means the run has finished.
                  * (Or it was a death on the final stage. In this case we'll undo the split automatically.) */
                 Split();
             }
-            else if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
+            else if (result.IsBlackScreen)
             {
-                /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
-                 * If it's actually a death, you have to manually undo the split. */
-                Split();
-            }
-            else if (settings.Game == "Sonic 2" && (state.CurrentSplitIndex == 17 || state.CurrentSplitIndex == 18))
-            {
-                // Same for Sonic 2's Sky Chase and Wing Fortress.
-                Split();
+                if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
+                {
+                    /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
+                     * If it's actually a death, you have to manually undo the split. */
+                    Split();
+                }
+                else if (settings.Game == "Sonic 2" && (state.CurrentSplitIndex == 17 || state.CurrentSplitIndex == 18))
+                {
+                    // Same for Sonic 2's Sky Chase and Wing Fortress.
+                    Split();
+                }
             }
         }
 

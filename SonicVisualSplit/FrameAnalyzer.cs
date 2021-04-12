@@ -179,6 +179,15 @@ namespace SonicVisualSplit
                  * Checking that time too. */
                 previousResult.RecognizedTime = true;
                 previousResult.TimeInMilliseconds = gameTime - gameTimeOnSegmentStart;
+                
+                if (settings.Game == "Sonic CD")
+                {
+                    // In Sonic CD, the timer decreases by ~0.3 seconds after time travel.
+                    const int marginOfError = 330;
+                    previousResult.TimeInMilliseconds -= marginOfError;
+                    previousResult.FrameTime -= marginOfError;
+                }
+
                 if (!CheckAnalysisResult(result, isLatestFrame: true))
                 {
                     return;

@@ -48,6 +48,9 @@ namespace SonicVisualSplit
          * or -1 if the last frame was not such. */
         private int ingameTimerOnLastScoreCheck = -1;
 
+        // The last frame of a transition that we've successfully analyzed.
+        private AnalysisResult frameBeforeTransition = null;
+
         // How many times in a row the recognition failed.
         private int unsuccessfulStreak = 0;
 
@@ -173,28 +176,28 @@ namespace SonicVisualSplit
 
         private void CheckIfFrameIsAfterTransition(AnalysisResult result)
         {
-            if (previousResult != null && previousResult.IsWhiteScreen)
+            if (frameBeforeTransition == null || previousResult == null || state.CurrentSplitIndex == -1)
+                return;
+
+            if (previousResult.IsWhiteScreen)
             {
                 /* This was a transition to a special stage, or time travel in SCD.
                  * Checking that time too. */
-                previousResult.RecognizedTime = true;
-                previousResult.TimeInMilliseconds = gameTime - gameTimeOnSegmentStart;
                 
                 if (settings.Game == "Sonic CD")
                 {
                     // In Sonic CD, the timer decreases by ~0.3 seconds after time travel.
                     const int marginOfError = 330;
-                    previousResult.TimeInMilliseconds -= marginOfError;
-                    previousResult.FrameTime -= marginOfError;
+                    frameBeforeTransition.TimeInMilliseconds -= marginOfError;
+                    frameBeforeTransition.FrameTime -= marginOfError;
                 }
 
-                if (!CheckAnalysisResult(result, isLatestFrame: true))
+                if (!CheckAnalysisResult(result, isLatestFrame: true, frameBeforeTransition))
                 {
                     return;
                 }
             }
-
-            if (previousResult != null && previousResult.IsBlackScreen && state.CurrentSplitIndex != -1)
+            else if (previousResult.IsBlackScreen)
             {
                 /* This is the first recognized frame after a black transition screen.
                  * We may have skipped the first frame after the transition, so we go and find it. */
@@ -246,14 +249,16 @@ namespace SonicVisualSplit
             bool isLastSplit = state.CurrentSplitIndex == state.Run.Count - 1;
 
             // In Sonic CD the timer stops before the ending transition, no need to update the time.
-            if (!(settings.Game == "Sonic CD" && isLastSplit && result.IsWhiteScreen))
+            if (result.IsBlackScreen || (result.IsWhiteScreen && isLastSplit && settings.Game != "Sonic CD"))
             {
                 /* This is the first frame of a transition.
                  * We find the last frame before the transition to find out the time. */
-                AnalysisResult frameBeforeTransition =
+                frameBeforeTransition =
                     FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
                 UpdateGameTime(frameBeforeTransition);
             }
+            else
+                frameBeforeTransition = previousResult;
 
             if (isLastSplit)
             {
@@ -312,13 +317,15 @@ namespace SonicVisualSplit
                     checkForScoreScreen: false, visualize: false);
                 if (result.RecognizedTime)
                 {
-                    if (!CheckAnalysisResult(result))
-                    {
-                        SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
-                    }
-                    else
+                    if (CheckAnalysisResult(result))
                     {
                         return result;
+                    }
+                    else if (after)
+                    {
+                        SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
+                        /* When we're going into a transition, the screen fades out. So we **don't** reset 
+                         * the frame analyzer, because it won't find the "TIME" label on the screen once it's faded out. */
                     }
                 }
             }
@@ -372,8 +379,11 @@ namespace SonicVisualSplit
 
         /* Checks a frame with recognized digits, based on the previousResult.
          * Returns true if the result is (presumably) correct. */
-        bool CheckAnalysisResult(AnalysisResult result, bool isLatestFrame = false)
+        bool CheckAnalysisResult(AnalysisResult result, bool isLatestFrame = false, AnalysisResult previousResult = null)
         {
+            if (previousResult == null)  // Default parameter.
+                previousResult = this.previousResult;
+
             if (!result.IsSuccessful())
             {
                 if (isLatestFrame)
@@ -388,7 +398,7 @@ namespace SonicVisualSplit
                  * We want to recover from errors, so we also introduce a margin of error. */
                 long timeElapsed = result.FrameTime - previousResult.FrameTime;
                 long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
-                long marginOfError = (long) (timeElapsed * (settings.Game == "Sonic CD" ? 0.2 : 0.35));
+                long marginOfError = (long) (timeElapsed * 0.35);
 
                 if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
                     || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
@@ -526,6 +536,7 @@ namespace SonicVisualSplit
                     ingameTimerOnSplit = 0;
                     lastScoreScreenCheckFrameTime = 0;
                     ingameTimerOnLastScoreCheck = -1;
+                    frameBeforeTransition = null;
                 }
             });
         }

@@ -506,10 +506,19 @@ namespace SonicVisualSplit
             if (File.Exists(zipLocation))
             {
                 string destinationDirectory = Path.Combine(livesplitComponents, "SVS Templates");
-                if (Directory.Exists(destinationDirectory))
-                    Directory.Delete(destinationDirectory, recursive: true);
-                ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
-                File.Delete(zipLocation);
+                try
+                {
+                    if (Directory.Exists(destinationDirectory))
+                        Directory.Delete(destinationDirectory, recursive: true);
+                    ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
+                    File.Delete(zipLocation);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    MessageBox.Show("Please restart LiveSplit with administrator privileges.", "SVS Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Environment.Exit(0);
+                }
             }
         }
 

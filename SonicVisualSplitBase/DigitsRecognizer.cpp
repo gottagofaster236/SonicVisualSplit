@@ -373,6 +373,14 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     float difference = (float) (maxBrightness - minBrightness);
     cv::subtract(img, cv::Scalar((float) minBrightness), img);
     cv::multiply(img, cv::Scalar(255 / difference), img);
+
+    // Making pixels darker than a threshold black. This also helps increase the accuracy of recognition.
+    cv::UMat darkMask;
+    double darkWeight = 0.7;
+    double threshold = minBrightness * darkWeight + maxBrightness * (1 - darkWeight);
+    cv::threshold(img, darkMask, threshold, 1, cv::THRESH_BINARY);
+    cv::multiply(img, darkMask, img);
+
     return img;
 }
 

@@ -347,9 +347,6 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Three is often confused with eight, make it more preferable.
     case '3':
         return 0.8;
-    // And two is confused with three.
-    case '2':
-        return 0.9;
     }
 }
 
@@ -362,24 +359,32 @@ cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
 
 
 cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
-    double minBrightness, maxBrightness;
-    cv::minMaxLoc(img, &minBrightness, &maxBrightness);
-    if (maxBrightness < 180 || minBrightness > 135) {
+    std::vector<uint8_t> pixels;
+    cv::Mat imgMat = img.getMat(cv::ACCESS_READ);
+    for (int y = 0; y < img.rows; y += 2) {
+        for (int x = 0; x < img.cols; x += 2) {
+            pixels.push_back((uint8_t) imgMat.at<float>(y, x));
+        }
+    }
+    std::ranges::sort(pixels);
+    
+    const float darkPosition = 0.25f, brightPosition = 0.9f;
+    uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
+    uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
+    uint8_t difference = maxBrightness - minBrightness;
+    
+    if (difference < 10) {
         // This is an almost single-color image, there's no point in increasing the contrast.
         return cv::UMat();
     }
 
     // Making the minimum brightness equal to 0 and the maximum brightness equal to 255.
-    float difference = (float) (maxBrightness - minBrightness);
     cv::subtract(img, cv::Scalar((float) minBrightness), img);
-    cv::multiply(img, cv::Scalar(255 / difference), img);
+    cv::multiply(img, cv::Scalar(255.f / difference), img);
 
-    // Making pixels darker than a threshold black. This also helps increase the accuracy of recognition.
-    cv::UMat darkMask;
-    double darkWeight = 0.7;
-    double threshold = minBrightness * darkWeight + maxBrightness * (1 - darkWeight);
-    cv::threshold(img, darkMask, threshold, 1, cv::THRESH_BINARY);
-    cv::multiply(img, darkMask, img);
+    // Making sure all pixels are within the range of 0 to 255
+    cv::threshold(img, img, 0, 0, cv::THRESH_TOZERO);
+    cv::threshold(img, img, 255, 0, cv::THRESH_TRUNC);
 
     return img;
 }

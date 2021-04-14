@@ -67,7 +67,6 @@ Alternatively, you can go to component settings (as described in the previous se
 - Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
 
 ## Troubleshooting
-- If LiveSplit crashes on startup, run it as administrator.
 - If the component fails to recognize too many frames (when it writes a dash instead of a recognized time),
 check your settings.
 Make sure you've selected the correct video mode and the correct game.

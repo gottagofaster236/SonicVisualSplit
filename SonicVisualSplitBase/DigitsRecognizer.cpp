@@ -325,8 +325,6 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
             return 2.5;
     case '4':
         return 2.5;
-    case '0':
-        return 2.65;
     }
 }
 
@@ -340,9 +338,9 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Once again making one a less preferable option.
     case '1':
         return 2;
-    // Three is often confused with eight, make it more preferable.
-    case '3':
-        return 0.8;
+    // Three is often confused with eight.
+    case '8':
+        return 1.2;
     }
 }
 
@@ -364,7 +362,7 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.87f;
+    const float darkPosition = 0.25f, brightPosition = 0.85f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;

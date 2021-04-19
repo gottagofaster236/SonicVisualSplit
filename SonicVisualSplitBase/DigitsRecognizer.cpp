@@ -104,7 +104,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
             frame = cropToDigitsRectAndCorrectColor(frame);
             if (frame.empty())
-                return {};
+                return curRecognized;
 
             relativeDigitsRect = {(float) digitsRect.x / oldWidth, (float) digitsRect.y / oldHeight,
                 (float) digitsRect.width / oldWidth, (float) digitsRect.height / oldHeight};
@@ -116,13 +116,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
 
 
 cv::UMat DigitsRecognizer::convertFrameToGray(cv::UMat frame) {
-    /* Getting the yellow color intensity by adding green and red channels (BGR).
-     * TIME and SCORE are yellow, so it's probably a good way to convert a frame to grayscale. 
-     * (In the first place it is done to speed up the template matching by reducing the number of channels to 1). */
-    std::vector<cv::UMat> channels(4);
-    cv::split(frame, channels);
     cv::UMat result;
-    cv::addWeighted(channels[1], 0.5, channels[2], 0.5, 0, result);
+    auto conversionType = (frame.channels() == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY);
+    cv::cvtColor(frame, result, conversionType);
     return result;
 }
 
@@ -368,12 +364,13 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.9f;
+    const float darkPosition = 0.25f, brightPosition = 0.87f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;
-    
-    if (difference < 10) {
+    const uint8_t MIN_DIFFERENCE = 5;
+
+    if (difference < MIN_DIFFERENCE) {
         // This is an almost single-color image, there's no point in increasing the contrast.
         return cv::UMat();
     }

@@ -307,7 +307,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
 double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     switch (symbol) {
     default:
-        return 3.25;
+        return 3.75;
     case SCORE:
         return 2;
     // We use "TIME" to detect the score screen, so we want to be sure.
@@ -320,7 +320,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
         if (isComposite)
-            return 2;
+            return 2.15;
         else
             return 2.5;
     case '4':
@@ -340,6 +340,9 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
         return 2;
     // Three is often confused with eight.
     case '8':
+        return 1.13;
+    // Seven is confused with one and two.
+    case '7':
         return 1.2;
     }
 }
@@ -362,7 +365,7 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.85f;
+    const float darkPosition = 0.25f, brightPosition = 0.83f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;

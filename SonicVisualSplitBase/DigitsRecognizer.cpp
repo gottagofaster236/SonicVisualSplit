@@ -23,9 +23,15 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         resetDigitsPlacement();
     }
 
+    // Filtering for TIME and SCORE is done on the grayscale frame where yellow is white, it's more accurate this way.
+    cv::UMat frameWithYellowFilter;
+
     if (bestScale != -1 && !digitsRect.empty()) {
         cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
-        if (!checkForScoreScreen) {
+        if (checkForScoreScreen) {
+            frameWithYellowFilter = convertFrameToGray(frame, true);
+        }
+        else {
             // We are looking for digits only, so cropping the frame do the rectangle where digits are located.
             frame = cropToDigitsRectAndCorrectColor(frame);
             if (frame.empty())
@@ -36,6 +42,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         /* We need to find the digits rectangle. It is relative to the TIME label, so we need to find it.
          * Since we check for score screen by finding the positions of TIME label (as in TIME BONUS), we'll do exactly that. */
         checkForScoreScreen = true;
+        frameWithYellowFilter = convertFrameToGray(frame, true);
     }
 
     if (checkForScoreScreen) {
@@ -54,9 +61,10 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         symbolsToSearch.push_back('0' + i);
 
     for (char symbol : symbolsToSearch) {
+        cv::UMat& frameToSearch = ((symbol == TIME || symbol == SCORE) ? frameWithYellowFilter : frame);
         bool recalculateDigitsPlacement = (bestScale == -1);
         recalculatedDigitsPlacement = recalculatedDigitsPlacement;
-        std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frame, symbol, recalculateDigitsPlacement);
+        std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
 
         for (auto [location, similarity] : matches) {
             similarity *= getSymbolSimilarityMultiplier(symbol);
@@ -70,9 +78,11 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                 return {};
             // Checking only the top half of the frame, so that "SCORE" is searched faster.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
-            frame = frame(topHalf);
+            frameWithYellowFilter = frameWithYellowFilter(topHalf);
             if (recalculateDigitsPlacement) {
                 // bestScale is calculated already after we found "TIME".
+                cv::resize(frameWithYellowFilter, frameWithYellowFilter, cv::Size(),
+                    bestScale, bestScale, cv::INTER_AREA);
                 cv::resize(frame, frame, cv::Size(), bestScale, bestScale, cv::INTER_AREA);
             }
         }
@@ -112,14 +122,6 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
     }
 
     return removeOverlappingLocations(digitLocations);
-}
-
-
-cv::UMat DigitsRecognizer::convertFrameToGray(cv::UMat frame) {
-    cv::UMat result;
-    auto conversionType = (frame.channels() == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY);
-    cv::cvtColor(frame, result, conversionType);
-    return result;
 }
 
 
@@ -286,10 +288,8 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
                     intersectsWithOthers = true;
                 }
             }
-            else {
-                if (!(location & other).empty()) {
-                    intersectsWithOthers = true;
-                }
+            else if (!(location & other).empty()) {
+                intersectsWithOthers = true;
             }
 
             if (intersectsWithOthers)
@@ -350,6 +350,7 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
 
 cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
     frame = frame(digitsRect);
+    frame = convertFrameToGray(frame);
     frame = applyColorCorrection(frame);
     return frame;
 }
@@ -388,8 +389,26 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
 }
 
 
-// Separates the image and its alpha channel.
-// Returns a tuple of {image, binary alpha mask, count of opaque pixels}
+cv::UMat DigitsRecognizer::convertFrameToGray(cv::UMat frame, bool filterYellowColor) {
+    cv::UMat result;
+
+    if (!filterYellowColor) {
+        auto conversionType = (frame.channels() == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY);
+        cv::cvtColor(frame, result, conversionType);
+    }
+    else {
+        /* Getting the yellow color intensity by adding green and red channels (BGR).
+         * TIME and SCORE are yellow, so it's probably a good way to convert a frame to grayscale. */
+        std::vector<cv::UMat> channels(4);
+        cv::split(frame, channels);
+        cv::addWeighted(channels[1], 0.5, channels[2], 0.5, 0, result);
+    }
+
+    result.convertTo(result, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
+    return result;
+}
+
+
 std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(char symbol) {
     // The path can contain unicode, so we read the file by ourselves.
     std::filesystem::path templatePath = templatesDirectory / (symbol + std::string(".png"));
@@ -402,15 +421,15 @@ std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(c
     cv::resize(templateWithAlpha, templateWithAlpha, cv::Size(), 2, 2, cv::INTER_NEAREST);
     // We double the size of the image, as then matching is more accurate.
     
-    cv::UMat templateImage = convertFrameToGray(templateWithAlpha);
-    templateImage.convertTo(templateImage, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
+    bool filterYellowColor = (symbol == TIME || symbol == SCORE);
+    cv::UMat templateImage = convertFrameToGray(templateWithAlpha, filterYellowColor);
 
     std::vector<cv::UMat> templateChannels(4);
     cv::split(templateWithAlpha, templateChannels);
 
     cv::UMat templateMask = templateChannels[3];  // Get the alpha channel.
     cv::threshold(templateMask, templateMask, 0, 1.0, cv::THRESH_BINARY);
-    templateMask.convertTo(templateMask, CV_32F);
+    templateMask.convertTo(templateMask, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
 
     int opaquePixels = cv::countNonZero(templateMask);
 

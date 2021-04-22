@@ -18,10 +18,6 @@ public:
     // Finds locations of all digits, "SCORE" and "TIME" labels.
     std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
-    /* Converts a frame to grayscale. Call this before passing the frame to findAllSymbolsLocations.
-     * (Speeds up template matching by reducing the number of channels to 1). */
-    static cv::UMat convertFrameToGray(cv::UMat frame);
-
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
     static void resetDigitsPlacement();
@@ -78,6 +74,13 @@ private:
      * (as the frames before a transition are either too dark or too bright). */
     cv::UMat applyColorCorrection(cv::UMat img);
 
+    /* Converts a frame to grayscale.
+     * If filterYellowColor is true, then yellow will be white in the resulting image.
+     * (This method is needed to speed up template matching by reducing the number of channels to 1). */
+    static cv::UMat convertFrameToGray(cv::UMat frame, bool filterYellowColor = false);
+
+    /* Loads a template image from file, separates its alpha channel.
+     * Returns a tuple of {image, binary alpha mask, count of opaque pixels}. */
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
     
     // Settings.

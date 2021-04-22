@@ -52,7 +52,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         cv::resize(originalFrame, originalFrame, cv::Size(), scaleFactor, scaleFactor, cv::INTER_AREA);
     }
 
-    cv::UMat frame = DigitsRecognizer::convertFrameToGray(originalFrame);
+    cv::UMat frame = originalFrame;
     if (isStretchedTo16By9) {
         cv::resize(frame, frame, cv::Size(), scaleFactorTo4By3, 1, cv::INTER_AREA);
     }
@@ -69,7 +69,6 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     }
 
     DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isComposite);
-    frame.convertTo(frame, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
     recognizedSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
     checkRecognizedSymbols(checkForScoreScreen, visualize);
     originalFrame.release();
@@ -240,7 +239,9 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
     std::vector<uint8_t> pixels;
     for (int y = 0; y < frame.rows; y += stepY) {
         for (int x = 0; x < frame.cols; x += stepX) {
-            pixels.push_back(frameRead.at<uint8_t>(y, x));
+            cv::Vec3b pixel = frameRead.at<uint8_t>(y, x);
+            uint8_t brightness = ((int) pixel[0] + (int) pixel[1] + (int) pixel[2]) / 3;
+            pixels.push_back(brightness);
         }
     }
     

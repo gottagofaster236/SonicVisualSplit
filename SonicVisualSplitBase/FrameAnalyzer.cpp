@@ -97,13 +97,13 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
             return;
     }
 
-    std::vector<std::pair<cv::Rect2f, char>> timeDigits;
-    for (auto& [position, symbol] : recognizedSymbols) {
-        if (symbol != DigitsRecognizer::TIME && symbol != DigitsRecognizer::SCORE)
-            timeDigits.push_back({position, symbol});
+    std::vector<DigitsRecognizer::Match> timeDigits;
+    for (const auto& match : recognizedSymbols) {
+        if (match.symbol != DigitsRecognizer::TIME && match.symbol != DigitsRecognizer::SCORE)
+            timeDigits.push_back(match);
     }
     std::ranges::sort(timeDigits, {}, [](const auto& positionAndSymbol) {
-        return positionAndSymbol.first.x;
+        return positionAndSymbol.location.x;
     });
 
     bool includesMilliseconds = (gameName == "Sonic CD");
@@ -115,8 +115,9 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
 
     for (int i = 0; i + 1 < timeDigits.size(); i++) {
         double bestScale = DigitsRecognizer::getCurrentInstance()->getBestScale();
-        double interval = ((timeDigits[i + 1].first.x + timeDigits[i + 1].first.width) -
-            (timeDigits[i].first.x + timeDigits[i].first.width)) * bestScale;
+        const cv::Rect2f& prevLocation = timeDigits[i].location, nextLocation = timeDigits[i + 1].location;
+        double interval = ((nextLocation.x + nextLocation.width) -
+            (prevLocation.x + prevLocation.width)) * bestScale;
         
         if (i == 0 || i == 2) {
             /* Checking that separators (:, ' and ") aren't detected as digits.
@@ -141,8 +142,8 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
     }
 
     std::string timeDigitsStr;
-    for (auto& [position, digit] : timeDigits)
-        timeDigitsStr += digit;
+    for (const auto& match : timeDigits)
+        timeDigitsStr += match.symbol;
 
     // Formatting the timeString and calculating timeInMilliseconds
     std::string minutes = timeDigitsStr.substr(0, 1), seconds = timeDigitsStr.substr(1, 2);
@@ -182,9 +183,9 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
 
 
 void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>>& scoreAndTimePositions) {
-    for (auto& [position, symbol] : recognizedSymbols) {
-        if (symbol == DigitsRecognizer::SCORE || symbol == DigitsRecognizer::TIME) {
-            scoreAndTimePositions[symbol].push_back(position);
+    for (const auto& match : recognizedSymbols) {
+        if (match.symbol == DigitsRecognizer::SCORE || match.symbol == DigitsRecognizer::TIME) {
+            scoreAndTimePositions[match.symbol].push_back(match.location);
         }
     }
 
@@ -216,12 +217,12 @@ void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>
 
 void FrameAnalyzer::visualizeResult() {
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
-    for (auto& [position, symbol] : recognizedSymbols) {
+    for (auto match : recognizedSymbols) {
         if (isStretchedTo16By9) {
-            position.x /= scaleFactorTo4By3;
-            position.width /= scaleFactorTo4By3;
+            match.location.x /= scaleFactorTo4By3;
+            match.location.width /= scaleFactorTo4By3;
         }
-        cv::rectangle(result.visualizedFrame, position, cv::Scalar(0, 0, 255), lineThickness);
+        cv::rectangle(result.visualizedFrame, match.location, cv::Scalar(0, 0, 255), lineThickness);
     }
 }
 

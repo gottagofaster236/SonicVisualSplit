@@ -3,6 +3,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <fstream>
+#include <ranges>
 #include <algorithm>
 #include <cctype>
 
@@ -17,13 +18,13 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 }
 
 
-std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
+std::vector<DigitsRecognizer::Match> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
     if (shouldResetDigitsPlacement) {
         shouldResetDigitsPlacement = false;
         resetDigitsPlacement();
     }
 
-    // Filtering for TIME and SCORE is done on the grayscale frame where yellow is white, it's more accurate this way.
+    // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter;
 
     if (bestScale != -1 && !digitsRect.empty()) {
@@ -50,7 +51,7 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         digitsRect = {0, 0, 0, 0};
     }
 
-    std::vector<std::tuple<cv::Rect2f, char, double>> digitLocations;  // {location, digit, similarity coefficient}
+    std::vector<Match> allMatches;
 
     std::vector<char> symbolsToSearch;
     if (checkForScoreScreen) {
@@ -61,20 +62,20 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
         symbolsToSearch.push_back('0' + i);
 
     for (char symbol : symbolsToSearch) {
-        cv::UMat& frameToSearch = ((symbol == TIME || symbol == SCORE) ? frameWithYellowFilter : frame);
+        const cv::UMat& frameToSearch = ((symbol == TIME || symbol == SCORE) ? frameWithYellowFilter : frame);
         bool recalculateDigitsPlacement = (bestScale == -1);
         recalculatedDigitsPlacement = recalculatedDigitsPlacement;
-        std::vector<std::pair<cv::Rect2f, double>> matches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
+        std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
 
-        for (auto [location, similarity] : matches) {
-            similarity *= getSymbolSimilarityMultiplier(symbol);
+        for (auto& match : symbolMatches) {
+            match.similarity *= getSymbolSimilarityMultiplier(symbol);
             // We've cropped the frame to speed up the search. Now we have to compensate for that.
-            location += cv::Point2f((float) (digitsRect.x / bestScale), (float) (digitsRect.y / bestScale));
-            digitLocations.push_back({location, symbol, similarity});
+            match.location += cv::Point2f((float) (digitsRect.x / bestScale), (float) (digitsRect.y / bestScale));
+            allMatches.push_back(match);
         }
 
         if (symbol == TIME) {
-            if (matches.empty())  // Cannot find the "TIME" label, but it should be there on a correct frame.
+            if (symbolMatches.empty())
                 return {};
             // Checking only the top half of the frame, so that "SCORE" is searched faster.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
@@ -90,13 +91,14 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
             /* We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
              * We'll look for digits only in the rectangle to the right of "TIME".
              * That's why we'll crop the frame to that rectangle. */
-            if (matches.empty())
+            if (symbolMatches.empty())
                 return {};
-            std::vector<std::pair<cv::Rect2f, char>> curRecognized = removeOverlappingLocations(digitLocations);
+            std::vector<Match> curRecognized = allMatches;
+            removeOverlappingMatches(curRecognized);
             cv::Rect2f timeRect = {1e9, 1e9, 1e9, 1e9};
-            for (const auto& [location, symbol] : curRecognized) {
-                if (symbol == TIME && location.y < timeRect.y)
-                    timeRect = location;
+            for (const auto& match : curRecognized) {
+                if (match.symbol == TIME && match.location.y < timeRect.y)
+                    timeRect = match.location;
             }
 
             double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.55);
@@ -120,8 +122,9 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::findAllSymbolsLocatio
                 (float) digitsRect.width / oldWidth, (float) digitsRect.height / oldHeight};
         }
     }
-
-    return removeOverlappingLocations(digitLocations);
+    
+    removeOverlappingMatches(allMatches);
+    return allMatches;
 }
 
 
@@ -174,8 +177,8 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 /* Returns all found positions of a digit. If recalculateDigitsPlacement is set to true,
  * goes through different scales of the original frame (see the link below).
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
-std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
-    auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
+std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
+    const auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
 
     // if we already found the scale, we don't go through different scales
     double minScale, maxScale;
@@ -199,7 +202,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
         bestSimilarity = MIN_SIMILARITY / getSymbolMinSimilarityCoefficient();
     }
 
-    std::vector<std::pair<cv::Rect2f, double>> matches;  // Pairs: {supposed digit location, similarity coefficient}.
+    std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
 
     for (double scale = maxScale; scale >= minScale; scale *= 0.96) {
         cv::UMat resized;
@@ -257,7 +260,7 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
             cv::Rect2f matchRect((float) (x / bestScale), (float) (y / bestScale),
                                  (float) (templateImage.cols / bestScale),
                                  (float) (templateImage.rows / bestScale));
-            matches.push_back({matchRect, similarity});
+            matches.push_back({matchRect, symbol, similarity});
         }
     }
 
@@ -268,22 +271,18 @@ std::vector<std::pair<cv::Rect2f, double>> DigitsRecognizer::findSymbolLocations
 }
 
 
-std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLocations(
-        std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations) {
+void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& symbolLocations) {
     // Sorting the matches by similarity in descending order, and removing the overlapping ones.
-    std::vector<std::pair<cv::Rect2f, char>> resultDigitLocations;
+    sortMatchesBySimilarity(symbolLocations);
+    std::vector<Match> resultSymbolLocations;
 
-    std::ranges::sort(digitLocations, std::greater<>(), [](const auto& digitLocation) {
-        return std::get<2>(digitLocation);
-    });
-
-    for (const auto& [location, symbol, similarity] : digitLocations) {
+    for (const auto& [location, symbol, similarity] : symbolLocations) {
         bool intersectsWithOthers = false;
 
-        for (auto& digit : resultDigitLocations) {
-            const cv::Rect2f& other = digit.first;
+        for (const auto& digit : resultSymbolLocations) {
+            const cv::Rect2f& other = digit.location;
 
-            if (std::isdigit(symbol) && std::isdigit(digit.second)) {
+            if (std::isdigit(symbol) && std::isdigit(digit.symbol)) {
                 if (std::abs(location.x + location.width - (other.x + other.width)) * bestScale < 12) {
                     intersectsWithOthers = true;
                 }
@@ -297,10 +296,15 @@ std::vector<std::pair<cv::Rect2f, char>> DigitsRecognizer::removeOverlappingLoca
         }
 
         if (!intersectsWithOthers)
-            resultDigitLocations.push_back({location, symbol});
+            resultSymbolLocations.push_back({location, symbol});
     }
 
-    return resultDigitLocations;
+    symbolLocations = resultSymbolLocations;
+}
+
+
+void DigitsRecognizer::sortMatchesBySimilarity(std::vector<DigitsRecognizer::Match>& symbolLocations) {
+    std::ranges::sort(symbolLocations, std::greater<>(), &Match::similarity);
 }
 
 
@@ -341,9 +345,6 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Three is often confused with eight.
     case '8':
         return 1.13;
-    // Seven is confused with one and two.
-    case '7':
-        return 1.2;
     }
 }
 
@@ -366,24 +367,25 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.83f;
+    const float darkPosition = 0.25f, brightPosition = 0.75f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;
-    const uint8_t MIN_DIFFERENCE = 5;
+    const uint8_t MIN_DIFFERENCE = 4;
 
     if (difference < MIN_DIFFERENCE) {
         // This is an almost single-color image, there's no point in increasing the contrast.
         return cv::UMat();
     }
 
-    // Making the minimum brightness equal to 0 and the maximum brightness equal to 255.
+    // Making the minimum brightness equal to 0 and the maximum brightness equal to newMaxBrighteness.
+    const uint8_t newMaxBrightness = 230;  // The maximum brightness for digits.
     cv::subtract(img, cv::Scalar((float) minBrightness), img);
-    cv::multiply(img, cv::Scalar(255.f / difference), img);
+    cv::multiply(img, cv::Scalar((float) newMaxBrightness / difference), img);
 
-    // Making sure all pixels are within the range of 0 to 255
+    // Making sure all pixels are within the range of 0 to newMaxBrightness
     cv::threshold(img, img, 0, 0, cv::THRESH_TOZERO);
-    cv::threshold(img, img, 255, 0, cv::THRESH_TRUNC);
+    cv::threshold(img, img, newMaxBrightness, 0, cv::THRESH_TRUNC);
 
     return img;
 }

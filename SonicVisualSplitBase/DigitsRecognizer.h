@@ -15,8 +15,14 @@ class DigitsRecognizer {
 public:
     static DigitsRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
+    struct Match {
+        cv::Rect2f location;
+        char symbol;
+        double similarity;
+    };
+
     // Finds locations of all digits, "SCORE" and "TIME" labels.
-    std::vector<std::pair<cv::Rect2f, char>> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
+    std::vector<Match> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
@@ -53,9 +59,12 @@ public:
 private:
     DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
-    std::vector<std::pair<cv::Rect2f, double>> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
+    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
 
-    std::vector<std::pair<cv::Rect2f, char>> removeOverlappingLocations(std::vector<std::tuple<cv::Rect2f, char, double>>& digitLocations);
+    void removeOverlappingMatches(std::vector<Match>& symbolLocations);
+
+    // Sorts the matches by similarity in descending order.
+    static void sortMatchesBySimilarity(std::vector<Match>& symbolLocations);
 
     /* Returns the minimum similarity coefficient divided by the best found similarity.
      * Without parameters, returns the default similarity. */

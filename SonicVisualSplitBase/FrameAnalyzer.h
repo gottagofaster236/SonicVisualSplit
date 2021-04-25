@@ -1,4 +1,5 @@
 #pragma once
+#include "DigitsRecognizer.h"
 #include <opencv2/core.hpp>
 #include <filesystem>
 #include <vector>
@@ -63,7 +64,7 @@ private:
 
     // Temporary fields for the functions.
     AnalysisResult result;
-    std::vector<std::pair<cv::Rect2f, char>> recognizedSymbols;
+    std::vector<DigitsRecognizer::Match> recognizedSymbols;
     cv::UMat originalFrame;
 
     inline static std::unique_ptr<FrameAnalyzer> instance;

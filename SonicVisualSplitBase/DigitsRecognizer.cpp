@@ -373,6 +373,8 @@ cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
     frame = frame(digitsRect);
     frame = convertFrameToGray(frame);
     frame = applyColorCorrection(frame);
+    if (!frame.empty())
+        cv::imwrite("C:/tmp/digitsRect.png", frame);
     return frame;
 }
 
@@ -387,7 +389,7 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.75f;
+    const float darkPosition = 0.25f, brightPosition = 0.8f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;

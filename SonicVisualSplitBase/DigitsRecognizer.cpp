@@ -102,7 +102,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findAllSymbolsLocations(c
                     timeRect = match.location;
             }
 
-            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.3 : 2.55);
+            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.2 : 2.55);
             int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
             int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
@@ -278,18 +278,18 @@ void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
     sortMatchesBySimilarity(matches);
     std::vector<Match> resultSymbolLocations;
 
-    for (const auto& [location, symbol, similarity] : matches) {
+    for (const auto& match : matches) {
         bool intersectsWithOthers = false;
 
         for (const auto& digit : resultSymbolLocations) {
             const cv::Rect2f& other = digit.location;
 
-            if (std::isdigit(symbol) && std::isdigit(digit.symbol)) {
-                if (std::abs(location.x + location.width - (other.x + other.width)) * bestScale < 12) {
+            if (std::isdigit(match.symbol) && std::isdigit(digit.symbol)) {
+                if (std::abs(match.location.x + match.location.width - (other.x + other.width)) * bestScale < 12) {
                     intersectsWithOthers = true;
                 }
             }
-            else if (!(location & other).empty()) {
+            else if (!(match.location & other).empty()) {
                 intersectsWithOthers = true;
             }
 
@@ -298,7 +298,7 @@ void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
         }
 
         if (!intersectsWithOthers)
-            resultSymbolLocations.push_back({location, symbol});
+            resultSymbolLocations.push_back(match);
     }
 
     matches = resultSymbolLocations;
@@ -365,6 +365,9 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Seven is confused with one and two.
     case '7':
         return 1.2;
+    // Nine is confused with eight.
+    case '9':
+        return 1.1;
     }
 }
 
@@ -373,8 +376,6 @@ cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
     frame = frame(digitsRect);
     frame = convertFrameToGray(frame);
     frame = applyColorCorrection(frame);
-    if (!frame.empty())
-        cv::imwrite("C:/tmp/digitsRect.png", frame);
     return frame;
 }
 

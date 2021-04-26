@@ -102,8 +102,8 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         if (match.symbol != DigitsRecognizer::TIME && match.symbol != DigitsRecognizer::SCORE)
             timeDigits.push_back(match);
     }
-    std::ranges::sort(timeDigits, {}, [](const auto& positionAndSymbol) {
-        return positionAndSymbol.location.x;
+    std::ranges::sort(timeDigits, {}, [](const auto& match) {
+        return match.location.x;
     });
 
     bool includesMilliseconds = (gameName == "Sonic CD");
@@ -134,6 +134,11 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
                 return;
             }
         }
+    }
+
+    if (isComposite) {
+        while (timeDigits.size() > requiredDigitsCount && timeDigits.back().symbol == '1')
+            timeDigits.pop_back();
     }
 
     if (timeDigits.size() != requiredDigitsCount) {

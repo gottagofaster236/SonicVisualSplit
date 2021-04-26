@@ -6,6 +6,7 @@
 #include <ranges>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 
 
 namespace SonicVisualSplitBase {
@@ -123,6 +124,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findAllSymbolsLocations(c
         }
     }
     
+    removeMatchesWithIncorrectYCoord(allMatches);
     removeOverlappingMatches(allMatches);
     return allMatches;
 }
@@ -271,12 +273,12 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
 }
 
 
-void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& symbolLocations) {
+void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
     // Sorting the matches by similarity in descending order, and removing the overlapping ones.
-    sortMatchesBySimilarity(symbolLocations);
+    sortMatchesBySimilarity(matches);
     std::vector<Match> resultSymbolLocations;
 
-    for (const auto& [location, symbol, similarity] : symbolLocations) {
+    for (const auto& [location, symbol, similarity] : matches) {
         bool intersectsWithOthers = false;
 
         for (const auto& digit : resultSymbolLocations) {
@@ -299,12 +301,30 @@ void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& symbolLocati
             resultSymbolLocations.push_back({location, symbol});
     }
 
-    symbolLocations = resultSymbolLocations;
+    matches = resultSymbolLocations;
 }
 
 
-void DigitsRecognizer::sortMatchesBySimilarity(std::vector<DigitsRecognizer::Match>& symbolLocations) {
-    std::ranges::sort(symbolLocations, std::greater<>(), &Match::similarity);
+void DigitsRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& matches) {
+    sortMatchesBySimilarity(matches);
+    auto digitMatches = matches | std::views::filter([](const Match& match) {
+        return std::isdigit(match.symbol);
+    });
+    if (digitMatches.empty())
+        return;
+    const cv::Rect2f& bestMatchLocation = digitMatches.begin()->location;
+
+    std::erase_if(matches, [&](const Match& match) {
+        if (!std::isdigit(match.symbol))
+            return false;
+        // If the difference in the y coordinates is more than one pixel, we consider it a wrong match.
+        return std::abs(match.location.y - bestMatchLocation.y) * bestScale > 1.5;
+    });
+}
+
+
+void DigitsRecognizer::sortMatchesBySimilarity(std::vector<DigitsRecognizer::Match>& matches) {
+    std::ranges::sort(matches, std::greater<>(), &Match::similarity);
 }
 
 
@@ -345,6 +365,9 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Three is often confused with eight.
     case '8':
         return 1.13;
+    // Seven is confused with one and two.
+    case '7':
+        return 1.2;
     }
 }
 

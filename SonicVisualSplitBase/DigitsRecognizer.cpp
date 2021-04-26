@@ -362,9 +362,6 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Once again making one a less preferable option.
     case '1':
         return 2;
-    // Three is often confused with eight.
-    case '8':
-        return 1.13;
     // Seven is confused with one and two.
     case '7':
         return 1.2;

@@ -400,6 +400,10 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
         // This is an almost single-color image, there's no point in increasing the contrast.
         return cv::UMat();
     }
+    else if (maxBrightness < 150) {
+        // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
+        return cv::UMat();
+    }
 
     // Making the minimum brightness equal to 0 and the maximum brightness equal to newMaxBrighteness.
     const uint8_t newMaxBrightness = 230;  // The maximum brightness for digits.

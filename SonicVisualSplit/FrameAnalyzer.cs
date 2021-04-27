@@ -212,8 +212,19 @@ namespace SonicVisualSplit
         {
             gameTimeOnSegmentStart = gameTime;
             firstFrameTimeOfSegment = result.FrameTime;
-            ingameTimerOnSegmentStart = result.TimeInMilliseconds;
             previousResult = result;
+
+            if (result.TimeInMilliseconds > 60)
+            {
+                ingameTimerOnSegmentStart = result.TimeInMilliseconds;
+            }
+            else
+            {
+                /* Sonic CD starts the timer from 0'00"03 (or 0'00"01) when you die.
+                 * We check for 6 centiseconds (in case of a 30 fps capture).
+                 * This check may be deleted as Sonic CD mods will clarify the rules. */
+                ingameTimerOnSegmentStart = 0;
+            }
         }
 
         private void SplitIfNecessary(AnalysisResult result, bool checkedForScoreScreen)

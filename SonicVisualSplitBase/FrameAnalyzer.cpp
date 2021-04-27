@@ -163,12 +163,6 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         std::string milliseconds = timeDigitsStr.substr(3, 2);
         result.timeString += '"' + milliseconds;
         result.timeInMilliseconds += std::stoi(milliseconds) * 10;
-
-        if (result.timeInMilliseconds <= 30) {
-            /* Sonic CD starts the timer from 0'00"03 (or 0'00"01) when you die.
-             * This check may be deleted as Sonic CD mods will clarify the rules. */ 
-            result.timeInMilliseconds = 0;
-        }
     }
 
     result.recognizedTime = true;

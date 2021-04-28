@@ -59,7 +59,7 @@
     <ClInclude Include="VirtualCamCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fair_mutex.h">
+    <ClInclude Include="FairMutex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

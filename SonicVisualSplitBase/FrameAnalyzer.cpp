@@ -69,7 +69,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     }
 
     DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isComposite);
-    recognizedSymbols = digitsRecognizer.findAllSymbolsLocations(frame, checkForScoreScreen);
+    recognizedSymbols = digitsRecognizer.findLabelsAndDigits(frame, checkForScoreScreen);
     checkRecognizedSymbols(checkForScoreScreen, visualize);
     originalFrame.release();
 

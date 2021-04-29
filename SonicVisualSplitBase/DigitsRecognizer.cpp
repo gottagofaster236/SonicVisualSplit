@@ -19,7 +19,7 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 }
 
 
-std::vector<DigitsRecognizer::Match> DigitsRecognizer::findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen) {
+std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::UMat frame, bool checkForScoreScreen) {
     if (shouldResetDigitsPlacement) {
         shouldResetDigitsPlacement = false;
         resetDigitsPlacement();
@@ -124,6 +124,12 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findAllSymbolsLocations(c
         }
     }
     
+    removeMatchesWithLowSimilarity(digitsMatches);  // nope!
+    /* Will have two arrays for matches: "labelMatches" and "digitMatches".
+     * Call removeLow after we've found SCORE and here.
+    */
+    0 = 0;
+    // merge the matches here into allMatches (and define the variable itself here, not higher).
     removeMatchesWithIncorrectYCoord(allMatches);
     removeOverlappingMatches(allMatches);
     return allMatches;
@@ -199,10 +205,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         minScale = maxScale = 1;
     }
 
-    if (recalculateDigitsPlacement) {
-        const double MIN_SIMILARITY = -13000;
-        bestSimilarity = MIN_SIMILARITY / getSymbolMinSimilarityCoefficient();
-    }
+    const double MIN_SIMILARITY = -3500;
+    double bestSimilarityForScales = MIN_SIMILARITY;  // Used only if recalculateDigitsPlacement is true.
 
     std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
 
@@ -222,8 +226,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
             double minimumSqdiff;
             cv::minMaxLoc(matchResult, &minimumSqdiff);
             double bestSimilarityForScale = -minimumSqdiff / opaquePixels;
-            if (bestSimilarity < bestSimilarityForScale) {
-                bestSimilarity = bestSimilarityForScale;
+            if (bestSimilarityForScales < bestSimilarityForScale) {
+                bestSimilarityForScales = bestSimilarityForScale;
                 bestScale = scale;
             }
             else {
@@ -234,13 +238,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
 
         matches.clear();
 
-        double similarityCoefficient = getSymbolMinSimilarityCoefficient(symbol);
-        double maximumAcceptableSqdiff = -similarityCoefficient * bestSimilarity * opaquePixels;
-        if (maximumAcceptableSqdiff == 0)  // Someone is testing this on an emulator, so perfect matches are possible.
-            maximumAcceptableSqdiff = -bestSimilarity / 10 * opaquePixels;
-
         cv::UMat matchResultBinary;
-        cv::threshold(matchResult, matchResultBinary, maximumAcceptableSqdiff, 1, cv::THRESH_BINARY_INV);
+        cv::threshold(matchResult, matchResultBinary, MIN_SIMILARITY, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);
 
@@ -270,6 +269,18 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         return matches;
     else  // There cannot be that many matches on a correct image. (It's probably a single color image).
         return {};
+}
+
+
+void DigitsRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches) {
+    double bestSimilarity = std::ranges::max(
+        std::views::transform(matches, &Match::similarity));
+    std::erase_if(matches, [&](const Match& match) {
+        double similarityCoefficient = getSymbolMinSimilarityCoefficient(match.symbol);
+        double similarityMultiplier = getSymbolSimilarityMultiplier(match.symbol);
+        double minSimilarity = bestSimilarity * similarityCoefficient * similarityMultiplier;
+        return match.similarity < minSimilarity;
+    });
 }
 
 
@@ -348,7 +359,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
         else
             return 2.5;
     case '4':
-        return 2.5;
+        return 2;
     }
 }
 

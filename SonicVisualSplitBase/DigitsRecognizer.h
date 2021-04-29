@@ -22,7 +22,7 @@ public:
     };
 
     // Finds locations of all digits, "SCORE" and "TIME" labels.
-    std::vector<Match> findAllSymbolsLocations(cv::UMat frame, bool checkForScoreScreen);
+    std::vector<Match> findLabelsAndDigits(cv::UMat frame, bool checkForScoreScreen);
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
@@ -31,7 +31,7 @@ public:
     // Same as resetDigitsPlacement, but non-blocking.
     static void resetDigitsPlacementAsync();
 
-    // Returns whether in the last call to findAllSymbolsLocations the digits placement was recalculated.
+    // Returns whether in the last call to findLabelsAndDigits the digits placement was recalculated.
     bool recalculatedDigitsPlacementLastTime() const;
 
     // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
@@ -60,6 +60,8 @@ private:
     DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
     std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
+
+    void removeMatchesWithLowSimilarity(std::vector<Match>& matches);
 
     void removeOverlappingMatches(std::vector<Match>& matches);
 
@@ -105,9 +107,6 @@ private:
     /* The rectangle where the time digits are located (i.e. we don't search the whole frame).
      * (This rectangle is valid after the frame has been scaled down to bestScale). */
     cv::Rect digitsRect;
-
-    // Similarity coefficient of the best match
-    double bestSimilarity;
 
     // See recalculatedDigitsPlacementLastTime()
     bool recalculatedDigitsPlacement;

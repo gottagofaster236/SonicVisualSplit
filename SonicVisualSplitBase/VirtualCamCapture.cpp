@@ -98,12 +98,12 @@ std::wstring VirtualCamCapture::getName(IMoniker* moniker) {
 
 // Release the format block for a media type.
 void _FreeMediaType(AM_MEDIA_TYPE& mt) {
-    if (mt.cbFormat != 0)     {
+    if (mt.cbFormat != 0) {
         CoTaskMemFree((PVOID) mt.pbFormat);
         mt.cbFormat = 0;
         mt.pbFormat = nullptr;
     }
-    if (mt.pUnk != nullptr)     {
+    if (mt.pUnk != nullptr) {
         // pUnk should not be used.
         mt.pUnk->Release();
         mt.pUnk = nullptr;

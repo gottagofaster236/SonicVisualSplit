@@ -78,7 +78,8 @@ make sure the camera stream isn't used by another program.
 - If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
 If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
 at the point where SVS fails would be appreciated.
-- If you couldn't solve your problem or have other questions, feel free to ask a question using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
+- If you couldn't solve your problem or have questions and/or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
+You can also ask your question [here on Discord](https://discord.gg/BRa5X9BPGg) if you don't wanna create a GitHub account.
 
 ## For developers
 Contributions are welcome! You should probably read [BUILDING.md](BUILDING.md) on how to build the project.

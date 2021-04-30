@@ -65,10 +65,7 @@ private:
 
     void removeOverlappingMatches(std::vector<Match>& matches);
 
-    void removeMatchesWithIncorrectYCoord(std::vector<Match>& matches);
-
-    // Sorts the matches by similarity in descending order.
-    static void sortMatchesBySimilarity(std::vector<Match>& matches);
+    void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
 
     /* Returns the minimum similarity coefficient divided by the best found similarity.
      * Without parameters, returns the default similarity. */

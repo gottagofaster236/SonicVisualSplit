@@ -52,8 +52,6 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
         digitsRect = {0, 0, 0, 0};
     }
 
-    std::vector<Match> allMatches;
-
     std::vector<char> symbolsToSearch;
     if (checkForScoreScreen) {
         symbolsToSearch.push_back(TIME);
@@ -62,8 +60,11 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
     for (int i = 0; i <= 9; i++)
         symbolsToSearch.push_back('0' + i);
 
+    std::vector<Match> labelMatches;  // "TIME" and "SCORE" labels.
+    std::vector<Match> digitMatches;  // Time digits.
+
     for (char symbol : symbolsToSearch) {
-        const cv::UMat& frameToSearch = ((symbol == TIME || symbol == SCORE) ? frameWithYellowFilter : frame);
+        const cv::UMat& frameToSearch = (std::isdigit(symbol) ? frame : frameWithYellowFilter);
         bool recalculateDigitsPlacement = (bestScale == -1);
         recalculatedDigitsPlacement = recalculatedDigitsPlacement;
         std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
@@ -72,7 +73,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             match.similarity *= getSymbolSimilarityMultiplier(symbol);
             // We've cropped the frame to speed up the search. Now we have to compensate for that.
             match.location += cv::Point2f((float) (digitsRect.x / bestScale), (float) (digitsRect.y / bestScale));
-            allMatches.push_back(match);
+            std::vector<Match>& matches = (std::isdigit(symbol) ? digitMatches : labelMatches);
+            matches.push_back(match);
         }
 
         if (symbol == TIME) {
@@ -94,15 +96,20 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
              * That's why we'll crop the frame to that rectangle. */
             if (symbolMatches.empty())
                 return {};
-            std::vector<Match> curRecognized = allMatches;
-            removeOverlappingMatches(curRecognized);
+            removeMatchesWithLowSimilarity(labelMatches);
+            removeOverlappingMatches(labelMatches);
+            if (labelMatches.size() > 5) {
+                // There can't be that many matches.
+                return {};
+            }
+
             cv::Rect2f timeRect = {1e9, 1e9, 1e9, 1e9};
-            for (const auto& match : curRecognized) {
+            for (const auto& match : labelMatches) {
                 if (match.symbol == TIME && match.location.y < timeRect.y)
                     timeRect = match.location;
             }
 
-            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.2 : 2.55);
+            double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.2 : 2.45);
             int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
             int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
@@ -117,21 +124,19 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
             frame = cropToDigitsRectAndCorrectColor(frame);
             if (frame.empty())
-                return curRecognized;
+                return labelMatches;
 
             relativeDigitsRect = {(float) digitsRect.x / oldWidth, (float) digitsRect.y / oldHeight,
                 (float) digitsRect.width / oldWidth, (float) digitsRect.height / oldHeight};
         }
     }
     
-    removeMatchesWithLowSimilarity(digitsMatches);  // nope!
-    /* Will have two arrays for matches: "labelMatches" and "digitMatches".
-     * Call removeLow after we've found SCORE and here.
-    */
-    0 = 0;
-    // merge the matches here into allMatches (and define the variable itself here, not higher).
-    removeMatchesWithIncorrectYCoord(allMatches);
-    removeOverlappingMatches(allMatches);
+    removeMatchesWithLowSimilarity(digitMatches);
+    removeMatchesWithIncorrectYCoord(digitMatches);
+    removeOverlappingMatches(digitMatches);
+
+    std::vector<Match> allMatches = std::move(digitMatches);
+    allMatches.insert(allMatches.end(), labelMatches.begin(), labelMatches.end());
     return allMatches;
 }
 
@@ -182,6 +187,8 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 }
 
 
+static const double MIN_SIMILARITY = -8000;
+
 /* Returns all found positions of a digit. If recalculateDigitsPlacement is set to true,
  * goes through different scales of the original frame (see the link below).
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
@@ -205,8 +212,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         minScale = maxScale = 1;
     }
 
-    const double MIN_SIMILARITY = -3500;
-    double bestSimilarityForScales = MIN_SIMILARITY;  // Used only if recalculateDigitsPlacement is true.
+    double bestSimilarityForScales = MIN_SIMILARITY;
+    // bestSimilarityForScales is used only if recalculateDigitsPlacement is true.
 
     std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
 
@@ -239,7 +246,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         matches.clear();
 
         cv::UMat matchResultBinary;
-        cv::threshold(matchResult, matchResultBinary, MIN_SIMILARITY, 1, cv::THRESH_BINARY_INV);
+        cv::threshold(matchResult, matchResultBinary, -MIN_SIMILARITY * opaquePixels, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);
 
@@ -265,28 +272,31 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         }
     }
 
-    if (matches.size() < 1000)
-        return matches;
-    else  // There cannot be that many matches on a correct image. (It's probably a single color image).
-        return {};
+    return matches;
 }
 
 
 void DigitsRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches) {
-    double bestSimilarity = std::ranges::max(
-        std::views::transform(matches, &Match::similarity));
+    if (matches.size() < 2)
+        return;
+    // Finding the second largest similarity (not the first for precision).
+    std::ranges::nth_element(matches, matches.begin() + 1, std::greater<>(), &Match::similarity);
+    double bestSimilarity = matches[1].similarity;
+    
     std::erase_if(matches, [&](const Match& match) {
         double similarityCoefficient = getSymbolMinSimilarityCoefficient(match.symbol);
         double similarityMultiplier = getSymbolSimilarityMultiplier(match.symbol);
-        double minSimilarity = bestSimilarity * similarityCoefficient * similarityMultiplier;
-        return match.similarity < minSimilarity;
+        double minSimilarity = bestSimilarity * similarityCoefficient;
+        minSimilarity = std::max(minSimilarity, MIN_SIMILARITY);
+        minSimilarity = std::min(minSimilarity, MIN_SIMILARITY / 10);
+        return match.similarity / similarityMultiplier < minSimilarity;
     });
 }
 
 
 void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
     // Sorting the matches by similarity in descending order, and removing the overlapping ones.
-    sortMatchesBySimilarity(matches);
+    std::ranges::sort(matches, std::greater<>(), &Match::similarity);
     std::vector<Match> resultSymbolLocations;
 
     for (const auto& match : matches) {
@@ -316,33 +326,23 @@ void DigitsRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
 }
 
 
-void DigitsRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& matches) {
-    sortMatchesBySimilarity(matches);
-    auto digitMatches = matches | std::views::filter([](const Match& match) {
-        return std::isdigit(match.symbol);
-    });
+void DigitsRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches) {
     if (digitMatches.empty())
         return;
-    const cv::Rect2f& bestMatchLocation = digitMatches.begin()->location;
+    const Match& bestMatch = std::ranges::max(digitMatches, {}, &Match::similarity);
+    const cv::Rect2f& bestMatchLocation = bestMatch.location;
 
-    std::erase_if(matches, [&](const Match& match) {
-        if (!std::isdigit(match.symbol))
-            return false;
+    std::erase_if(digitMatches, [&](const Match& match) {
         // If the difference in the y coordinates is more than one pixel, we consider it a wrong match.
         return std::abs(match.location.y - bestMatchLocation.y) * bestScale > 1.5;
     });
 }
 
 
-void DigitsRecognizer::sortMatchesBySimilarity(std::vector<DigitsRecognizer::Match>& matches) {
-    std::ranges::sort(matches, std::greater<>(), &Match::similarity);
-}
-
-
 double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     switch (symbol) {
     default:
-        return 3.75;
+        return 3.25;
     case SCORE:
         return 2;
     // We use "TIME" to detect the score screen, so we want to be sure.
@@ -355,11 +355,11 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
         if (isComposite)
-            return 2.15;
+            return 2;
         else
             return 2.5;
     case '4':
-        return 2;
+        return 2.5;
     }
 }
 
@@ -373,6 +373,9 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Once again making one a less preferable option.
     case '1':
         return 2;
+    // Four is confused with one.
+    case '4':
+        return 1.3;
     // Seven is confused with one and two.
     case '7':
         return 1.2;
@@ -411,7 +414,7 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
         // This is an almost single-color image, there's no point in increasing the contrast.
         return cv::UMat();
     }
-    else if (maxBrightness < 150) {
+    else if (maxBrightness < 100) {
         // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
         return cv::UMat();
     }

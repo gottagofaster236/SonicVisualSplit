@@ -3,7 +3,7 @@
 #include "ObsWindowCapture.h"
 #include "VirtualCamCapture.h"
 #include "DigitsRecognizer.h"
-#include "fair_mutex.h"
+#include "FairMutex.h"
 #include <chrono>
 #include <thread>
 #include <mutex>

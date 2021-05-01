@@ -359,7 +359,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
         else
             return 2.5;
     case '4':
-        return 2.5;
+        return 2;
     }
 }
 
@@ -375,10 +375,10 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
         return 2;
     // Four is confused with one.
     case '4':
-        return 1.3;
+        return 1.2;
     // Seven is confused with one and two.
     case '7':
-        return 1.2;
+        return 1.15;
     // Nine is confused with eight.
     case '9':
         return 1.1;

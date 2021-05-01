@@ -118,20 +118,18 @@ void setVideoCapture(int sourceIndex) {
 
     /* We've changed the capture, now the previous frames are now useless
      * (since the processFrame function is different). */
-    {
-        std::lock_guard<yamc::fair::mutex> guard(savedRawFramesMutex);
-        savedRawFrames.clear();
-        DigitsRecognizer::resetDigitsPlacementAsync();
+    std::lock_guard<yamc::fair::mutex> guard2(savedRawFramesMutex);
+    savedRawFrames.clear();
+    DigitsRecognizer::resetDigitsPlacementAsync();
 
-        currentVideoSourceIndex = sourceIndex;
+    currentVideoSourceIndex = sourceIndex;
 
-        if (sourceIndex >= 0)
-            gameVideoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
-        else if (sourceIndex == OBS_WINDOW_CAPTURE)
-            gameVideoCapture = std::make_unique<ObsWindowCapture>();
-        else  // NO_VIDEO_CAPTURE
-            gameVideoCapture = nullptr;
-    }
+    if (sourceIndex >= 0)
+        gameVideoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
+    else if (sourceIndex == OBS_WINDOW_CAPTURE)
+        gameVideoCapture = std::make_unique<ObsWindowCapture>();
+    else  // NO_VIDEO_CAPTURE
+        gameVideoCapture = nullptr;
 }
 
 }  // namespace SonicVisualSplitBase

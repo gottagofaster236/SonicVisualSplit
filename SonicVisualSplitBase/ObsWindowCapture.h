@@ -10,7 +10,7 @@
 namespace SonicVisualSplitBase {
 
 /* A class that captures the stream preview from the currently opened OBS window.
- * See REAME.md for more information. */
+ * See README.md for more information. */
 class ObsWindowCapture : public GameVideoCapture {
 public:
     // Returns the stream preview.

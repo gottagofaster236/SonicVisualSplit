@@ -5,6 +5,7 @@
 #define NOMINMAX
 #include <dshow.h>
 #include <vector>
+#include <string>
 #include <utility>
 
 

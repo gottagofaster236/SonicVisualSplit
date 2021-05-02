@@ -98,7 +98,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
                 return {};
             removeMatchesWithLowSimilarity(labelMatches);
             removeOverlappingMatches(labelMatches);
-            if (labelMatches.size() > 5) {
+            if (labelMatches.size() > 6) {
                 // There can't be that many matches.
                 return {};
             }
@@ -348,7 +348,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
     // We use "TIME" to detect the score screen, so we want to be sure.
     case TIME:
         if (isComposite)
-            return 2;
+            return 1.75;
         else
             return 1.5;
     /* One is really small, so it can be misdetected, thus the coefficient is lowered.

@@ -31,6 +31,9 @@ public:
     // Same as resetDigitsPlacement, but non-blocking.
     static void resetDigitsPlacementAsync();
 
+    // Resetting everything we precalculated.
+    static void fullReset();
+
     // Returns whether in the last call to findLabelsAndDigits the digits placement was recalculated.
     bool recalculatedDigitsPlacementLastTime() const;
 

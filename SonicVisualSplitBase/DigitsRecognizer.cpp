@@ -156,6 +156,15 @@ void DigitsRecognizer::resetDigitsPlacementAsync() {
 }
 
 
+void DigitsRecognizer::fullReset() {
+    FrameAnalyzer::lockFrameAnalyzationMutex();
+    resetDigitsPlacement();
+    if (instance)
+        instance->relativeDigitsRect = {};
+    FrameAnalyzer::unlockFrameAnalyzationMutex();
+}
+
+
 bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() const {
     return recalculatedDigitsPlacement;
 }

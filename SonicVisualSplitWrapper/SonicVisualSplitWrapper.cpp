@@ -70,6 +70,11 @@ void FrameAnalyzer::ResetDigitsPlacement() {
 }
 
 
+void FrameAnalyzer::FullReset() {
+    SonicVisualSplitBase::DigitsRecognizer::fullReset();
+}
+
+
 Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }

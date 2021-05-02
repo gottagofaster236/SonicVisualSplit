@@ -36,6 +36,8 @@ public:
 
     static void ResetDigitsPlacement();
 
+    static void FullReset();
+
 private:
     String^ gameName;
     String^ templatesDirectory;

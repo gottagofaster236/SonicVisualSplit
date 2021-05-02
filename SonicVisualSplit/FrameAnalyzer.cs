@@ -321,6 +321,9 @@ namespace SonicVisualSplit
             int startingIndex = savedFrameTimes.IndexOf(startFrameTime) + increment;
             int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
 
+            TimeSpan timeout = TimeSpan.FromSeconds(10);  // FindFirstRecognizedFrame is a very expensive operation.
+            DateTime start = DateTime.Now;
+
             for (int frameIndex = startingIndex; frameIndex != fallbackIndex; frameIndex += increment)
             {
                 long frameTime = savedFrameTimes[frameIndex];
@@ -338,6 +341,12 @@ namespace SonicVisualSplit
                         /* When we're going into a transition, the screen fades out. So we **don't** reset 
                          * the frame analyzer, because it won't find the "TIME" label on the screen once it's faded out. */
                     }
+                }
+
+                TimeSpan elapsed = DateTime.Now - start;
+                if (elapsed > timeout)
+                {
+                    return fallback;
                 }
             }
 
@@ -548,6 +557,8 @@ namespace SonicVisualSplit
                     // IsGameTimePaused is reset too, bring it back to true.
                     state.IsGameTimePaused = true;
                     FrameStorage.DeleteAllSavedFrames();
+                    SonicVisualSplitWrapper.FrameAnalyzer.FullReset();
+
                     gameTime = 0;
                     gameTimeOnSegmentStart = 0;
                     ingameTimerOnSegmentStart = 0;

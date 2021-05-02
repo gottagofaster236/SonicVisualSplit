@@ -421,15 +421,15 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
 
     if (difference < MIN_DIFFERENCE) {
         // This is an almost single-color image, there's no point in increasing the contrast.
-        return cv::UMat();
+        return {};
     }
     else if (maxBrightness < 100) {
         // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
-        return cv::UMat();
+        return {};
     }
     else if (minBrightness > 180 && gameName == "Sonic CD") {
         // In Sonic CD, we don't need to recognize white transitions.
-        return cv::UMat();
+        return {};
     }
 
     maxBrightness = std::max(maxBrightness, (uint8_t) 210);

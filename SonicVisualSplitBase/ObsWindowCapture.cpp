@@ -60,12 +60,12 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
 
     if (abs((streamLeft + streamRight) / 2 - screenshot.cols / 2) > 10) {
         // The stream preview isn't centered. That's probably because OBS hasn't finished drawing.
-        return cv::UMat();
+        return {};
     }
 
     cv::Rect streamRectangle(streamLeft, streamTop, streamRight - streamLeft, streamBottom - streamTop);
     if (streamRectangle.empty()) {
-        return cv::UMat();
+        return {};
     }
     screenshot(streamRectangle).copyTo(streamPreview);
     if (lastGameFrameWidth != streamPreview.cols || lastGameFrameHeight != streamPreview.rows) {

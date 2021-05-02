@@ -89,10 +89,10 @@ cv::UMat getSavedFrame(long long frameTime) {
     
     // Return an empty UMat if no capture is specified.
     if (!gameVideoCapture)
-        return cv::UMat();
+        return {};
     // Or if the storage doesn't contain the frame.
     if (!savedRawFrames.contains(frameTime))
-        return cv::UMat();
+        return {};
 
     cv::Mat rawFrame = savedRawFrames[frameTime];
     return gameVideoCapture->processFrame(rawFrame);

@@ -404,7 +404,7 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.8f;
+    const float darkPosition = 0.25f, brightPosition = 0.85f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;
@@ -418,6 +418,8 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
         // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
         return cv::UMat();
     }
+
+    maxBrightness = std::max(maxBrightness, (uint8_t) 210);
 
     // Making the minimum brightness equal to 0 and the maximum brightness equal to newMaxBrighteness.
     const uint8_t newMaxBrightness = 230;  // The maximum brightness for digits.

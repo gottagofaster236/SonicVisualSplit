@@ -231,7 +231,6 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
      * we take a thousand pixels from the frame, and check whether at least half of them have around the same brightness.
      * If that brightness is around 0, then we say that it's a black frame.
      * If it's high enough, we say that it's a white frame. */
-
     cv::Mat frameRead = frame.getMat(cv::ACCESS_READ);
     const int pixelsPerDimension = 30;
     int stepX = std::max(frame.cols / pixelsPerDimension, 1);
@@ -239,7 +238,7 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
     std::vector<uint8_t> pixels;
     for (int y = 0; y < frame.rows; y += stepY) {
         for (int x = 0; x < frame.cols; x += stepX) {
-            cv::Vec3b pixel = frameRead.at<uint8_t>(y, x);
+            cv::Vec3b pixel = frameRead.at<cv::Vec3b>(y, x);
             uint8_t brightness = ((int) pixel[0] + (int) pixel[1] + (int) pixel[2]) / 3;
             pixels.push_back(brightness);
         }

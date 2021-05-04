@@ -98,8 +98,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
                 return {};
             removeMatchesWithLowSimilarity(labelMatches);
             removeOverlappingMatches(labelMatches);
-            if (labelMatches.size() > 6) {
-                // There can't be that many matches.
+            if (labelMatches.size() > 30) {
+                // There can't be that many matches, even if some of them are wrong.
                 return {};
             }
 

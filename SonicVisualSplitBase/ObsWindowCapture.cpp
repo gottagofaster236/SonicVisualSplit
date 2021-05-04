@@ -16,7 +16,7 @@ static const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
 cv::Mat ObsWindowCapture::captureRawFrameImpl() {
     cv::Mat screenshot;
     if (!updateOBSHwnd())
-        return screenshot;  // return an empty image in case of error
+        return {};
     {
         std::lock_guard<std::mutex> guard(obsCaptureMutex);
         obsCapture->getScreenshot();
@@ -33,7 +33,7 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
      * It is adjacent to the sides of the screen. We start from the right side. */
     cv::UMat streamPreview;
     if (screenshot.empty())
-        return streamPreview;  // Return an empty image in case of error
+        return {};
     // Find the border rectangle.
     int borderRight = screenshot.cols - 1;
     cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);

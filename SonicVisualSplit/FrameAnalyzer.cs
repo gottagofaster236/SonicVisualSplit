@@ -416,7 +416,7 @@ namespace SonicVisualSplit
                 /* Checking that the recognized time is correct (at least to some degree).
                  * If the time decreased, or if it increased by too much, we just ignore that.
                  * We want to recover from errors, so we also introduce a margin of error. */
-                long timeElapsed = result.FrameTime - previousResult.FrameTime + 100;
+                long timeElapsed = result.FrameTime - previousResult.FrameTime + 150;
                 // Adding a margin to the elapsed time, as frames are not captured at precise moments.
                 long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
                 long marginOfError = (long)(timeElapsed * 0.35);

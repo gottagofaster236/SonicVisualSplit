@@ -9,7 +9,7 @@ Splits Sonic 1, 2, and CD using IGT *(in-game time)*.
 ## System requirements
 Required OS version is **Windows 10 64-bit** (2016's Anniversary Update or newer).
 
-If you want to record (or stream) your game footage, you have to have [OBS Studio](https://obsproject.com/) (or an another streaming software) installed.
+If you want to record (or stream) your game footage, you have to have [OBS Studio](https://obsproject.com/) (or other streaming software) installed.
 
 ## Installation
 1. Unpack the contents of [SVS.zip](https://github.com/gottagofaster236/SonicVisualSplit/releases/latest/download/SVS.zip)
@@ -29,7 +29,7 @@ and find SonicVisualSplit under the "Control" category.
 (provided that your video capture cards is detected as a webcam on your computer).
 
 - If you **do want to share your runs**, then you'll have use OBS Studio
-(or an alternative streaming software, such as Streamlabs).
+(or alternative streaming software, such as Streamlabs).
 This is due to Windows not allowing two applications to use a webcam simultaneously.
 You'll have to use one of the two methods to set everything up.
 
@@ -65,20 +65,26 @@ Alternatively, you can go to component settings (as described in the previous se
 ## Known limitations
 - If you die on *Scrap Brain 3* in Sonic 1, you'll have to undo the split manually (the game time will be correct anyways).
 - Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
+- In Sonic 2, when you hit the boss, the timer is flashing and SVS fails to recognize that.
+This is fine, it'll recover soon after.
 
 ## Troubleshooting
-- If the component fails to recognize too many frames (when it writes a dash instead of a recognized time),
+- If the component fails to recognize the digits too often (when it writes a dash instead of a recognized time),
 check your settings.
 Make sure you've selected the correct video mode and the correct game.
 Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
 - Note that occasional incorrectly recognized frames are fine, thanks to error detection.
-- If your capture card outputs a too dark image, you'll have to apply a color correction filter (in your streaming software).
+- If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software. Increase the contrast and brightness and see if it helps.
+- Make sure that the aspect ratio of the game is correct. If it's stretched, fix it with your streaming software.
 - If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.
-- If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
+- If you've found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
 If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
 at the point where SVS fails would be appreciated.
-- If you couldn't solve your problem or have questions and/or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
+
+## Questions / Suggestions
+If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
+
 You can also ask your question [here on Discord](https://discord.gg/BRa5X9BPGg) if you don't wanna create a GitHub account.
 
 ## For developers

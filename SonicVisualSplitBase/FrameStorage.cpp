@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <memory>
 #include <map>
 #include <set>
@@ -27,18 +28,25 @@ static yamc::fair::mutex gameVideoCaptureMutex;
 static int currentVideoSourceIndex;
 
 static std::jthread framesThread;
+// The time when the next frame is scheduled to capture, measured in system_clock::duration::count().
+static std::atomic<long long> nextFrameCaptureTimeCount;
+static const int captureFPS = 60;
 
 static void saveOneFrame();
+static void resetNextFrameCaptureTime();
 
 void startSavingFrames() {
     stopSavingFrames();
 
+    resetNextFrameCaptureTime();
+
     framesThread = std::jthread([](std::stop_token stopToken) {
         while (!stopToken.stop_requested()) {
-            auto startTime = system_clock::now();
+            auto nextFrameCaptureTime = system_clock::time_point(system_clock::duration(nextFrameCaptureTimeCount));
+            std::this_thread::sleep_until(nextFrameCaptureTime);
             saveOneFrame();
-            auto nextIteration = startTime + milliseconds(16);  // 60 fps
-            std::this_thread::sleep_until(nextIteration);
+            system_clock::duration frameLength(seconds(1) / captureFPS);
+            nextFrameCaptureTimeCount += frameLength.count();
         }
     });
 
@@ -61,6 +69,11 @@ void saveOneFrame() {
 
     long long currentMilliseconds = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     savedRawFrames[currentMilliseconds] = rawFrame;
+}
+
+
+void resetNextFrameCaptureTime() {
+    nextFrameCaptureTimeCount = system_clock::now().time_since_epoch().count();
 }
 
 
@@ -130,7 +143,10 @@ void setVideoCapture(int sourceIndex) {
         gameVideoCapture = std::make_unique<ObsWindowCapture>();
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = nullptr;
+
+    resetNextFrameCaptureTime();
 }
+
 
 }  // namespace SonicVisualSplitBase
 }  // namespace FrameStorage

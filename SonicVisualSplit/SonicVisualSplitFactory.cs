@@ -1,6 +1,7 @@
 ﻿using LiveSplit.Model;
 using LiveSplit.UI.Components;
 using System;
+using System.Reflection;
 
 [assembly: ComponentFactory(typeof(SonicVisualSplit.SonicVisualSplitFactory))]
 
@@ -32,13 +33,15 @@ namespace SonicVisualSplit
             return newComponent;
         }
 
+        // Update code take from here https://github.com/fatalis/SourceSplit/
+
         public string UpdateName => ComponentName;
 
-        public string XMLURL => "http://livesplit.org/update/Components/update.SonicVisualSplit.xml";
+        public string UpdateURL => "https://raw.githubusercontent.com/gottagofaster236/SonicVisualSplit/autoupdate/";
 
-        public string UpdateURL => "http://livesplit.org/update/";
+        public string XMLURL => UpdateURL + "update.xml";
 
-        public Version Version => Version.Parse("1.0.0");
+        public Version Version => Assembly.GetExecutingAssembly().GetName().Version;
 
     }
 }

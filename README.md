@@ -67,6 +67,7 @@ Alternatively, you can go to component settings (as described in the previous se
 - Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
 - In Sonic 2, when you hit the boss, the timer is flashing and SVS fails to recognize that.
 This is fine, it'll recover soon after.
+- You must have one split per each act, and the splits should start from the first act. In particular, SVS is (probably) not usable for multi-game runs.
 
 ## Troubleshooting
 - If the component fails to recognize the digits too often (when it writes a dash instead of a recognized time),

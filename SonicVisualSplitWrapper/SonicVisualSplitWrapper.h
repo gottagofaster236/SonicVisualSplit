@@ -34,6 +34,8 @@ public:
 
     AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize);
 
+    static void ReportCurrentSplitIndex(int currentSplitIndex);
+
     static void ResetDigitsPlacement();
 
     static void FullReset();

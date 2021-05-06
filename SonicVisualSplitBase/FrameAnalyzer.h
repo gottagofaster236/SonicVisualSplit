@@ -36,6 +36,11 @@ public:
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
+    // Must be called before calling analyzeFrame.
+    static void reportCurrentSplitIndex(int currentSplitIndex);
+
+    static int getCurrentSplitIndex();
+
     // This header is included by C++/CLI, which doesn't have <mutex>.
     static void lockFrameAnalyzationMutex();
 
@@ -56,6 +61,8 @@ private:
     enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
     SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
 
+    inline static std::unique_ptr<FrameAnalyzer> instance;
+
     // Settings.
     std::string gameName;
     std::filesystem::path templatesDirectory;
@@ -67,7 +74,7 @@ private:
     std::vector<DigitsRecognizer::Match> recognizedSymbols;
     cv::UMat originalFrame;
 
-    inline static std::unique_ptr<FrameAnalyzer> instance;
+    inline static int currentSplitIndex;
 };
 
 }  // namespace SonicVisualSplitBase

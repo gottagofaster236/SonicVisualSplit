@@ -109,6 +109,8 @@ namespace SonicVisualSplit
                     SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
                 }
 
+                SonicVisualSplitWrapper.FrameAnalyzer.ReportCurrentSplitIndex(state.CurrentSplitIndex);
+
                 AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize);
                 SendResultToConsumers(result);
 

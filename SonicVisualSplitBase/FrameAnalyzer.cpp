@@ -306,6 +306,16 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
 }
 
 
+void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
+    FrameAnalyzer::currentSplitIndex = currentSplitIndex;
+}
+
+
+int FrameAnalyzer::getCurrentSplitIndex() {
+    return currentSplitIndex;
+}
+
+
 void FrameAnalyzer::lockFrameAnalyzationMutex() {
     frameAnalyzationMutex.lock();
 }

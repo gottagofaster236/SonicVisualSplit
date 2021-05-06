@@ -65,6 +65,11 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 }
 
 
+void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
+    SonicVisualSplitBase::FrameAnalyzer::reportCurrentSplitIndex(currentSplitIndex);
+}
+
+
 void FrameAnalyzer::ResetDigitsPlacement() {
     SonicVisualSplitBase::DigitsRecognizer::resetDigitsPlacement();
 }

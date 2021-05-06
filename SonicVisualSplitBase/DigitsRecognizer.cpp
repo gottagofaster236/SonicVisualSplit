@@ -410,7 +410,7 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     }
     std::ranges::sort(pixels);
     
-    const float darkPosition = 0.25f, brightPosition = 0.85f;
+    const float darkPosition = 0.2f, brightPosition = 0.85f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t difference = maxBrightness - minBrightness;

@@ -114,10 +114,6 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
             int digitsRectBottom = (int) ((timeRect.y + timeRect.height * 1.1) * bestScale);
-            digitsRectLeft = std::max(digitsRectLeft, 0);
-            digitsRectRight = std::min(digitsRectRight, frame.cols);
-            digitsRectTop = std::max(digitsRectTop, 0);
-            digitsRectBottom = std::min(digitsRectBottom, frame.rows);
             digitsRect = {digitsRectLeft, digitsRectTop, digitsRectRight - digitsRectLeft, digitsRectBottom - digitsRectTop};
             if (digitsRect.empty())
                 return {};
@@ -393,6 +389,11 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
 
 
 cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
+    // Checking that digitsRect is inside the frame.
+    cv::Rect frameRect(0, 0, frame.cols, frame.rows);
+    if ((digitsRect & frameRect) != digitsRect) {
+        return {};
+    }
     frame = frame(digitsRect);
     frame = convertFrameToGray(frame);
     frame = applyColorCorrection(frame);

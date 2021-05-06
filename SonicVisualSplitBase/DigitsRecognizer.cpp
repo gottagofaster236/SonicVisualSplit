@@ -110,7 +110,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             }
 
             double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.2 : 2.45);
-            int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.25) * bestScale);
+            int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.22) * bestScale);
             int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
             int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
             int digitsRectBottom = (int) ((timeRect.y + timeRect.height * 1.1) * bestScale);
@@ -388,9 +388,6 @@ double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
     // Seven is confused with one and two.
     case '7':
         return 1.15;
-    // Nine is confused with eight.
-    case '9':
-        return 1.1;
     }
 }
 

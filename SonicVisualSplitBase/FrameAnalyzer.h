@@ -61,6 +61,8 @@ private:
     enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
     SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
 
+    bool checkIfImageIsSingleColor(cv::UMat, cv::Vec3b color);
+
     inline static std::unique_ptr<FrameAnalyzer> instance;
 
     // Settings.

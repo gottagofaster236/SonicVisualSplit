@@ -227,83 +227,34 @@ void FrameAnalyzer::visualizeResult() {
 
 
 FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
-    /* The algorithm is the following:
-     * we take a thousand pixels from the frame, and check whether at least half of them have around the same brightness.
-     * If that brightness is around 0, then we say that it's a black frame.
-     * If it's high enough, we say that it's a white frame. */
-    cv::Mat frameRead = frame.getMat(cv::ACCESS_READ);
-    const int pixelsPerDimension = 30;
-    int stepX = std::max(frame.cols / pixelsPerDimension, 1);
-    int stepY = std::max(frame.rows / pixelsPerDimension, 1);
-    std::vector<uint8_t> pixels;
-    for (int y = 0; y < frame.rows; y += stepY) {
-        for (int x = 0; x < frame.cols; x += stepX) {
-            cv::Vec3b pixel = frameRead.at<cv::Vec3b>(y, x);
-            uint8_t brightness = ((int) pixel[0] + (int) pixel[1] + (int) pixel[2]) / 3;
-            pixels.push_back(brightness);
-        }
-    }
-    
-    std::vector<int> pixelDistribution(256);  // How many pixels have the corresponding brightness value.
-    for (int pixel : pixels) {
-        pixelDistribution[pixel]++;
-    }
-
-    // We go through the pixel distribution with a sliding window of size 10, to see the most frequent brightness.
-    const int SLIDING_WINDOW_SIZE = 10;
-
-    int maximumOccurrences = INT_MIN;
-    int mostPopularWindow;
-
-    int currentOccurrences = std::accumulate(pixelDistribution.begin(), pixelDistribution.begin() + SLIDING_WINDOW_SIZE, 0);
-    for (int currentWindowStart = 0; ; currentWindowStart++) {
-        if (currentOccurrences > maximumOccurrences) {
-            maximumOccurrences = currentOccurrences;
-            mostPopularWindow = currentWindowStart;
-        }
-
-        if (currentWindowStart == pixelDistribution.size() - SLIDING_WINDOW_SIZE) {
-            break;
-        }
-        else {
-            currentOccurrences -= pixelDistribution[currentWindowStart];
-            currentOccurrences += pixelDistribution[currentWindowStart + SLIDING_WINDOW_SIZE];
-        }
-    }
-
-    if (maximumOccurrences < pixels.size() * 0.35)
+    /* Checking the rectangle with the digits to see whether */
+    const std::unique_ptr<DigitsRecognizer>& instance = DigitsRecognizer::getCurrentInstance();
+    if (!instance)
+        return SingleColor::NOT_SINGLE_COLOR;
+    cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
+    cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
+        (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
+    if (digitsRect.empty())
         return SingleColor::NOT_SINGLE_COLOR;
 
-    if (mostPopularWindow >= 200) {
-        return SingleColor::WHITE;
-    }
-    else if (mostPopularWindow <= 35) {
-        /* This is a black frame, supposedly.
-         * Sonic 1's Star Light zone is dark enough to trick the algorithm, so we make another check:
-         * if we precalculated the area with digits, it must dark (i.e. black frame shouldn't contain digits). */
-        const std::unique_ptr<DigitsRecognizer>& instance = DigitsRecognizer::getCurrentInstance();
-        if (!instance)
-            return SingleColor::NOT_SINGLE_COLOR;
+    frame = frame(digitsRect);
 
-        cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
-        cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
-            (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
-        if (digitsRect.empty())
-            return SingleColor::NOT_SINGLE_COLOR;
-
-        // Check that every pixel's brightness is low enough.
-        frameRead = frameRead(digitsRect);
-        double maximumBrightness;
-        cv::minMaxLoc(frameRead, nullptr, &maximumBrightness);
-        if (maximumBrightness > 40)
-            return SingleColor::NOT_SINGLE_COLOR;
-        
+    const cv::Vec3b black(0, 0, 0), white(255, 255, 255), red(0, 0, 255);
+    if (checkIfImageIsSingleColor(frame, black)) {
         return SingleColor::BLACK;
     }
-    else {
-        return SingleColor::NOT_SINGLE_COLOR;
+    else if (checkIfImageIsSingleColor(frame, white)) {
+        return SingleColor::WHITE;
+    }
+    else if (gameName == "Sonic 2" && checkIfImageIsSingleColor(frame, red)) {
+        /* This is a screen with the act name, we make it a frame of the black transition
+         * to simplify the code. */
+        return SingleColor::BLACK;
     }
 }
+
+
+
 
 
 void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {

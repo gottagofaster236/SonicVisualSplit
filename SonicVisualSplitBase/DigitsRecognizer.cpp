@@ -271,8 +271,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
 
             // The frame is resized to the bestScale, so the match rectangle will be different.
             cv::Rect2f matchRect((float) (x / bestScale), (float) (y / bestScale),
-                                 (float) (templateImage.cols / bestScale),
-                                 (float) (templateImage.rows / bestScale));
+                (float) (templateImage.cols / bestScale), (float) (templateImage.rows / bestScale));
             matches.push_back({matchRect, symbol, similarity});
         }
     }

@@ -239,22 +239,39 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
 
     frame = frame(digitsRect);
 
-    const cv::Vec3b black(0, 0, 0), white(255, 255, 255), red(0, 0, 255);
+    const cv::Scalar black(0, 0, 0), white(255, 255, 255), red(0, 0, 255), blue(198, 65, 33);
     if (checkIfImageIsSingleColor(frame, black)) {
         return SingleColor::BLACK;
     }
     else if (checkIfImageIsSingleColor(frame, white)) {
         return SingleColor::WHITE;
     }
-    else if (gameName == "Sonic 2" && checkIfImageIsSingleColor(frame, red)) {
-        /* This is a screen with the act name, we make it a frame of the black transition
-         * to simplify the code. */
+    else if (gameName == "Sonic 2" &&
+            (checkIfImageIsSingleColor(frame, red) || checkIfImageIsSingleColor(frame, blue))) {
+        // This is a screen with the act name, we call it a frame of the black transition to simplify the code.
         return SingleColor::BLACK;
     }
 }
 
 
+bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color) {
+    /* Converting to a wider type to make sure no overflow happens during subtraction,
+     * then calculating the L2 norm between the image and the color. */
+    img.convertTo(img, CV_32SC3);
+    cv::subtract(img, color, img);
 
+    std::vector<cv::Vec3i> pixels;
+    cv::Mat imgRead = img.getMat(cv::ACCESS_READ);
+    for (int i = 0; i < img.rows; i++) {
+        for (int j = 0; j < img.cols; j++)
+            pixels.push_back(imgRead.at<cv::Vec3i>(i, j));
+    }
+
+    double squareDifference = cv::norm(img, cv::NORM_L2SQR);
+    double avgSquareDifference = squareDifference / img.total();
+    const int MAX_AVG_DIFFERENCE = 25;
+    return avgSquareDifference < MAX_AVG_DIFFERENCE * MAX_AVG_DIFFERENCE * 3;  // Three channels, so multiplying by 3.
+}
 
 
 void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {

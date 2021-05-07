@@ -323,7 +323,7 @@ namespace SonicVisualSplit
             int startingIndex = savedFrameTimes.IndexOf(startFrameTime) + increment;
             int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
 
-            TimeSpan timeout = TimeSpan.FromSeconds(5);  // FindFirstRecognizedFrame is a very expensive operation.
+            TimeSpan timeout = TimeSpan.FromSeconds(2.5);  // FindFirstRecognizedFrame is a very expensive operation.
             DateTime start = DateTime.Now;
 
             for (int frameIndex = startingIndex; frameIndex != fallbackIndex; frameIndex += increment)

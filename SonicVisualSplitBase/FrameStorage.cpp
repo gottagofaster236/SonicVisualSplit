@@ -30,7 +30,7 @@ static int currentVideoSourceIndex;
 static std::jthread framesThread;
 // The time when the next frame is scheduled to capture, measured in system_clock::duration::count().
 static std::atomic<long long> nextFrameCaptureTimeCount;
-static const int captureFPS = 60;
+static const int captureFPS = 61;  // More than 60 for safety.
 
 static void saveOneFrame();
 static void resetNextFrameCaptureTime();

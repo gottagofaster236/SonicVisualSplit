@@ -163,7 +163,7 @@ namespace SonicVisualSplit
                 }
                 else
                 {
-                    var scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(result.FrameTime,
+                    AnalysisResult scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(result.FrameTime,
                         checkForScoreScreen: true, visualize: false);
                     isScoreScreen = scoreScreenCheck.IsScoreScreen;
                 }
@@ -323,8 +323,8 @@ namespace SonicVisualSplit
             int startingIndex = savedFrameTimes.IndexOf(startFrameTime) + increment;
             int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
 
-            TimeSpan timeout = TimeSpan.FromSeconds(4);  // FindFirstRecognizedFrame is a very expensive operation.
-            DateTime start = DateTime.Now;
+            var timeout = TimeSpan.FromSeconds(4);  // FindFirstRecognizedFrame is a very expensive operation.
+            var startTime = DateTime.Now;
 
             for (int frameIndex = startingIndex; frameIndex != fallbackIndex; frameIndex += increment)
             {
@@ -345,8 +345,8 @@ namespace SonicVisualSplit
                     }
                 }
 
-                TimeSpan elapsed = DateTime.Now - start;
-                if (elapsed > timeout)
+                var elapsedTime = DateTime.Now - startTime;
+                if (elapsedTime > timeout)
                 {
                     return fallback;
                 }
@@ -584,10 +584,10 @@ namespace SonicVisualSplit
          * because if UI thread is waiting for frame analyzer thread to finish (StopAnalyzingFrames), this can cause a deadlock. */
         private void RunOnUiThreadAsync(Action action)
         {
-            FormCollection forms = Application.OpenForms;
+            var forms = Application.OpenForms;
             if (forms.Count == 0)
                 return;
-            Control mainWindow = forms[0];
+            var mainWindow = forms[0];
             mainWindow.BeginInvoke(action);
         }
 

@@ -323,7 +323,7 @@ namespace SonicVisualSplit
             int startingIndex = savedFrameTimes.IndexOf(startFrameTime) + increment;
             int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
 
-            TimeSpan timeout = TimeSpan.FromSeconds(2.5);  // FindFirstRecognizedFrame is a very expensive operation.
+            TimeSpan timeout = TimeSpan.FromSeconds(4);  // FindFirstRecognizedFrame is a very expensive operation.
             DateTime start = DateTime.Now;
 
             for (int frameIndex = startingIndex; frameIndex != fallbackIndex; frameIndex += increment)
@@ -584,7 +584,10 @@ namespace SonicVisualSplit
          * because if UI thread is waiting for frame analyzer thread to finish (StopAnalyzingFrames), this can cause a deadlock. */
         private void RunOnUiThreadAsync(Action action)
         {
-            Control mainWindow = Application.OpenForms[0];
+            FormCollection forms = Application.OpenForms;
+            if (forms.Count == 0)
+                return;
+            Control mainWindow = forms[0];
             mainWindow.BeginInvoke(action);
         }
 

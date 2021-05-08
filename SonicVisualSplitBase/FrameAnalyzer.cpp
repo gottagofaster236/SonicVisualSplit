@@ -259,14 +259,6 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color) {
      * then calculating the L2 norm between the image and the color. */
     img.convertTo(img, CV_32SC3);
     cv::subtract(img, color, img);
-
-    std::vector<cv::Vec3i> pixels;
-    cv::Mat imgRead = img.getMat(cv::ACCESS_READ);
-    for (int i = 0; i < img.rows; i++) {
-        for (int j = 0; j < img.cols; j++)
-            pixels.push_back(imgRead.at<cv::Vec3i>(i, j));
-    }
-
     double squareDifference = cv::norm(img, cv::NORM_L2SQR);
     double avgSquareDifference = squareDifference / img.total();
     const int MAX_AVG_DIFFERENCE = 25;

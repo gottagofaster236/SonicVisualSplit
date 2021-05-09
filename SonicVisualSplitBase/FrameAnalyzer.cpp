@@ -251,6 +251,8 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
         // This is a screen with the act name, we call it a frame of the black transition to simplify the code.
         return SingleColor::BLACK;
     }
+
+    return SingleColor::NOT_SINGLE_COLOR;
 }
 
 

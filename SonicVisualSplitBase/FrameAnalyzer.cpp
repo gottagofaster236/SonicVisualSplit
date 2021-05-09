@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <cctype>
 
 
 namespace SonicVisualSplitBase {
@@ -99,7 +100,7 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
 
     std::vector<DigitsRecognizer::Match> timeDigits;
     for (const auto& match : recognizedSymbols) {
-        if (match.symbol != DigitsRecognizer::TIME && match.symbol != DigitsRecognizer::SCORE)
+        if (std::isdigit(match.symbol))
             timeDigits.push_back(match);
     }
     std::ranges::sort(timeDigits, {}, [](const auto& match) {

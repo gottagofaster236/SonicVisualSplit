@@ -90,6 +90,12 @@ void AnalysisResult::MarkAsIncorrectlyRecognized() {
 }
 
 
+String^ AnalysisResult::ToString() {
+    return String::Format("Frame time: {0}, recognized time: {1}, isBlack: {2}, isWhite: {3}, isScoreScreen: {4}",
+        FrameTime, TimeString, IsBlackScreen, IsWhiteScreen, IsScoreScreen);
+}
+
+
 void FrameStorage::SetVideoCapture(int sourceIndex) {
     SonicVisualSplitBase::FrameStorage::setVideoCapture(sourceIndex);
 }

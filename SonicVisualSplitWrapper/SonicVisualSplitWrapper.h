@@ -25,6 +25,7 @@ public:
 
     Boolean IsSuccessful();
     void MarkAsIncorrectlyRecognized();
+    virtual String^ ToString() override;  // For debugging.
 };
 
 

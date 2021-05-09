@@ -11,6 +11,9 @@
 #include <memory>
 #include <map>
 #include <set>
+#include <sstream>
+#define NOMINMAX
+#include "Windows.h"
 using namespace std::chrono;
 
 
@@ -30,10 +33,11 @@ static int currentVideoSourceIndex;
 static std::jthread framesThread;
 // The time when the next frame is scheduled to capture, measured in system_clock::duration::count().
 static std::atomic<long long> nextFrameCaptureTimeCount;
-static const int captureFPS = 61;  // More than 60 for safety.
+static const int captureFPS = 60;
 
 static void saveOneFrame();
 static void resetNextFrameCaptureTime();
+static void elevateFramesThreadPriority();
 
 void startSavingFrames() {
     stopSavingFrames();
@@ -49,6 +53,7 @@ void startSavingFrames() {
             nextFrameCaptureTimeCount += frameLength.count();
         }
     });
+    elevateFramesThreadPriority();
 
     /* The above loop is the reason a fair mutex is used.
      * With std::mutex it's possible that framesThread will acquire the mutexes all the time,
@@ -82,6 +87,17 @@ void stopSavingFrames() {
         framesThread.request_stop();
         framesThread.join();  // Make sure the frame thread stops.
     }
+}
+
+
+void elevateFramesThreadPriority() {
+    // Awful workaround since std::jthread doesn't native_handle in current version of MSVC.
+    std::ostringstream iss;
+    iss << framesThread.get_id();
+    DWORD threadId = std::stoi(iss.str());
+    HANDLE nativeHandle = OpenThread(THREAD_ALL_ACCESS, true, threadId);
+
+    SetThreadPriority(nativeHandle, HIGH_PRIORITY_CLASS);
 }
 
 

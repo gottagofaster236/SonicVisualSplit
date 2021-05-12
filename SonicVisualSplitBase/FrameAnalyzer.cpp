@@ -228,29 +228,36 @@ void FrameAnalyzer::visualizeResult() {
 
 
 FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
-    /* Checking the rectangle with the digits to see whether */
+    // Checking just the rectangle with the digits (with doubled height to check more). 
     const std::unique_ptr<DigitsRecognizer>& instance = DigitsRecognizer::getCurrentInstance();
     if (!instance)
         return SingleColor::NOT_SINGLE_COLOR;
     cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
     cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
         (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
-    if (digitsRect.empty())
+
+    cv::Rect checkRect = digitsRect;
+    checkRect.height *= 2;
+    checkRect.height = std::min(checkRect.height, frame.rows - checkRect.y);
+    if (checkRect.empty())
         return SingleColor::NOT_SINGLE_COLOR;
+    frame = frame(checkRect);
 
-    frame = frame(digitsRect);
-
-    const cv::Scalar black(0, 0, 0), white(255, 255, 255), red(0, 0, 255), blue(198, 65, 33);
+    const cv::Scalar black(0, 0, 0), white(255, 255, 255);
     if (checkIfImageIsSingleColor(frame, black)) {
         return SingleColor::BLACK;
     }
     else if (checkIfImageIsSingleColor(frame, white)) {
         return SingleColor::WHITE;
     }
-    else if (gameName == "Sonic 2" &&
-            (checkIfImageIsSingleColor(frame, red) || checkIfImageIsSingleColor(frame, blue))) {
-        // This is a screen with the act name, we call it a frame of the black transition to simplify the code.
-        return SingleColor::BLACK;
+    else if (gameName == "Sonic 2") {
+        /* Sonic 2 has a transition where it shows the act name in front of a red/blue background.
+         * We just check that there's no white on the screen. */
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+        double maxBrightness;
+        cv::minMaxLoc(frame, nullptr, &maxBrightness);
+        if (maxBrightness < 120)
+            return SingleColor::BLACK;
     }
 
     return SingleColor::NOT_SINGLE_COLOR;

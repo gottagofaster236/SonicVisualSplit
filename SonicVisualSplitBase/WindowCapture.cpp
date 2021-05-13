@@ -25,7 +25,7 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
     hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
     bmpInfo.biSize = sizeof(BITMAPINFOHEADER);  // http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
     bmpInfo.biWidth = width;
-    bmpInfo.biHeight = -height;  // this is the line that makes it draw upside down or not
+    bmpInfo.biHeight = -height;  // This is the line that makes it draw upside down or not.
     bmpInfo.biPlanes = 1;
     bmpInfo.biBitCount = 32;
     bmpInfo.biCompression = BI_RGB;
@@ -84,13 +84,13 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     int width = oldWindowPos.right - oldWindowPos.left;
     int height = oldWindowPos.bottom - oldWindowPos.top;
     RECT windowPos = oldWindowPos;
-    // mare sure the window is not off-screen
+    // Make sure the window is not off-screen.
     HMONITOR hMonitor = MonitorFromRect(&windowPos, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi;
     mi.cbSize = sizeof(mi);
     GetMonitorInfo(hMonitor, &mi);
     RECT rc = mi.rcMonitor;
-    // check the size of the window (i.e. stream preview isn't too small)
+    // Check the size of the window (stream preview shouldn't bee too small).
     if (height < minimumWindowHeight)
         height = minimumWindowHeight;
     height = std::min<int>(height, rc.bottom - rc.top);
@@ -103,7 +103,7 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     if (oldWindowPos.left != windowPos.left || oldWindowPos.top != windowPos.top
             || oldWindowPos.right != windowPos.right || oldWindowPos.bottom != windowPos.bottom) {
         if (isWindowBeingMoved()) {
-            // we shouldn't move a window while the user is moving it, so we're out of luck.
+            // We shouldn't move a window while the user is moving it, so we're out of luck.
             return false;
         }
         SetWindowPos(hwnd, nullptr, windowPos.left, windowPos.top, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
@@ -149,7 +149,7 @@ FakeMinimize& FakeMinimize::getInstance() {
 
 
 FakeMinimize::FakeMinimize() {
-    // Starting a thread that will get the event when a window needs to be restored
+    // Start a thread that will get the event when a window needs to be restored.
     windowRestoreHookThread = std::thread(windowRestoreHookProc);
 }
 
@@ -203,7 +203,7 @@ void FakeMinimize::prepareMinimizedWindowForCaptureImpl(HWND hwnd) {
     // Make sure the window restore animation isn't played.
     bool oldAnimStatus = setMinimizeMaximizeAnimation(hwnd, false);
     ShowWindow(hwnd, SW_RESTORE);
-    // Saving the position of the window to show it later at the same position.
+    // Save the position of the window to show it later at the same position.
     saveWindowPosition(hwnd);
     // Place the window at the top-left corner to make sure it's not off screen.
     SetWindowPos(hwnd, GetDesktopWindow(), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
@@ -241,7 +241,7 @@ void FakeMinimize::restoreWindow(HWND hwnd) {
     {
         std::lock_guard<std::mutex> guard(originalWindowPositionsMutex);
         auto findIter = originalWindowPositions.find(hwnd);
-        if (findIter == originalWindowPositions.end())  // hwnd is not the OBS window
+        if (findIter == originalWindowPositions.end())  // hwnd is not the OBS window.
             return;
         originalPosition = findIter->second;
         originalWindowPositions.erase(findIter);

@@ -26,44 +26,40 @@ namespace FrameStorage {
 static std::map<long long, cv::Mat> savedRawFrames;
 static yamc::fair::mutex savedRawFramesMutex;
 
-static std::unique_ptr<GameVideoCapture> gameVideoCapture;
+static std::unique_ptr<GameVideoCapture> gameVideoCapture = std::make_unique<NullCapture>();
 static yamc::fair::mutex gameVideoCaptureMutex;
 static int currentVideoSourceIndex;
 
 static std::jthread framesThread;
-// The time when the next frame is scheduled to capture, measured in system_clock::duration::count().
-static std::atomic<long long> nextFrameCaptureTimeCount;
-static const int captureFPS = 60;
 
 static void saveOneFrame();
-static void resetNextFrameCaptureTime();
 static void elevateFramesThreadPriority();
 
 void startSavingFrames() {
     stopSavingFrames();
 
-    resetNextFrameCaptureTime();
-
     framesThread = std::jthread([](std::stop_token stopToken) {
         while (!stopToken.stop_requested()) {
-            auto nextFrameCaptureTime = system_clock::time_point(system_clock::duration(nextFrameCaptureTimeCount));
-            std::this_thread::sleep_until(nextFrameCaptureTime);
-            saveOneFrame();
-            system_clock::duration frameLength(seconds(1) / captureFPS);
-            nextFrameCaptureTimeCount += frameLength.count();
+            system_clock::time_point startTime = system_clock::now(), nextIteration;
+            {
+                std::lock_guard<yamc::fair::mutex> guard(gameVideoCaptureMutex);
+                saveOneFrame();
+                nextIteration = startTime + gameVideoCapture->getDelayAfterLastFrame();
+            }
+            std::this_thread::sleep_until(nextIteration);
         }
     });
-    elevateFramesThreadPriority();
 
     /* The above loop is the reason a fair mutex is used.
      * With std::mutex it's possible that framesThread will acquire the mutexes all the time,
      * and other functions will just infinitely wait. */
+
+    elevateFramesThreadPriority();
 }
 
 
 void saveOneFrame() {
-    std::lock_guard<yamc::fair::mutex> guard1(gameVideoCaptureMutex);
-    std::lock_guard<yamc::fair::mutex> guard2(savedRawFramesMutex);
+    std::lock_guard<yamc::fair::mutex> guard(savedRawFramesMutex);
 
     if (savedRawFrames.size() == MAX_CAPACITY)
         return;
@@ -74,11 +70,6 @@ void saveOneFrame() {
 
     long long currentMilliseconds = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     savedRawFrames[currentMilliseconds] = rawFrame;
-}
-
-
-void resetNextFrameCaptureTime() {
-    nextFrameCaptureTimeCount = system_clock::now().time_since_epoch().count();
 }
 
 
@@ -158,9 +149,7 @@ void setVideoCapture(int sourceIndex) {
     else if (sourceIndex == OBS_WINDOW_CAPTURE)
         gameVideoCapture = std::make_unique<ObsWindowCapture>();
     else  // NO_VIDEO_CAPTURE
-        gameVideoCapture = nullptr;
-
-    resetNextFrameCaptureTime();
+        gameVideoCapture = std::make_unique<NullCapture>();
 }
 
 

@@ -83,6 +83,11 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
 }
 
 
+std::chrono::milliseconds ObsWindowCapture::getDelayAfterLastFrame() {
+    return std::chrono::milliseconds(1000) / 60;  // 60 FPS
+}
+
+
 bool ObsWindowCapture::updateOBSHwnd() {
     if (IsWindow(obsHwnd) && !IsIconic(obsHwnd)) {
         // Checking that the size of the window hasn't changed.

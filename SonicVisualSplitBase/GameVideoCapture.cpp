@@ -25,4 +25,15 @@ int GameVideoCapture::getUnsuccessfulFramesStreak() {
     return unsuccessfulFramesStreak;
 }
 
+
+std::chrono::milliseconds NullCapture::getDelayAfterLastFrame() {
+    return std::chrono::milliseconds(100);
+}
+
+
+cv::Mat NullCapture::captureRawFrameImpl() {
+    // Returning an empty frame to indicate failure.
+    return {};
+}
+
 }  // namespace SonicVisualSplitBase

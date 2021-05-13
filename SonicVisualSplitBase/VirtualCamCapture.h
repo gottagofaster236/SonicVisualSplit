@@ -22,6 +22,8 @@ public:
      * May contain duplicate names, if there are several devices with the same name. */
     static std::vector<std::wstring> getVideoDevicesList();
 
+    std::chrono::milliseconds getDelayAfterLastFrame() override;
+
 private:
     // Grabs a frame from the video capture, or returns an empty Mat in case of error.
     cv::Mat captureRawFrameImpl() override;

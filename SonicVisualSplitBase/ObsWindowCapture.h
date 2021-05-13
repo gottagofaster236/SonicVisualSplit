@@ -16,6 +16,8 @@ public:
     // Returns the stream preview.
     cv::UMat processFrame(cv::Mat screenshot) override;
 
+    std::chrono::milliseconds getDelayAfterLastFrame() override;
+
 private:
     // Returns a full screenshot of the OBS window.
     cv::Mat captureRawFrameImpl() override;

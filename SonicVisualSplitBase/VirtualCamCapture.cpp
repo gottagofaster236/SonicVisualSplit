@@ -11,6 +11,7 @@ VirtualCamCapture::VirtualCamCapture(int deviceIndex) {
     cv::Size resolution = captureResolutions[deviceIndex];
     videoCapture.set(cv::CAP_PROP_FRAME_WIDTH, resolution.width);
     videoCapture.set(cv::CAP_PROP_FRAME_HEIGHT, resolution.height);
+    videoCapture.set(cv::CAP_PROP_FPS, 60);
 }
 
 
@@ -49,6 +50,18 @@ std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
         enumMoniker->Release();
     }
     return devices;
+}
+
+
+std::chrono::milliseconds VirtualCamCapture::getDelayAfterLastFrame() {
+    if (getUnsuccessfulFramesStreak() > 0) {
+        // The last frame was a fail, just wait for the next one.
+        return std::chrono::milliseconds(1000) / 60;
+    }
+    else {
+        // cv::VideoCapture waits for the next frame by itself, no delay is needed.
+        return std::chrono::milliseconds(0);
+    }
 }
 
 

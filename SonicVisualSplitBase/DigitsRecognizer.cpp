@@ -168,10 +168,10 @@ double DigitsRecognizer::getBestScale() const {
 
 
 void DigitsRecognizer::reportRecognitionSuccess() {
-    float frameWidth = lastFrameSize.width * bestScale;
-    float frameHeight = lastFrameSize.height * bestScale;
-    relativeDigitsRect = {(float) digitsRect.x / frameWidth, (float) digitsRect.y / frameHeight,
-        (float) frameWidth, (float) frameHeight};
+    float frameWidth = (float) lastFrameSize.width * bestScale;
+    float frameHeight = (float) lastFrameSize.height * bestScale;
+    relativeDigitsRect = {digitsRect.x / frameWidth, digitsRect.y / frameHeight,
+        digitsRect.width / frameWidth, digitsRect.height / frameHeight};
     relativeDigitsRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure the it isn't out of bounds.
     relativeDigitsRectUpdatedTime = std::chrono::system_clock::now();
 }

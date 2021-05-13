@@ -54,7 +54,7 @@ private:
 
     void checkRecognizedSymbols(bool checkForScoreScreen, bool visualize);
 
-    void doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>>& scoreAndTimePositions);
+    void doCheckForScoreScreen(std::vector<DigitsRecognizer::Match>& labels);
 
     void visualizeResult();
 

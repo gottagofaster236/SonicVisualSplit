@@ -168,8 +168,8 @@ double DigitsRecognizer::getBestScale() const {
 
 
 void DigitsRecognizer::reportRecognitionSuccess() {
-    float frameWidth = (float) lastFrameSize.width * bestScale;
-    float frameHeight = (float) lastFrameSize.height * bestScale;
+    float frameWidth = (float) (lastFrameSize.width * bestScale);
+    float frameHeight = (float) (lastFrameSize.height * bestScale);
     relativeDigitsRect = {digitsRect.x / frameWidth, digitsRect.y / frameHeight,
         digitsRect.width / frameWidth, digitsRect.height / frameHeight};
     relativeDigitsRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure the it isn't out of bounds.
@@ -516,5 +516,8 @@ std::tuple<cv::UMat, cv::UMat, int> DigitsRecognizer::loadImageAndMaskFromFile(c
 
     return {templateImage, templateMask, opaquePixels};
 }
+
+
+bool DigitsRecognizer::Match::operator==(const Match& other) const = default;
 
 }

@@ -20,6 +20,8 @@ public:
         cv::Rect2f location;
         char symbol;
         double similarity;
+
+        bool operator==(const Match& other) const;
     };
 
     // Finds locations of all digits, "SCORE" and "TIME" labels.

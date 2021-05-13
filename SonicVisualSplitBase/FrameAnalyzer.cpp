@@ -74,14 +74,13 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     checkRecognizedSymbols(checkForScoreScreen, visualize);
     originalFrame.release();
 
-    if (result.recognizedTime) {
+    if (result.recognizedTime)
         digitsRecognizer.reportRecognitionSuccess();
-    }
-    else {
+    else
         digitsRecognizer.reportRecognitionFailure();
-        if (visualize)
-            visualizeResult();
-    }
+
+    if (visualize)
+        visualizeResult();
     return result;
 }
 
@@ -89,10 +88,10 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visualize) {
     result.recognizedTime = false;
 
-    std::map<char, std::vector<cv::Rect2f>> scoreAndTimePositions;
+    std::vector<DigitsRecognizer::Match> labels;
 
     if (checkForScoreScreen) {
-        doCheckForScoreScreen(scoreAndTimePositions);
+        doCheckForScoreScreen(labels);
         if (result.errorReason != ErrorReasonEnum::NO_ERROR)
             return;
     }
@@ -168,49 +167,45 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
     result.recognizedTime = true;
     result.errorReason = ErrorReasonEnum::NO_ERROR;
 
-    if (visualize) {
-        recognizedSymbols = timeDigits;
-        char additionalSymbols[] = {DigitsRecognizer::SCORE, DigitsRecognizer::TIME};
-        for (char c : additionalSymbols) {
-            for (const cv::Rect2f& position : scoreAndTimePositions[c]) {
-                recognizedSymbols.push_back({position, c});
-            }
-        }
-        visualizeResult();
-    }
+    recognizedSymbols = std::move(timeDigits);
+    recognizedSymbols.insert(recognizedSymbols.end(), labels.begin(), labels.end());
 }
 
 
-void FrameAnalyzer::doCheckForScoreScreen(std::map<char, std::vector<cv::Rect2f>>& scoreAndTimePositions) {
+void FrameAnalyzer::doCheckForScoreScreen(std::vector<DigitsRecognizer::Match>& labels) {
+    std::vector<DigitsRecognizer::Match> timeMatches;
+    std::vector<DigitsRecognizer::Match> scoreMatches;
     for (const auto& match : recognizedSymbols) {
-        if (match.symbol == DigitsRecognizer::SCORE || match.symbol == DigitsRecognizer::TIME) {
-            scoreAndTimePositions[match.symbol].push_back(match.location);
-        }
+        if (match.symbol == DigitsRecognizer::TIME)
+            timeMatches.push_back(match);
+        else if (match.symbol == DigitsRecognizer::SCORE)
+            scoreMatches.push_back(match);
     }
 
-    if (scoreAndTimePositions[DigitsRecognizer::SCORE].empty() || scoreAndTimePositions[DigitsRecognizer::TIME].empty()) {
+    if (timeMatches.empty() || scoreMatches.empty()) {
         result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
         return;
     }
-    std::vector<cv::Rect2f>& timeRects = scoreAndTimePositions[DigitsRecognizer::TIME];
-    cv::Rect2f timeRect = *std::ranges::min_element(timeRects, [](const auto& rect1, const auto& rect2) {
-        return rect1.y < rect2.y;
+    auto topTimeLabel = std::ranges::min(timeMatches, {}, [](const auto& timeMatch) {
+        return timeMatch.location.y;
     });
 
-    if (timeRects.size() >= 2) {
-        // Make sure that the other recognized TIME rectangles are valid.
-        for (int i = (int) timeRects.size() - 1; i >= 0; i--) {
-            if (timeRects[i] == timeRect)
-                continue;
-            if (timeRects[i].y - timeRect.y < timeRect.width || timeRects[i].y > 3 * originalFrame.rows / 4) {
-                timeRects.erase(timeRects.begin() + i);
-            }
-        }
-    }
+    // Make sure that the other TIME matches are valid.
+    std::erase_if(timeMatches, [&](const auto& timeMatch) {
+        if (timeMatch == topTimeLabel)
+            return false;
+        const cv::Rect& topLocation = topTimeLabel.location;
+        const cv::Rect& otherLocation = timeMatch.location;
+        return (otherLocation.y - topLocation.y < topLocation.width
+            || otherLocation.y > 3 * originalFrame.rows / 4);
+    });
 
     /* There's always a "TIME" label on top of the screen.
      * But there's a second one during the score countdown screen ("TIME BONUS"). */
-    result.isScoreScreen = (timeRects.size() >= 2);
+    result.isScoreScreen = (timeMatches.size() >= 2);
+
+    labels = std::move(timeMatches);
+    labels.insert(labels.end(), scoreMatches.begin(), scoreMatches.end());
 }
 
 

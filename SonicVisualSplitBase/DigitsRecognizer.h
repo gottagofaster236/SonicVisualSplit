@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <memory>
 #include <atomic>
+#include <chrono>
 
 
 namespace SonicVisualSplitBase {
@@ -34,21 +35,23 @@ public:
     // Resetting everything we precalculated.
     static void fullReset();
 
-    // Returns whether in the last call to findLabelsAndDigits the digits placement was recalculated.
-    bool recalculatedDigitsPlacementLastTime() const;
-
     // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
     double getBestScale() const;
+
+    // Called from FrameAnalyzer after the frame is checked.
+    void reportRecognitionSuccess();
+
+    void reportRecognitionFailure();
+
+    /* Returns the rectangle where the time digits were located last time,
+     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
+     * Unlike digitsRect, it's never reset, so that it's possible to estimate
+     * the position of time digits ROI almost all the time. */
+    cv::Rect2f getRelativeDigitsRect();
 
     /* There is never more than instance of DigitsRecognizer.
      * This function gets the current instance, or returns nullptr if there's no current instance. */
     static const std::unique_ptr<DigitsRecognizer>& getCurrentInstance();
-
-    /* Returns the region of interest where the time digits were located last time,
-     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
-     * This value is never reset, so that it's possible to estimate 
-     * the position of time digits ROI almost all the time. */
-    cv::Rect2f getRelativeDigitsRect();
 
     DigitsRecognizer(DigitsRecognizer& other) = delete;
     void operator=(const DigitsRecognizer&) = delete;
@@ -108,11 +111,14 @@ private:
      * (This rectangle is valid after the frame has been scaled down to bestScale). */
     cv::Rect digitsRect;
 
-    // See recalculatedDigitsPlacementLastTime()
-    bool recalculatedDigitsPlacement;
+    bool recalculatedDigitsPlacementLastTime;
 
     // See getRelativeDigitsRect().
     cv::Rect2f relativeDigitsRect;
+
+    std::chrono::system_clock::time_point relativeDigitsRectUpdatedTime;
+
+    cv::Size lastFrameSize;
 
     // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;

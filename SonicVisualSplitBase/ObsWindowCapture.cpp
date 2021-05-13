@@ -69,7 +69,6 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
     }
     screenshot(streamRectangle).copyTo(streamPreview);
     if (lastGameFrameWidth != streamPreview.cols || lastGameFrameHeight != streamPreview.rows) {
-        DigitsRecognizer::resetDigitsPlacementAsync();
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
         int minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
@@ -108,8 +107,6 @@ bool ObsWindowCapture::updateOBSHwnd() {
                 return true;
         }
     }
-    // reset the scale for the DigitRecognizer, as the video stream changed
-    DigitsRecognizer::resetDigitsPlacementAsync();
 
     obsHwnd = nullptr;
     DWORD processId = getOBSProcessId();

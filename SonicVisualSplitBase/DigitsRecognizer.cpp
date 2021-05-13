@@ -21,8 +21,13 @@ DigitsRecognizer& DigitsRecognizer::getInstance(const std::string& gameName, con
 
 std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::UMat frame, bool checkForScoreScreen) {
     if (shouldResetDigitsPlacement) {
-        shouldResetDigitsPlacement = false;
         resetDigitsPlacement();
+        shouldResetDigitsPlacement = false;
+    }
+
+    if (frame.size() != lastFrameSize) {
+        resetDigitsPlacement();
+        lastFrameSize = frame.size();
     }
 
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
@@ -66,7 +71,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
     for (char symbol : symbolsToSearch) {
         const cv::UMat& frameToSearch = (std::isdigit(symbol) ? frame : frameWithYellowFilter);
         bool recalculateDigitsPlacement = (bestScale == -1);
-        recalculatedDigitsPlacement = recalculatedDigitsPlacement;
+        recalculatedDigitsPlacementLastTime = recalculateDigitsPlacement;
         std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
 
         for (auto& match : symbolMatches) {
@@ -117,13 +122,9 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             digitsRect = {digitsRectLeft, digitsRectTop, digitsRectRight - digitsRectLeft, digitsRectBottom - digitsRectTop};
             if (digitsRect.empty())
                 return {};
-            int oldWidth = frame.cols, oldHeight = frame.rows * 2 + 1;
             frame = cropToDigitsRectAndCorrectColor(frame);
             if (frame.empty())
                 return labelMatches;
-
-            relativeDigitsRect = {(float) digitsRect.x / oldWidth, (float) digitsRect.y / oldHeight,
-                (float) digitsRect.width / oldWidth, (float) digitsRect.height / oldHeight};
         }
     }
     
@@ -161,23 +162,43 @@ void DigitsRecognizer::fullReset() {
 }
 
 
-bool DigitsRecognizer::recalculatedDigitsPlacementLastTime() const {
-    return recalculatedDigitsPlacement;
-}
-
-
 double DigitsRecognizer::getBestScale() const {
     return bestScale;
 }
 
 
-const std::unique_ptr<DigitsRecognizer>& DigitsRecognizer::getCurrentInstance() {
-    return instance;
+void DigitsRecognizer::reportRecognitionSuccess() {
+    float frameWidth = lastFrameSize.width * bestScale;
+    float frameHeight = lastFrameSize.height * bestScale;
+    relativeDigitsRect = {(float) digitsRect.x / frameWidth, (float) digitsRect.y / frameHeight,
+        (float) frameWidth, (float) frameHeight};
+    relativeDigitsRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure the it isn't out of bounds.
+    relativeDigitsRectUpdatedTime = std::chrono::system_clock::now();
+}
+
+
+void DigitsRecognizer::reportRecognitionFailure() {
+    if (recalculatedDigitsPlacementLastTime) {
+        // We recalculated everything but failed. Make sure those results aren't saved.
+        resetDigitsPlacement();
+    }
 }
 
 
 cv::Rect2f DigitsRecognizer::getRelativeDigitsRect() {
-    return relativeDigitsRect;
+    auto currentTime = std::chrono::system_clock::now();
+    if (currentTime - relativeDigitsRectUpdatedTime < std::chrono::seconds(10)) {
+        return relativeDigitsRect;
+    }
+    else {
+        // We consider the relative digits rectangle outdated now, it hasn't been updated for too long.
+        return {};
+    }
+}
+
+
+const std::unique_ptr<DigitsRecognizer>& DigitsRecognizer::getCurrentInstance() {
+    return instance;
 }
 
 

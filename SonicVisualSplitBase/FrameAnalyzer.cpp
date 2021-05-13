@@ -74,14 +74,13 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     checkRecognizedSymbols(checkForScoreScreen, visualize);
     originalFrame.release();
 
-    if (result.recognizedTime)
-        return result;
-    else if (visualize)
-        visualizeResult();
-
-    if (digitsRecognizer.recalculatedDigitsPlacementLastTime() && !result.recognizedTime) {
-        // We recalculated everything but failed. Make sure those results aren't saved.
-        DigitsRecognizer::resetDigitsPlacement();
+    if (result.recognizedTime) {
+        digitsRecognizer.reportRecognitionSuccess();
+    }
+    else {
+        digitsRecognizer.reportRecognitionFailure();
+        if (visualize)
+            visualizeResult();
     }
     return result;
 }

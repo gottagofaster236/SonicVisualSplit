@@ -86,7 +86,8 @@ Boolean AnalysisResult::IsSuccessful() {
 
 
 void AnalysisResult::MarkAsIncorrectlyRecognized() {
-    ErrorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+    if (IsSuccessful())
+        ErrorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
 }
 
 

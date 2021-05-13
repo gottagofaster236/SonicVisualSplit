@@ -251,7 +251,7 @@ namespace SonicVisualSplit
 
         private void ShowHelp(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            var startInfo = new ProcessStartInfo("https://github.com/gottagofaster236/SonicVisualSplit");
+            var startInfo = new ProcessStartInfo("https://github.com/gottagofaster236/SonicVisualSplit#setting-up-video-capture");
             Process.Start(startInfo);
         }
     }

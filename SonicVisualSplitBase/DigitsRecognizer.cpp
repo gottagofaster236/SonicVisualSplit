@@ -415,8 +415,11 @@ cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
         return {};
     }
     frame = frame(digitsRect);
+    cv::imwrite("C:/tmp/beforeColorCorr.png", frame);
     frame = convertFrameToGray(frame);
     frame = applyColorCorrection(frame);
+    if (!frame.empty())
+        cv::imwrite("C:/tmp/afterColorCorr.png", frame);
     return frame;
 }
 
@@ -430,15 +433,17 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
         }
     }
     std::ranges::sort(pixels);
-    
-    const float darkPosition = 0.25f, brightPosition = 0.85f;
+
+    const float darkPosition = 0.25f, brightPosition = 0.85f, veryBrightPosition = 0.98f;
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
+    uint8_t whiteColor = pixels[(int) (pixels.size() * veryBrightPosition)];
 
-    if (maxBrightness < 180) {
+    if (whiteColor < 175 || maxBrightness < 100) {
         // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
         return {};
     }
+
 
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
     bool recognizeWhiteTransition = (gameName == "Sonic 2" && FrameAnalyzer::getCurrentSplitIndex() == 19);

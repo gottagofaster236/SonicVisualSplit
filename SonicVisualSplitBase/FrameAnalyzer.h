@@ -42,9 +42,9 @@ public:
     static int getCurrentSplitIndex();
 
     // This header is included by C++/CLI, which doesn't have <mutex>.
-    static void lockFrameAnalyzationMutex();
+    static void lockFrameAnalysisMutex();
 
-    static void unlockFrameAnalyzationMutex();
+    static void unlockFrameAnalysisMutex();
 
     FrameAnalyzer(FrameAnalyzer& other) = delete;
     void operator=(const FrameAnalyzer&) = delete;

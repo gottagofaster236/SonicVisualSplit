@@ -139,12 +139,12 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
 
 
 void DigitsRecognizer::resetDigitsPlacement() {
-    FrameAnalyzer::lockFrameAnalyzationMutex();
+    FrameAnalyzer::lockFrameAnalysisMutex();
     if (instance) {
         instance->bestScale = -1;
         instance->digitsRect = {0, 0, 0, 0};
     }
-    FrameAnalyzer::unlockFrameAnalyzationMutex();
+    FrameAnalyzer::unlockFrameAnalysisMutex();
 }
 
 
@@ -154,11 +154,11 @@ void DigitsRecognizer::resetDigitsPlacementAsync() {
 
 
 void DigitsRecognizer::fullReset() {
-    FrameAnalyzer::lockFrameAnalyzationMutex();
+    FrameAnalyzer::lockFrameAnalysisMutex();
     resetDigitsPlacement();
     if (instance)
         instance->relativeDigitsRect = {};
-    FrameAnalyzer::unlockFrameAnalyzationMutex();
+    FrameAnalyzer::unlockFrameAnalysisMutex();
 }
 
 

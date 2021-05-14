@@ -14,7 +14,7 @@ namespace SonicVisualSplit
     public class FrameAnalyzer
     {
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
-        private object frameAnalyzationLock = new object();
+        private object frameAnalysisLock = new object();
 
         /* All times are in milliseconds.
          * A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
@@ -54,10 +54,10 @@ namespace SonicVisualSplit
         // How many times in a row the recognition failed.
         private int unsuccessfulStreak = 0;
 
-        List<long> savedFrameTimes;
+        private List<long> savedFrameTimes;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
-        private CancellableLoopTask frameAnalyzationTask;
+        private CancellableLoopTask frameAnalysisTask;
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
     
         private LiveSplitState state;
@@ -75,12 +75,12 @@ namespace SonicVisualSplit
 
             UnpackTemplatesArrayIfNeeded();
 
-            frameAnalyzationTask = new CancellableLoopTask(AnalyzeFrame, ANALYZE_FRAME_PERIOD);
+            frameAnalysisTask = new CancellableLoopTask(AnalyzeFrame, ANALYZE_FRAME_PERIOD);
         }
 
         private void AnalyzeFrame()
         {
-            lock (frameAnalyzationLock)
+            lock (frameAnalysisLock)
             {
                 savedFrameTimes = FrameStorage.GetSavedFramesTimes();
                 if (savedFrameTimes.Count == 0)
@@ -468,12 +468,12 @@ namespace SonicVisualSplit
             state.OnReset += OnReset;
 
             FrameStorage.StartSavingFrames();
-            frameAnalyzationTask.Start();
+            frameAnalysisTask.Start();
         }
 
         public void StopAnalyzingFrames()
         {
-            frameAnalyzationTask.Stop();
+            frameAnalysisTask.Stop();
 
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();
@@ -486,7 +486,7 @@ namespace SonicVisualSplit
         {
             bool haveToStopAnalyzingFrames = false;
 
-            lock (frameAnalyzationLock)
+            lock (frameAnalysisLock)
             {
                 if (!settings.IsPracticeMode)
                 {
@@ -550,7 +550,7 @@ namespace SonicVisualSplit
         {
             Task.Run(() =>
             {
-                lock (frameAnalyzationLock)
+                lock (frameAnalysisLock)
                 {
                     // IsGameTimePaused is reset too, bring it back to true.
                     state.IsGameTimePaused = true;

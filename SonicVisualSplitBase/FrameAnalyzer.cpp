@@ -11,14 +11,14 @@
 
 namespace SonicVisualSplitBase {
 
-static std::recursive_mutex frameAnalyzationMutex;
+static std::recursive_mutex frameAnalysisMutex;
 
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
 FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
         bool isStretchedTo16By9, bool isComposite) {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
+    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
 
     if (!instance || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
             || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isComposite != isComposite) {
@@ -35,7 +35,7 @@ FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem:
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalyzationMutex);
+    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
 
     result = AnalysisResult();
     result.frameTime = frameTime;
@@ -279,13 +279,13 @@ int FrameAnalyzer::getCurrentSplitIndex() {
 }
 
 
-void FrameAnalyzer::lockFrameAnalyzationMutex() {
-    frameAnalyzationMutex.lock();
+void FrameAnalyzer::lockFrameAnalysisMutex() {
+    frameAnalysisMutex.lock();
 }
 
 
-void FrameAnalyzer::unlockFrameAnalyzationMutex() {
-    frameAnalyzationMutex.unlock();
+void FrameAnalyzer::unlockFrameAnalysisMutex() {
+    frameAnalysisMutex.unlock();
 }
 
 }  // namespace SonicVisualSplitBase

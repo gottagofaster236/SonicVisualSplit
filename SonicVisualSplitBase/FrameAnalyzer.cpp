@@ -238,10 +238,10 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
     frame = frame(checkRect);
 
     const cv::Scalar black(0, 0, 0), white(255, 255, 255);
-    if (checkIfImageIsSingleColor(frame, black)) {
+    if (checkIfImageIsSingleColor(frame, black, 40)) {
         return SingleColor::BLACK;
     }
-    else if (checkIfImageIsSingleColor(frame, white)) {
+    else if (checkIfImageIsSingleColor(frame, white, 25)) {
         return SingleColor::WHITE;
     }
     else if (gameName == "Sonic 2") {
@@ -258,15 +258,14 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
 }
 
 
-bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color) {
+bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference) {
     /* Converting to a wider type to make sure no overflow happens during subtraction,
      * then calculating the L2 norm between the image and the color. */
     img.convertTo(img, CV_32SC3);
     cv::subtract(img, color, img);
     double squareDifference = cv::norm(img, cv::NORM_L2SQR);
     double avgSquareDifference = squareDifference / img.total();
-    const int MAX_AVG_DIFFERENCE = 25;
-    return avgSquareDifference < MAX_AVG_DIFFERENCE * MAX_AVG_DIFFERENCE * 3;  // Three channels, so multiplying by 3.
+    return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
 }
 
 

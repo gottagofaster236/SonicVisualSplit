@@ -435,6 +435,11 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     uint8_t minBrightness = pixels[(int) (pixels.size() * darkPosition)];
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
 
+    if (maxBrightness < 180) {
+        // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
+        return {};
+    }
+
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
     bool recognizeWhiteTransition = (gameName == "Sonic 2" && FrameAnalyzer::getCurrentSplitIndex() == 19);
     
@@ -450,10 +455,6 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
 
     if (difference < MIN_DIFFERENCE) {
         // This is an almost single-color image, there's no point in increasing the contrast.
-        return {};
-    }
-    else if (maxBrightness < 100) {
-        // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
         return {};
     }
 

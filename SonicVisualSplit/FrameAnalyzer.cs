@@ -461,7 +461,7 @@ namespace SonicVisualSplit
             }
         }
 
-        public void StartAnalyzingFrames()
+        private void StartAnalyzingFrames()
         {
             state.CurrentTimingMethod = TimingMethod.GameTime;
             state.IsGameTimePaused = true;  // stop the timer from automatically counting up
@@ -611,6 +611,14 @@ namespace SonicVisualSplit
             {
                 resultConsumers.Add(resultConsumer);
             }
+            SendFirstEmptyResultToConsumer(resultConsumer);
+        }
+
+        private void SendFirstEmptyResultToConsumer(IResultConsumer resultConsumer)
+        {
+            var emptyResult = new AnalysisResult();
+            emptyResult.ErrorReason = ErrorReasonEnum.VIDEO_DISCONNECTED;
+            resultConsumer.OnFrameAnalyzed(emptyResult);
         }
 
         public void RemoveResultConsumer(IResultConsumer resultConsumer)

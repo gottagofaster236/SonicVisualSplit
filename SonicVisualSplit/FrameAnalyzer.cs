@@ -185,7 +185,6 @@ namespace SonicVisualSplit
             {
                 /* This was a transition to a special stage, or time travel in SCD.
                  * Checking that time too. */
-                
                 if (settings.Game == "Sonic CD")
                 {
                     // In Sonic CD, the timer decreases by ~0.3 seconds after time travel.
@@ -193,11 +192,7 @@ namespace SonicVisualSplit
                     frameBeforeTransition.TimeInMilliseconds -= marginOfError;
                     frameBeforeTransition.FrameTime -= marginOfError;
                 }
-
-                if (!CheckAnalysisResult(result, isLatestFrame: true, frameBeforeTransition))
-                {
-                    return;
-                }
+                CheckAnalysisResult(result, isLatestFrame: true, frameBeforeTransition);
             }
             else if (previousResult.IsBlackScreen)
             {
@@ -207,6 +202,7 @@ namespace SonicVisualSplit
                     FindFirstRecognizedFrame(after: true, previousResult.FrameTime, fallback: result);
                 SetFirstFrameOfSegment(frameAfterTransition);
                 CorrectFirstFrameOfSegment(result);
+                CheckAnalysisResult(result, isLatestFrame: true);
             }
         }
 

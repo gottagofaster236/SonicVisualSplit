@@ -144,6 +144,7 @@ set LivesplitLocation=C:\Program Files\LiveSplit\Components\
 
 REM Copying the missing DLL's and resources.
 xcopy /y "$(SolutionDir)$(PlatformName)\$(Configuration)\*.dll" "$(TargetDir)"
+xcopy /y "$(SolutionDir)SVS Templates\SVS Templates.zip" "$(TargetDir)"
 
 REM Deleting unneeded DLLs (and PDBs)
 del "$(TargetDir)LiveSplit.View.*"
@@ -151,7 +152,6 @@ del "$(TargetDir)LiveSplit.Core.*"
 del "$(TargetDir)UpdateManager.*"
 
 REM Copying the build results to LiveSplit.
-xcopy /y "$(TargetDir)" "%25LivesplitLocation%25"
-echo f|xcopy /y "$(SolutionDir)SVS Templates\SVS Templates.zip" "%25LivesplitLocation%25SVS Templates.zip"</PostBuildEvent>
+xcopy /y "$(TargetDir)" "%25LivesplitLocation%25"</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -38,7 +38,7 @@ namespace SonicVisualSplit
         public void Stop()
         {
             shouldBeRunning = false;
-            taskThread.Join();  // Wait for the thread to finish.
+            taskThread?.Join();  // Wait for the thread to finish.
         }
 
         public delegate void TaskIteration();

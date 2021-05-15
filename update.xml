@@ -1,11 +1,22 @@
 <updates>
 	<update version="1.0.1">
-	<files>
-		<file path="Components/SonicVisualSplit.dll" status="changed"/>
-		<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
-	</files>
-	<changelog>
-		<change>Removed a debug file write.</change>
-	</changelog>
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Removed a debug file write.</change>
+		</changelog>
+	</update>
+	
+	<update version="1.0.2">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fixed autoupdate.</change>
+			<change>Fixed a rare crash.</change>
+		</changelog>
 	</update>
 </updates>

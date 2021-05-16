@@ -19,4 +19,14 @@
 			<change>Fixed a rare crash.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.0.3">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Not splitting on deaths at the last stage of S2/SCD.</change>
+		</changelog>
+	</update>
 </updates>

@@ -269,10 +269,10 @@ namespace SonicVisualSplit
             else
                 frameBeforeTransition = previousResult;
 
-            if (isLastSplit)
+            if (isLastSplit && (result.IsWhiteScreen || settings.Game == "Sonic 1"))
             {
                 /* If we were on the last split, that means the run has finished.
-                 * (Or it was a death on the final stage. In this case we'll undo the split automatically.) */
+                 * (Or it was a death on Sonic 1's Final Zone. In this case we'll undo the split automatically.) */
                 Split();
             }
             else if (result.IsBlackScreen)

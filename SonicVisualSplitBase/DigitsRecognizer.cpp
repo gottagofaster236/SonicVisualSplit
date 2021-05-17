@@ -369,10 +369,16 @@ void DigitsRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digi
 
 
 double DigitsRecognizer::getGlobalMinSimilarity(char symbol) {
-    if (std::isdigit(symbol))
+    if (std::isdigit(symbol)) {
         return -8000;
-    else
-        return -3500;
+    }
+    else {
+        // TIME and SCORE labels.
+        if (isComposite)
+            return -3500;
+        else
+            return -7000;
+    }
 }
 
 

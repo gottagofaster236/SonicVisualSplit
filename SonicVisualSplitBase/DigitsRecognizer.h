@@ -75,13 +75,16 @@ private:
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
 
-    /* Returns the minimum similarity coefficient divided by the best found similarity.
-     * Without parameters, returns the default similarity. */
-    double getSymbolMinSimilarityCoefficient(char symbol = 0);
+    // Returns the global minimum acceptable similarity of a symbol.
+    double getGlobalMinSimilarity(char symbol);
+
+    /* Returns the minimum acceptable similarity in relation to the best found similarity.
+     * Without parameters, returns the default value. */
+    double getMinSimilarityDividedByBestSimilarity(char symbol = 0);
 
     /* Similarity of a symbol may be multiplied by a coefficient
      * in order to make it a less or more preferable option when choosing between symbols. */
-    double getSymbolSimilarityMultiplier(char symbol);
+    double getSimilarityMultiplier(char symbol);
 
     /* Crops the frame to the region of interest where the digits are located,
      * and increases the contrast for the resulting image. Returns an empty image on error. */

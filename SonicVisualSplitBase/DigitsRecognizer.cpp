@@ -75,7 +75,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
         std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
 
         for (auto& match : symbolMatches) {
-            match.similarity *= getSymbolSimilarityMultiplier(symbol);
+            match.similarity *= getSimilarityMultiplier(symbol);
             // We've cropped the frame to speed up the search. Now we have to compensate for that.
             match.location += cv::Point2f((float) (digitsRect.x / bestScale), (float) (digitsRect.y / bestScale));
             std::vector<Match>& matches = (std::isdigit(symbol) ? digitMatches : labelMatches);
@@ -213,8 +213,6 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 }
 
 
-static const double MIN_SIMILARITY = -8000;
-
 /* Returns all found positions of a digit. If recalculateDigitsPlacement is set to true,
  * goes through different scales of the original frame (see the link below).
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
@@ -238,7 +236,8 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         minScale = maxScale = 1;
     }
 
-    double bestSimilarityForScales = MIN_SIMILARITY;
+    double globalMinSimilarity = getGlobalMinSimilarity(symbol);
+    double bestSimilarityForScales = globalMinSimilarity;
     // bestSimilarityForScales is used only if recalculateDigitsPlacement is true.
 
     std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
@@ -272,7 +271,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         matches.clear();
 
         cv::UMat matchResultBinary;
-        cv::threshold(matchResult, matchResultBinary, -MIN_SIMILARITY * opaquePixels, 1, cv::THRESH_BINARY_INV);
+        cv::threshold(matchResult, matchResultBinary, -globalMinSimilarity * opaquePixels, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);
 
@@ -309,11 +308,12 @@ void DigitsRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matche
     double bestSimilarity = matches[1].similarity;
     
     std::erase_if(matches, [&](const Match& match) {
-        double similarityCoefficient = getSymbolMinSimilarityCoefficient(match.symbol);
-        double similarityMultiplier = getSymbolSimilarityMultiplier(match.symbol);
+        double similarityCoefficient = getMinSimilarityDividedByBestSimilarity(match.symbol);
+        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         double minSimilarity = bestSimilarity * similarityCoefficient;
-        minSimilarity = std::max(minSimilarity, MIN_SIMILARITY);
-        minSimilarity = std::min(minSimilarity, MIN_SIMILARITY / 10);
+        double globalMinSimilarity = getGlobalMinSimilarity(match.symbol);
+        minSimilarity = std::max(minSimilarity, globalMinSimilarity);
+        minSimilarity = std::min(minSimilarity, globalMinSimilarity / 10);
         return match.similarity / similarityMultiplier < minSimilarity;
     });
 }
@@ -364,7 +364,15 @@ void DigitsRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digi
 }
 
 
-double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
+double DigitsRecognizer::getGlobalMinSimilarity(char symbol) {
+    if (std::isdigit(symbol))
+        return -8000;
+    else
+        return -3500;
+}
+
+
+double DigitsRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) {
     switch (symbol) {
     default:
         return 3.25;
@@ -389,7 +397,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
 }
 
 
-double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
+double DigitsRecognizer::getSimilarityMultiplier(char symbol) {
     switch (symbol)
     {
     // No multiplier by default.

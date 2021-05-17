@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SonicVisualSplit
 {
@@ -38,7 +37,7 @@ namespace SonicVisualSplit
         public void Stop()
         {
             shouldBeRunning = false;
-            taskThread.Join();  // Wait for the thread to finish.
+            taskThread?.Join();  // Wait for the thread to finish.
         }
 
         public delegate void TaskIteration();

@@ -7,7 +7,8 @@
 namespace SonicVisualSplitBase {
 namespace FrameStorage {
 
-/* This module saves frames from OBS for further usage (as we can't process all of them in real-time).
+/* This module saves frames from the game video capture for further usage
+ * (as we can't process all of them in real-time).
  * To distinguish between the frames, we use the time of capture (in milliseconds from epoch). */
 
  /* Sets the video source.
@@ -19,7 +20,7 @@ const int NO_VIDEO_CAPTURE = -1;  // No video capture is needed
 const int OBS_WINDOW_CAPTURE = -2;  // Capture the stream preview from currently opened OBS window.
 
 
-// Creates a thread which saves a screenshot of OBS every 16 milliseconds.
+// Creates a thread which saves a frame from the game video capture every 16 milliseconds.
 void startSavingFrames();
 
 // Stops that thread.

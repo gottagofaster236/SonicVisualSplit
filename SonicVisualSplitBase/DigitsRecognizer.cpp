@@ -415,11 +415,8 @@ cv::UMat DigitsRecognizer::cropToDigitsRectAndCorrectColor(cv::UMat frame) {
         return {};
     }
     frame = frame(digitsRect);
-    cv::imwrite("C:/tmp/beforeColorCorr.png", frame);
     frame = convertFrameToGray(frame);
     frame = applyColorCorrection(frame);
-    if (!frame.empty())
-        cv::imwrite("C:/tmp/afterColorCorr.png", frame);
     return frame;
 }
 

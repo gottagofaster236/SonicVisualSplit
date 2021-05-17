@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <numeric>
 #include <cctype>
-#include <opencv2/imgcodecs.hpp>
 
 
 namespace SonicVisualSplitBase {
@@ -118,11 +117,6 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         const cv::Rect2f& prevLocation = timeDigits[i].location, nextLocation = timeDigits[i + 1].location;
         double interval = ((nextLocation.x + nextLocation.width) -
             (prevLocation.x + prevLocation.width)) * bestScale;
-
-        // cv::imwrite to check the interval
-        // also lower time min coeff
-        // maybe limit the time check to 
-
         
         if (i == 0 || i == 2) {
             /* Checking that separators (:, ' and ") aren't detected as digits.

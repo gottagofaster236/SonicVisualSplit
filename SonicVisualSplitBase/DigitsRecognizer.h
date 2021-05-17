@@ -67,7 +67,7 @@ public:
 private:
     DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
-    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
+    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale);
 
     void removeMatchesWithLowSimilarity(std::vector<Match>& matches);
 
@@ -112,11 +112,14 @@ private:
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     double bestScale = -1;
 
+    bool recalculatedBestScaleLastTime;
+
     /* The rectangle where the time digits are located (i.e. we don't search the whole frame).
      * (This rectangle is valid after the frame has been scaled down to bestScale). */
     cv::Rect digitsRect;
 
-    bool recalculatedDigitsPlacementLastTime;
+    // Needed in case if score screen check fails.
+    cv::Rect prevDigitsRect;
 
     // See getRelativeDigitsRect().
     cv::Rect2f relativeDigitsRect;

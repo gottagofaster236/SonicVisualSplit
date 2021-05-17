@@ -29,6 +29,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
         resetDigitsPlacement();
         lastFrameSize = frame.size();
     }
+    prevDigitsRect = digitsRect;
 
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter;
@@ -54,7 +55,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
 
     if (checkForScoreScreen) {
         // We're gonna recalculate digits rectangle when we're checking for score screen.
-        digitsRect = {0, 0, 0, 0};
+        digitsRect = {};
     }
 
     std::vector<char> symbolsToSearch;
@@ -70,9 +71,9 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
 
     for (char symbol : symbolsToSearch) {
         const cv::UMat& frameToSearch = (std::isdigit(symbol) ? frame : frameWithYellowFilter);
-        bool recalculateDigitsPlacement = (bestScale == -1);
-        recalculatedDigitsPlacementLastTime = recalculateDigitsPlacement;
-        std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
+        bool recalculateBestScale = (bestScale == -1);
+        recalculatedBestScaleLastTime = recalculateBestScale;
+        std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateBestScale);
 
         for (auto& match : symbolMatches) {
             match.similarity *= getSimilarityMultiplier(symbol);
@@ -88,7 +89,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             // Checking only the top half of the frame, so that "SCORE" is searched faster.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
             frameWithYellowFilter = frameWithYellowFilter(topHalf);
-            if (recalculateDigitsPlacement) {
+            if (recalculateBestScale) {
                 // bestScale is calculated already after we found "TIME".
                 cv::resize(frameWithYellowFilter, frameWithYellowFilter, cv::Size(),
                     bestScale, bestScale, cv::INTER_AREA);
@@ -178,9 +179,12 @@ void DigitsRecognizer::reportRecognitionSuccess() {
 
 
 void DigitsRecognizer::reportRecognitionFailure() {
-    if (recalculatedDigitsPlacementLastTime) {
+    if (recalculatedBestScaleLastTime) {
         // We recalculated everything but failed. Make sure those results aren't saved.
         resetDigitsPlacement();
+    }
+    else {
+        digitsRect = prevDigitsRect;
     }
 }
 
@@ -213,16 +217,16 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 }
 
 
-/* Returns all found positions of a digit. If recalculateDigitsPlacement is set to true,
+/* Returns all found positions of a digit. If recalculateBestScale is set to true,
  * goes through different scales of the original frame (see the link below).
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
-std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
+std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale) {
     const auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
 
     // if we already found the scale, we don't go through different scales
     double minScale, maxScale;
 
-    if (recalculateDigitsPlacement) {
+    if (recalculateBestScale) {
         /* Sega Genesis resolution is 320×224 (height = 224).
          * We double the size of the template images, so we have to do the same for the resolution. */
         const int minHeight = 200 * 2;
@@ -238,7 +242,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
 
     double globalMinSimilarity = getGlobalMinSimilarity(symbol);
     double bestSimilarityForScales = globalMinSimilarity;
-    // bestSimilarityForScales is used only if recalculateDigitsPlacement is true.
+    // bestSimilarityForScales is used only if recalculateBestScale is true.
 
     std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
 
@@ -254,7 +258,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         cv::UMat matchResult;
         cv::matchTemplate(resized, templateImage, matchResult, cv::TM_SQDIFF, templateMask);
 
-        if (recalculateDigitsPlacement) {
+        if (recalculateBestScale) {
             double minimumSqdiff;
             cv::minMaxLoc(matchResult, &minimumSqdiff);
             double bestSimilarityForScale = -minimumSqdiff / opaquePixels;

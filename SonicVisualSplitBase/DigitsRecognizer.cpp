@@ -464,7 +464,20 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     bool recognizeWhiteTransition = (gameName == "Sonic 2" && FrameAnalyzer::getCurrentSplitIndex() == 19);
     
     if (!recognizeWhiteTransition) {
-        if (minBrightness > 180 && gameName != "Sonic 2")
+        uint8_t maxAcceptableBrightness;
+        if (gameName == "Sonic 2") {
+            // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
+            maxAcceptableBrightness = 255;
+        }
+        else if (gameName == "Sonic CD" && FrameAnalyzer::getCurrentSplitIndex() == 20) {
+            // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
+            maxAcceptableBrightness = 90;
+        }
+        else {
+            maxAcceptableBrightness = 180;
+        }
+
+        if (minBrightness > maxAcceptableBrightness)
             return {};
         minBrightness = std::min(minBrightness, (uint8_t) 50);
     }

@@ -29,4 +29,14 @@
 			<change>Not splitting on deaths at the last stage of S2/SCD.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.0.4">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Improved recognition accuracy.</change>
+		</changelog>
+	</update>
 </updates>

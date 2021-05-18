@@ -121,14 +121,14 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         if (i == 0 || i == 2) {
             /* Checking that separators (:, ' and ") aren't detected as digits.
              * For that we check that the digits adjacent to the separator have increased interval. */
-            if (interval < 28) {
+            if (interval < 26.5) {
                 timeDigits.erase(timeDigits.begin() + i + 1);
                 i--;
             }
         }
         else {
             // Checking that the interval is not too high.
-            if (interval > 20) {
+            if (interval > 20.5) {
                 result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
                 return;
             }

@@ -29,6 +29,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
         resetDigitsPlacement();
         lastFrameSize = frame.size();
     }
+    prevDigitsRect = digitsRect;
 
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter;
@@ -54,7 +55,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
 
     if (checkForScoreScreen) {
         // We're gonna recalculate digits rectangle when we're checking for score screen.
-        digitsRect = {0, 0, 0, 0};
+        digitsRect = {};
     }
 
     std::vector<char> symbolsToSearch;
@@ -70,12 +71,12 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
 
     for (char symbol : symbolsToSearch) {
         const cv::UMat& frameToSearch = (std::isdigit(symbol) ? frame : frameWithYellowFilter);
-        bool recalculateDigitsPlacement = (bestScale == -1);
-        recalculatedDigitsPlacementLastTime = recalculateDigitsPlacement;
-        std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateDigitsPlacement);
+        bool recalculateBestScale = (bestScale == -1);
+        recalculatedBestScaleLastTime = recalculateBestScale;
+        std::vector<Match> symbolMatches = findSymbolLocations(frameToSearch, symbol, recalculateBestScale);
 
         for (auto& match : symbolMatches) {
-            match.similarity *= getSymbolSimilarityMultiplier(symbol);
+            match.similarity *= getSimilarityMultiplier(symbol);
             // We've cropped the frame to speed up the search. Now we have to compensate for that.
             match.location += cv::Point2f((float) (digitsRect.x / bestScale), (float) (digitsRect.y / bestScale));
             std::vector<Match>& matches = (std::isdigit(symbol) ? digitMatches : labelMatches);
@@ -88,7 +89,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findLabelsAndDigits(cv::U
             // Checking only the top half of the frame, so that "SCORE" is searched faster.
             cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
             frameWithYellowFilter = frameWithYellowFilter(topHalf);
-            if (recalculateDigitsPlacement) {
+            if (recalculateBestScale) {
                 // bestScale is calculated already after we found "TIME".
                 cv::resize(frameWithYellowFilter, frameWithYellowFilter, cv::Size(),
                     bestScale, bestScale, cv::INTER_AREA);
@@ -178,9 +179,12 @@ void DigitsRecognizer::reportRecognitionSuccess() {
 
 
 void DigitsRecognizer::reportRecognitionFailure() {
-    if (recalculatedDigitsPlacementLastTime) {
+    if (recalculatedBestScaleLastTime) {
         // We recalculated everything but failed. Make sure those results aren't saved.
         resetDigitsPlacement();
+    }
+    else {
+        digitsRect = prevDigitsRect;
     }
 }
 
@@ -213,18 +217,16 @@ DigitsRecognizer::DigitsRecognizer(const std::string& gameName, const std::files
 }
 
 
-static const double MIN_SIMILARITY = -8000;
-
-/* Returns all found positions of a digit. If recalculateDigitsPlacement is set to true,
+/* Returns all found positions of a digit. If recalculateBestScale is set to true,
  * goes through different scales of the original frame (see the link below).
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
-std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement) {
+std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale) {
     const auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
 
     // if we already found the scale, we don't go through different scales
     double minScale, maxScale;
 
-    if (recalculateDigitsPlacement) {
+    if (recalculateBestScale) {
         /* Sega Genesis resolution is 320×224 (height = 224).
          * We double the size of the template images, so we have to do the same for the resolution. */
         const int minHeight = 200 * 2;
@@ -238,8 +240,9 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         minScale = maxScale = 1;
     }
 
-    double bestSimilarityForScales = MIN_SIMILARITY;
-    // bestSimilarityForScales is used only if recalculateDigitsPlacement is true.
+    double globalMinSimilarity = getGlobalMinSimilarity(symbol);
+    double bestSimilarityForScales = globalMinSimilarity;
+    // bestSimilarityForScales is used only if recalculateBestScale is true.
 
     std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
 
@@ -255,7 +258,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         cv::UMat matchResult;
         cv::matchTemplate(resized, templateImage, matchResult, cv::TM_SQDIFF, templateMask);
 
-        if (recalculateDigitsPlacement) {
+        if (recalculateBestScale) {
             double minimumSqdiff;
             cv::minMaxLoc(matchResult, &minimumSqdiff);
             double bestSimilarityForScale = -minimumSqdiff / opaquePixels;
@@ -272,7 +275,7 @@ std::vector<DigitsRecognizer::Match> DigitsRecognizer::findSymbolLocations(cv::U
         matches.clear();
 
         cv::UMat matchResultBinary;
-        cv::threshold(matchResult, matchResultBinary, -MIN_SIMILARITY * opaquePixels, 1, cv::THRESH_BINARY_INV);
+        cv::threshold(matchResult, matchResultBinary, -globalMinSimilarity * opaquePixels, 1, cv::THRESH_BINARY_INV);
         std::vector<cv::Point> matchPoints;
         cv::findNonZero(matchResultBinary, matchPoints);
 
@@ -309,11 +312,12 @@ void DigitsRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matche
     double bestSimilarity = matches[1].similarity;
     
     std::erase_if(matches, [&](const Match& match) {
-        double similarityCoefficient = getSymbolMinSimilarityCoefficient(match.symbol);
-        double similarityMultiplier = getSymbolSimilarityMultiplier(match.symbol);
+        double similarityCoefficient = getMinSimilarityDividedByBestSimilarity(match.symbol);
+        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         double minSimilarity = bestSimilarity * similarityCoefficient;
-        minSimilarity = std::max(minSimilarity, MIN_SIMILARITY);
-        minSimilarity = std::min(minSimilarity, MIN_SIMILARITY / 10);
+        double globalMinSimilarity = getGlobalMinSimilarity(match.symbol);
+        minSimilarity = std::max(minSimilarity, globalMinSimilarity);
+        minSimilarity = std::min(minSimilarity, globalMinSimilarity / 10);
         return match.similarity / similarityMultiplier < minSimilarity;
     });
 }
@@ -364,7 +368,21 @@ void DigitsRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digi
 }
 
 
-double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
+double DigitsRecognizer::getGlobalMinSimilarity(char symbol) {
+    if (std::isdigit(symbol)) {
+        return -8000;
+    }
+    else {
+        // TIME and SCORE labels.
+        if (isComposite)
+            return -3500;
+        else
+            return -7000;
+    }
+}
+
+
+double DigitsRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) {
     switch (symbol) {
     default:
         return 3.25;
@@ -389,7 +407,7 @@ double DigitsRecognizer::getSymbolMinSimilarityCoefficient(char symbol) {
 }
 
 
-double DigitsRecognizer::getSymbolSimilarityMultiplier(char symbol) {
+double DigitsRecognizer::getSimilarityMultiplier(char symbol) {
     switch (symbol)
     {
     // No multiplier by default.
@@ -446,7 +464,20 @@ cv::UMat DigitsRecognizer::applyColorCorrection(cv::UMat img) {
     bool recognizeWhiteTransition = (gameName == "Sonic 2" && FrameAnalyzer::getCurrentSplitIndex() == 19);
     
     if (!recognizeWhiteTransition) {
-        if (minBrightness > 180 && gameName != "Sonic 2")
+        uint8_t maxAcceptableBrightness;
+        if (gameName == "Sonic 2") {
+            // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
+            maxAcceptableBrightness = 255;
+        }
+        else if (gameName == "Sonic CD" && FrameAnalyzer::getCurrentSplitIndex() == 20) {
+            // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
+            maxAcceptableBrightness = 90;
+        }
+        else {
+            maxAcceptableBrightness = 180;
+        }
+
+        if (minBrightness > maxAcceptableBrightness)
             return {};
         minBrightness = std::min(minBrightness, (uint8_t) 50);
     }

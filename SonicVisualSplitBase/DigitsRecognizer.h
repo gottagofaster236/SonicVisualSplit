@@ -67,7 +67,7 @@ public:
 private:
     DigitsRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
-    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateDigitsPlacement);
+    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale);
 
     void removeMatchesWithLowSimilarity(std::vector<Match>& matches);
 
@@ -75,13 +75,16 @@ private:
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
 
-    /* Returns the minimum similarity coefficient divided by the best found similarity.
-     * Without parameters, returns the default similarity. */
-    double getSymbolMinSimilarityCoefficient(char symbol = 0);
+    // Returns the global minimum acceptable similarity of a symbol.
+    double getGlobalMinSimilarity(char symbol);
+
+    /* Returns the minimum acceptable similarity in relation to the best found similarity.
+     * Without parameters, returns the default value. */
+    double getMinSimilarityDividedByBestSimilarity(char symbol = 0);
 
     /* Similarity of a symbol may be multiplied by a coefficient
      * in order to make it a less or more preferable option when choosing between symbols. */
-    double getSymbolSimilarityMultiplier(char symbol);
+    double getSimilarityMultiplier(char symbol);
 
     /* Crops the frame to the region of interest where the digits are located,
      * and increases the contrast for the resulting image. Returns an empty image on error. */
@@ -109,11 +112,14 @@ private:
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     double bestScale = -1;
 
+    bool recalculatedBestScaleLastTime;
+
     /* The rectangle where the time digits are located (i.e. we don't search the whole frame).
      * (This rectangle is valid after the frame has been scaled down to bestScale). */
     cv::Rect digitsRect;
 
-    bool recalculatedDigitsPlacementLastTime;
+    // Needed in case if score screen check fails.
+    cv::Rect prevDigitsRect;
 
     // See getRelativeDigitsRect().
     cv::Rect2f relativeDigitsRect;

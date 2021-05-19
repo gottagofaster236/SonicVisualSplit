@@ -39,4 +39,14 @@
 			<change>Improved recognition accuracy.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.0.5">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fixed video capture on low-performance PCs.</change>
+		</changelog>
+	</update>
 </updates>

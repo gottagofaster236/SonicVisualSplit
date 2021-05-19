@@ -130,8 +130,11 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
 void setVideoCapture(int sourceIndex) {
     std::lock_guard<yamc::fair::mutex> guard(gameVideoCaptureMutex);
 
-    if (currentVideoSourceIndex == sourceIndex)
-        return;
+    if (currentVideoSourceIndex == sourceIndex) {
+        // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
+        if (sourceIndex < 0 || gameVideoCapture->getUnsuccessfulFramesStreak() < 5)
+            return;
+    }
 
     /* We've changed the capture, now the previous frames are now useless
      * (since the processFrame function is different). */

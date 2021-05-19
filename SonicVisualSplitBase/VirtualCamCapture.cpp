@@ -15,16 +15,11 @@ VirtualCamCapture::VirtualCamCapture(int deviceIndex) {
 }
 
 
-cv::Mat VirtualCamCapture::captureRawFrame() {
-    isLastFrameSuccessful = false;
+cv::Mat VirtualCamCapture::captureRawFrameImpl() {
+    cv::Mat frame;
     if (!videoCapture.isOpened())
         return {};
-
-    cv::Mat frame;
     videoCapture >> frame;
-    if (!frame.empty())
-        isLastFrameSuccessful = true;
-    
     return frame;
 }
 
@@ -59,14 +54,13 @@ std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
 
 
 std::chrono::milliseconds VirtualCamCapture::getDelayAfterLastFrame() {
-    if (isLastFrameSuccessful) {
-        /* cv::VideoCapture waits for the next frame by itself, no delay is needed.
-         * Still waiting for a millisecond so that FrameStorage doesn't have duplicate frames. */
-        return std::chrono::milliseconds(1);
-    }
-    else {
+    if (getUnsuccessfulFramesStreak() > 0) {
         // The last frame was a fail, just wait for the next one.
         return std::chrono::milliseconds(1000) / 60;
+    }
+    else {
+        // cv::VideoCapture waits for the next frame by itself, no delay is needed.
+        return std::chrono::milliseconds(0);
     }
 }
 

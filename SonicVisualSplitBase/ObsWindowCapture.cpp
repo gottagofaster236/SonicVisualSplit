@@ -10,7 +10,10 @@
 
 namespace SonicVisualSplitBase {
 
-cv::Mat ObsWindowCapture::captureRawFrame() {
+static const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
+
+
+cv::Mat ObsWindowCapture::captureRawFrameImpl() {
     cv::Mat screenshot;
     if (!updateOBSHwnd())
         return {};
@@ -68,7 +71,6 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
     if (lastGameFrameWidth != streamPreview.cols || lastGameFrameHeight != streamPreview.rows) {
         lastGameFrameWidth = streamPreview.cols;
         lastGameFrameHeight = streamPreview.rows;
-        const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
         int minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
         {
             std::lock_guard<std::mutex> guard(obsCaptureMutex);

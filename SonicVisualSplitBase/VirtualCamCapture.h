@@ -18,9 +18,6 @@ public:
 
     ~VirtualCamCapture() override;
 
-    // Grabs a frame from the video capture, or returns an empty Mat in case of error.
-    cv::Mat captureRawFrame() override;
-
     /* Returns the list of device names.
      * May contain duplicate names, if there are several devices with the same name. */
     static std::vector<std::wstring> getVideoDevicesList();
@@ -28,9 +25,10 @@ public:
     std::chrono::milliseconds getDelayAfterLastFrame() override;
 
 private:
-    cv::VideoCapture videoCapture;
+    // Grabs a frame from the video capture, or returns an empty Mat in case of error.
+    cv::Mat captureRawFrameImpl() override;
 
-    bool isLastFrameSuccessful = true;
+    cv::VideoCapture videoCapture;
 
     inline static std::vector<cv::Size> captureResolutions;
 

@@ -49,4 +49,14 @@
 			<change>Fixed video capture on low-performance PCs.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.0.6">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Improving accuracy for RGB.</change>
+		</changelog>
+	</update>
 </updates>

@@ -132,7 +132,7 @@ void setVideoCapture(int sourceIndex) {
 
     if (currentVideoSourceIndex == sourceIndex) {
         // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
-        if (sourceIndex < 0 || gameVideoCapture->getUnsuccessfulFramesStreak() < 5)
+        if (sourceIndex < 0 || gameVideoCapture->getUnsuccessfulFramesStreak() < 300)
             return;
     }
 

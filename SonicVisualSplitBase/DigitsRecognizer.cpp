@@ -393,7 +393,7 @@ double DigitsRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) {
         if (isComposite)
             return 1.75;
         else
-            return 1.5;
+            return 2;
     /* One is really small, so it can be misdetected, thus the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':

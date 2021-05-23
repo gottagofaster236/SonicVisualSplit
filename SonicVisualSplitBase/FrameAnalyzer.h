@@ -1,5 +1,5 @@
 #pragma once
-#include "DigitsRecognizer.h"
+#include "TimeRecognizer.h"
 #include <opencv2/core.hpp>
 #include <filesystem>
 #include <vector>
@@ -52,14 +52,15 @@ public:
 private:
     FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isComposite);
 
+    cv::UMat getSavedFrame(long long frameTime);
+
     void checkRecognizedSymbols(bool checkForScoreScreen, bool visualize);
 
-    void doCheckForScoreScreen(std::vector<DigitsRecognizer::Match>& labels);
+    void doCheckForScoreScreen(std::vector<TimeRecognizer::Match>& labels);
 
     void visualizeResult();
 
-    enum class SingleColor { BLACK, WHITE, NOT_SINGLE_COLOR };
-    SingleColor checkIfFrameIsSingleColor(cv::UMat frame);
+    bool checkIfFrameIsSingleColor(cv::UMat frame);
 
     bool checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference);
 
@@ -73,7 +74,7 @@ private:
 
     // Temporary fields for the functions.
     AnalysisResult result;
-    std::vector<DigitsRecognizer::Match> recognizedSymbols;
+    std::vector<TimeRecognizer::Match> recognizedSymbols;
     cv::UMat originalFrame;
 
     inline static int currentSplitIndex;

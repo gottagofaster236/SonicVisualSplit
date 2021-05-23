@@ -1,5 +1,5 @@
 ﻿#include "FrameAnalyzer.h"
-#include "DigitsRecognizer.h"
+#include "TimeRecognizer.h"
 #include "FrameStorage.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -41,38 +41,18 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     result.frameTime = frameTime;
     result.recognizedTime = false;
 
-    originalFrame = FrameStorage::getSavedFrame(frameTime);
-    if (originalFrame.cols == 0 || originalFrame.rows == 0) {
+    cv::UMat frame = getSavedFrame(frameTime);
+    if (frame.cols == 0 || frame.rows == 0) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
-        return result;
+        return;
     }
+    
+    if (checkIfFrameIsSingleColor(frame))
+        return;
 
-    // Make sure the frame isn't too large (that'll slow down the calculations).
-    if (originalFrame.rows > DigitsRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double) DigitsRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / originalFrame.rows;
-        cv::resize(originalFrame, originalFrame, cv::Size(), scaleFactor, scaleFactor, cv::INTER_AREA);
-    }
-
-    cv::UMat frame = originalFrame;
-    if (isStretchedTo16By9) {
-        cv::resize(frame, frame, cv::Size(), scaleFactorTo4By3, 1, cv::INTER_AREA);
-    }
-    if (visualize) {
-        originalFrame.copyTo(result.visualizedFrame);
-    }
-    switch (checkIfFrameIsSingleColor(frame)) {
-    case SingleColor::BLACK:
-        result.isBlackScreen = true;
-        return result;
-    case SingleColor::WHITE:
-        result.isWhiteScreen = true;
-        return result;
-    }
-
-    DigitsRecognizer& digitsRecognizer = DigitsRecognizer::getInstance(gameName, templatesDirectory, isComposite);
+    TimeRecognizer& digitsRecognizer = TimeRecognizer::getInstance(gameName, templatesDirectory, isComposite);
     recognizedSymbols = digitsRecognizer.findLabelsAndDigits(frame, checkForScoreScreen);
     checkRecognizedSymbols(checkForScoreScreen, visualize);
-    originalFrame.release();
 
     if (result.recognizedTime)
         digitsRecognizer.reportRecognitionSuccess();
@@ -85,10 +65,26 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 }
 
 
+cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
+    originalFrame = FrameStorage::getSavedFrame(frameTime);
+
+    // Make sure the frame isn't too large (that'll slow down the calculations).
+    if (originalFrame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
+        double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / originalFrame.rows;
+        cv::resize(originalFrame, originalFrame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
+    }
+
+    cv::UMat frame = originalFrame;
+    if (isStretchedTo16By9)
+        cv::resize(frame, frame, {}, scaleFactorTo4By3, 1, cv::INTER_AREA);
+    return frame;
+}
+
+
 void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visualize) {
     result.recognizedTime = false;
 
-    std::vector<DigitsRecognizer::Match> labels;
+    std::vector<TimeRecognizer::Match> labels;
 
     if (checkForScoreScreen) {
         doCheckForScoreScreen(labels);
@@ -96,7 +92,7 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
             return;
     }
 
-    std::vector<DigitsRecognizer::Match> timeDigits;
+    std::vector<TimeRecognizer::Match> timeDigits;
     for (const auto& match : recognizedSymbols) {
         if (std::isdigit(match.symbol))
             timeDigits.push_back(match);
@@ -113,7 +109,7 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
         requiredDigitsCount = 3;
 
     for (int i = 0; i + 1 < timeDigits.size(); i++) {
-        double bestScale = DigitsRecognizer::getCurrentInstance()->getBestScale();
+        double bestScale = TimeRecognizer::getCurrentInstance()->getBestScale();
         const cv::Rect2f& prevLocation = timeDigits[i].location, nextLocation = timeDigits[i + 1].location;
         double interval = ((nextLocation.x + nextLocation.width) -
             (prevLocation.x + prevLocation.width)) * bestScale;
@@ -172,13 +168,13 @@ void FrameAnalyzer::checkRecognizedSymbols(bool checkForScoreScreen, bool visual
 }
 
 
-void FrameAnalyzer::doCheckForScoreScreen(std::vector<DigitsRecognizer::Match>& labels) {
-    std::vector<DigitsRecognizer::Match> timeMatches;
-    std::vector<DigitsRecognizer::Match> scoreMatches;
+void FrameAnalyzer::doCheckForScoreScreen(std::vector<TimeRecognizer::Match>& labels) {
+    std::vector<TimeRecognizer::Match> timeMatches;
+    std::vector<TimeRecognizer::Match> scoreMatches;
     for (const auto& match : recognizedSymbols) {
-        if (match.symbol == DigitsRecognizer::TIME)
+        if (match.symbol == TimeRecognizer::TIME)
             timeMatches.push_back(match);
-        else if (match.symbol == DigitsRecognizer::SCORE)
+        else if (match.symbol == TimeRecognizer::SCORE)
             scoreMatches.push_back(match);
     }
 
@@ -210,6 +206,7 @@ void FrameAnalyzer::doCheckForScoreScreen(std::vector<DigitsRecognizer::Match>& 
 
 
 void FrameAnalyzer::visualizeResult() {
+    originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
     for (auto match : recognizedSymbols) {
         if (isStretchedTo16By9) {
@@ -221,11 +218,11 @@ void FrameAnalyzer::visualizeResult() {
 }
 
 
-FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
+bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     // Checking just the rectangle with the digits (with doubled height to check more). 
-    const std::unique_ptr<DigitsRecognizer>& instance = DigitsRecognizer::getCurrentInstance();
+    const std::unique_ptr<TimeRecognizer>& instance = TimeRecognizer::getCurrentInstance();
     if (!instance)
-        return SingleColor::NOT_SINGLE_COLOR;
+        return false;
     cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
     cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
         (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
@@ -234,15 +231,17 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
     checkRect.height *= 2;
     checkRect.height = std::min(checkRect.height, frame.rows - checkRect.y);
     if (checkRect.empty())
-        return SingleColor::NOT_SINGLE_COLOR;
+        return false;
     frame = frame(checkRect);
 
     const cv::Scalar black(0, 0, 0), white(255, 255, 255);
     if (checkIfImageIsSingleColor(frame, black, 40)) {
-        return SingleColor::BLACK;
+        result.isBlackScreen = true;
+        return true;
     }
     else if (checkIfImageIsSingleColor(frame, white, 25)) {
-        return SingleColor::WHITE;
+        result.isWhiteScreen = true;
+        return true;
     }
     else if (gameName == "Sonic 2") {
         /* Sonic 2 has a transition where it shows the act name in front of a red/blue background.
@@ -250,11 +249,13 @@ FrameAnalyzer::SingleColor FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat fra
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
         double maxBrightness;
         cv::minMaxLoc(frame, nullptr, &maxBrightness);
-        if (maxBrightness < 120)
-            return SingleColor::BLACK;
+        if (maxBrightness < 120) {
+            result.isBlackScreen = true;
+            return true;
+        }
     }
 
-    return SingleColor::NOT_SINGLE_COLOR;
+    return false;
 }
 
 

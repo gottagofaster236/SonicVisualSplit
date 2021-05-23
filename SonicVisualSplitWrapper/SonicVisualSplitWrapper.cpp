@@ -71,12 +71,12 @@ void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
 
 
 void FrameAnalyzer::ResetDigitsPlacement() {
-    SonicVisualSplitBase::DigitsRecognizer::resetDigitsPlacement();
+    SonicVisualSplitBase::TimeRecognizer::resetDigitsPlacement();
 }
 
 
 void FrameAnalyzer::FullReset() {
-    SonicVisualSplitBase::DigitsRecognizer::fullReset();
+    SonicVisualSplitBase::TimeRecognizer::fullReset();
 }
 
 

@@ -87,7 +87,5 @@ at the point where SVS fails would be appreciated.
 ## Questions / Suggestions
 If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
 
-You can also ask your question [here on Discord](https://discord.gg/BRa5X9BPGg) if you don't wanna create a GitHub account.
-
 ## For developers
 Contributions are welcome! You should probably read [BUILDING.md](BUILDING.md) on how to build the project.

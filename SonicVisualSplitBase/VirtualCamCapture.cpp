@@ -1,5 +1,5 @@
 #include "VirtualCamCapture.h"
-#include "DigitsRecognizer.h"
+#include "TimeRecognizer.h"
 #include <ranges>
 #include <algorithm>
 
@@ -138,7 +138,7 @@ cv::Size VirtualCamCapture::getResolution(IMoniker* moniker) {
     if (supportedResolutions.empty())
         return {0, 0};
     auto hdResolutions = supportedResolutions | std::views::filter([](const auto& resolution) {
-        return resolution.height >= DigitsRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT;
+        return resolution.height >= TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT;
     });
 
     if (hdResolutions.empty()) {

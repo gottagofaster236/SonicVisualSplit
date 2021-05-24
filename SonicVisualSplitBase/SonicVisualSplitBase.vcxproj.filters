@@ -62,5 +62,8 @@
     <ClInclude Include="TimeRecognizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AnalysisResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

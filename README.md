@@ -9,6 +9,8 @@ Splits Sonic 1, 2, and CD using IGT *(in-game time)*.
 ## System requirements
 Required OS version is **Windows 10 64-bit** (2016's Anniversary Update or newer).
 
+You have to have the latest version of [LiveSplit](http://livesplit.org/downloads/) installed.
+
 If you want to record (or stream) your game footage, you have to have [OBS Studio](https://obsproject.com/) (or other streaming software) installed.
 
 ## Installation

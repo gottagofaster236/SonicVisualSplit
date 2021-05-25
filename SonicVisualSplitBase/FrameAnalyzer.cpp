@@ -47,11 +47,12 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         return result;
     }
     
-    if (checkIfFrameIsSingleColor(frame))
-        return result;
+    std::vector<TimeRecognizer::Match> allMatches;
+    if (!checkIfFrameIsSingleColor(frame)) {
+        TimeRecognizer& timeRecognizer = TimeRecognizer::getInstance(gameName, templatesDirectory, isComposite);
+        allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
+    }
 
-    TimeRecognizer& timeRecognizer = TimeRecognizer::getInstance(gameName, templatesDirectory, isComposite);
-    auto allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
     if (visualize)
         visualizeResult(allMatches);
     return result;

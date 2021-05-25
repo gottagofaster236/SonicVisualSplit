@@ -73,7 +73,7 @@ private:
 
     void onRecognitionSuccess();
 
-    void onRecognitionFailure();
+    void onRecognitionFailure(AnalysisResult& result);
 
     Match findTopTimeLabel(const std::vector<Match>& labels);
     

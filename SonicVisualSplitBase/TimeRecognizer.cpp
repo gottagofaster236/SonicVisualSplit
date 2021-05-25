@@ -5,6 +5,7 @@
 #include <fstream>
 #include <ranges>
 #include <algorithm>
+#include <utility>
 #include <cctype>
 #include <cmath>
 #include <cassert>
@@ -45,8 +46,10 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
     }
     if (checkForScoreScreen) {
         std::vector<Match> labels = findLabelsAndUpdateDigitsRect(frame);
+        if (digitsRect.empty())
+            digitsRect = prevDigitsRect;
         if (bestScale == -1 || digitsRect.empty()) {
-            result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+            onRecognitionFailure(result);
             return allMatches;
         }
         if (recalculatedBestScaleLastTime)
@@ -57,7 +60,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
     frame = cropToDigitsRect(frame);
     frame = applyColorCorrection(frame);
     if (frame.empty()) {
-        result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        onRecognitionFailure(result);
         return allMatches;
     }
 
@@ -82,7 +85,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
     if (result.recognizedTime)
         onRecognitionSuccess();
     else
-        onRecognitionFailure();
+        onRecognitionFailure(result);
 
     allMatches.insert(allMatches.end(), digitMatches.begin(), digitMatches.end());
     return allMatches;
@@ -256,7 +259,9 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
         else
             scoreMatches.push_back(match);
     }
-
+    
+    if (timeMatches.empty() || scoreMatches.empty())
+        return false;
     auto topTimeLabel = findTopTimeLabel(labels);
 
     // Make sure that the other TIME matches are valid.
@@ -269,12 +274,12 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
             || otherLocation.y > 3 * originalFrameHeight / 4);
     });
 
+    /* There's always a "TIME" label on top of the screen.
+         * But there's a second one during the score countdown screen ("TIME BONUS"). */
+    bool isScoreScreen = timeMatches.size() >= 2;
     labels = std::move(timeMatches);
     labels.insert(labels.end(), scoreMatches.begin(), scoreMatches.end());
-
-    /* There's always a "TIME" label on top of the screen.
-     * But there's a second one during the score countdown screen ("TIME BONUS"). */
-    return timeMatches.size() >= 2;
+    return isScoreScreen;
 }
 
 
@@ -288,7 +293,8 @@ void TimeRecognizer::onRecognitionSuccess() {
 }
 
 
-void TimeRecognizer::onRecognitionFailure() {
+void TimeRecognizer::onRecognitionFailure(AnalysisResult& result) {
+    result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
     if (recalculatedBestScaleLastTime) {
         // We recalculated everything but failed. Make sure those results aren't saved.
         resetDigitsPlacement();
@@ -307,8 +313,6 @@ void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
     int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
     int digitsRectBottom = (int) ((timeRect.y + timeRect.height * 1.1) * bestScale);
     digitsRect = {digitsRectLeft, digitsRectTop, digitsRectRight - digitsRectLeft, digitsRectBottom - digitsRectTop};
-    if (digitsRect.empty())
-        digitsRect = prevDigitsRect;
 }
 
 

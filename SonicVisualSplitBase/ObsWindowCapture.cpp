@@ -1,6 +1,6 @@
 #include "ObsWindowCapture.h"
 #include "WindowCapture.h"
-#include "DigitsRecognizer.h"
+#include "TimeRecognizer.h"
 #include <opencv2/imgproc.hpp>
 #define NOMINMAX  // fighting defines from Windows.h
 #include <Windows.h>

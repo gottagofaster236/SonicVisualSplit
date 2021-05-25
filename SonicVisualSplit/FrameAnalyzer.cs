@@ -555,7 +555,6 @@ namespace SonicVisualSplit
                     // IsGameTimePaused is reset too, bring it back to true.
                     state.IsGameTimePaused = true;
                     FrameStorage.DeleteAllSavedFrames();
-                    SonicVisualSplitWrapper.FrameAnalyzer.FullReset();
 
                     gameTime = 0;
                     gameTimeOnSegmentStart = 0;

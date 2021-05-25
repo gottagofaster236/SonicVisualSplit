@@ -1,7 +1,7 @@
 ﻿#include "SonicVisualSplitWrapper.h"
 #pragma managed(push, off)
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
-#include "../SonicVisualSplitBase/DigitsRecognizer.h"
+#include "../SonicVisualSplitBase/TimeRecognizer.h"
 #include "../SonicVisualSplitBase/FrameStorage.h"
 #include "../SonicVisualSplitBase/VirtualCamCapture.h"
 #pragma managed(pop)
@@ -71,12 +71,7 @@ void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
 
 
 void FrameAnalyzer::ResetDigitsPlacement() {
-    SonicVisualSplitBase::DigitsRecognizer::resetDigitsPlacement();
-}
-
-
-void FrameAnalyzer::FullReset() {
-    SonicVisualSplitBase::DigitsRecognizer::fullReset();
+    SonicVisualSplitBase::TimeRecognizer::resetDigitsPlacement();
 }
 
 

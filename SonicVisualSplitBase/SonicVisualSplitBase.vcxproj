@@ -119,21 +119,22 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DigitsRecognizer.cpp" />
     <ClCompile Include="FrameStorage.cpp" />
     <ClCompile Include="FrameAnalyzer.cpp" />
     <ClCompile Include="GameVideoCapture.cpp" />
     <ClCompile Include="ObsWindowCapture.cpp" />
+    <ClCompile Include="TimeRecognizer.cpp" />
     <ClCompile Include="VirtualCamCapture.cpp" />
     <ClCompile Include="WindowCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DigitsRecognizer.h" />
+    <ClInclude Include="AnalysisResult.h" />
     <ClInclude Include="FairMutex.h" />
     <ClInclude Include="FrameStorage.h" />
     <ClInclude Include="FrameAnalyzer.h" />
     <ClInclude Include="GameVideoCapture.h" />
     <ClInclude Include="ObsWindowCapture.h" />
+    <ClInclude Include="TimeRecognizer.h" />
     <ClInclude Include="VirtualCamCapture.h" />
     <ClInclude Include="WindowCapture.h" />
   </ItemGroup>

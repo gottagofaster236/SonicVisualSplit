@@ -2,7 +2,7 @@
 #include "GameVideoCapture.h"
 #include "ObsWindowCapture.h"
 #include "VirtualCamCapture.h"
-#include "DigitsRecognizer.h"
+#include "TimeRecognizer.h"
 #include "FairMutex.h"
 #include <chrono>
 #include <thread>
@@ -140,7 +140,7 @@ void setVideoCapture(int sourceIndex) {
      * (since the processFrame function is different). */
     std::lock_guard<yamc::fair::mutex> guard2(savedRawFramesMutex);
     savedRawFrames.clear();
-    DigitsRecognizer::resetDigitsPlacementAsync();
+    TimeRecognizer::resetDigitsPlacementAsync();
 
     currentVideoSourceIndex = sourceIndex;
 

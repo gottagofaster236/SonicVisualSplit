@@ -2,15 +2,11 @@
 using LiveSplit.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LiveSplit.UI;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
 using SonicVisualSplitWrapper;
-using System.Diagnostics;
 
 namespace SonicVisualSplit
 {

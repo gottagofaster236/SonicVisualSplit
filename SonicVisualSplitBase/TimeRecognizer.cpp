@@ -174,8 +174,8 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect
     }
 
     /* We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
-    * We'll look for digits only in the rectangle to the right of "TIME".
-    * That's why we'll crop the frame to that rectangle. */
+     * We'll look for digits only in the rectangle to the right of "TIME".
+     * That's why we'll crop the frame to that rectangle. */
     updateDigitsRect(labelMatches);
     return labelMatches;
 }
@@ -275,7 +275,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
     });
 
     /* There's always a "TIME" label on top of the screen.
-         * But there's a second one during the score countdown screen ("TIME BONUS"). */
+     * But there's a second one during the score countdown screen ("TIME BONUS"). */
     bool isScoreScreen = timeMatches.size() >= 2;
     labels = std::move(timeMatches);
     labels.insert(labels.end(), scoreMatches.begin(), scoreMatches.end());

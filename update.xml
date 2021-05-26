@@ -59,4 +59,15 @@
 			<change>Improving accuracy for RGB.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.0.7">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fixed reset.</change>
+			<change>Accuracy improvements.</change>
+		</changelog>
+	</update>
 </updates>

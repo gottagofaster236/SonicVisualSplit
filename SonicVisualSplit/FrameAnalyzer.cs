@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using System.IO.Compression;
+using System.Threading;
 
 namespace SonicVisualSplit
 {
@@ -16,7 +17,7 @@ namespace SonicVisualSplit
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
         private object frameAnalysisLock = new object();
 
-        /* All times are in milliseconds.
+        /* All times are in milliseconds from a certain 
          * A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
          * for example from respawn on a checkpoint to the end of the level. */
 
@@ -56,6 +57,8 @@ namespace SonicVisualSplit
 
         private List<long> savedFrameTimes;
 
+        private long lastResetTime = 0;
+
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellableLoopTask frameAnalysisTask;
         private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
@@ -82,17 +85,9 @@ namespace SonicVisualSplit
         {
             lock (frameAnalysisLock)
             {
-                savedFrameTimes = FrameStorage.GetSavedFramesTimes();
-                if (savedFrameTimes.Count == 0)
+                long lastFrameTime = GetLastSavedFrameTime();
+                if (lastFrameTime == 0)  // Couldn't get the last frame time.
                     return;
-                long lastFrameTime = savedFrameTimes.Last();
-
-                if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
-                {
-                    /* The frames are not saved if there are too many saved already (to prevent an OOM).
-                     * In this case we unfortunately have to delete the old frames, even if we need them. */
-                    FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
-                }
                 
                 bool visualize;
                 lock (resultConsumers)
@@ -147,6 +142,30 @@ namespace SonicVisualSplit
                 previousResult = result;
                 FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
             }
+        }
+
+        // Returns the last saved frame time, or 0 on error.
+        private long GetLastSavedFrameTime()
+        {
+            savedFrameTimes = FrameStorage.GetSavedFramesTimes();
+            if (savedFrameTimes.Count == 0)
+                return 0;
+            long lastFrameTime = savedFrameTimes.Last();
+
+            if (ShouldWaitAfterReset(lastFrameTime))
+            {
+                FrameStorage.DeleteAllSavedFrames();
+                return 0;
+            }
+
+            if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
+            {
+                /* The frames are not saved if there are too many saved already (to prevent an OOM).
+                 * In this case we unfortunately have to delete the old frames, even if we need them. */
+                FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+            }
+
+            return lastFrameTime;
         }
 
         private void CheckIfNextStageStarted(AnalysisResult result, bool checkedForScoreScreen)
@@ -302,6 +321,8 @@ namespace SonicVisualSplit
             int gameTimeCopy = gameTime;
 
             RunOnUiThreadAsync(() => {
+                if (ShouldWaitAfterReset(FrameStorage.GetCurrentTimeInMilliseconds()))
+                    return;
                 // Make sure the run started and hasn't finished
                 if (state.CurrentSplitIndex == -1)
                     model.Start();
@@ -461,6 +482,12 @@ namespace SonicVisualSplit
             }
         }
 
+        private bool ShouldWaitAfterReset(long currentTimeInMilliseconds)
+        {
+            // Make sure the frames are coming from the next run.
+            return currentTimeInMilliseconds - Interlocked.Read(ref lastResetTime) < 3000;
+        }
+
         private void StartAnalyzingFrames()
         {
             state.CurrentTimingMethod = TimingMethod.GameTime;
@@ -548,6 +575,8 @@ namespace SonicVisualSplit
 
         private void OnReset(object sender = null, TimerPhase value = 0)
         {
+            Interlocked.Exchange(ref lastResetTime, FrameStorage.GetCurrentTimeInMilliseconds());
+
             Task.Run(() =>
             {
                 lock (frameAnalysisLock)

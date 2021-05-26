@@ -67,9 +67,7 @@ void saveOneFrame() {
     cv::Mat rawFrame;
     if (gameVideoCapture)
         rawFrame = gameVideoCapture->captureRawFrame();
-
-    long long currentMilliseconds = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-    savedRawFrames[currentMilliseconds] = rawFrame;
+    savedRawFrames[getCurrentTimeInMilliseconds()] = rawFrame;
 }
 
 
@@ -124,6 +122,11 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
     /* Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime).
      * std::map is sorted by key (i.e. frame time). */
     savedRawFrames.erase(savedRawFrames.lower_bound(beginFrameTime), savedRawFrames.lower_bound(endFrameTime));
+}
+
+
+long long getCurrentTimeInMilliseconds() {
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
 

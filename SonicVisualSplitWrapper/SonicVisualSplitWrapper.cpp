@@ -142,6 +142,11 @@ int FrameStorage::GetMaxCapacity() {
 }
 
 
+Int64 FrameStorage::GetCurrentTimeInMilliseconds() {
+    return SonicVisualSplitBase::FrameStorage::getCurrentTimeInMilliseconds();
+}
+
+
 List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
     std::vector<std::wstring> devices = SonicVisualSplitBase::VirtualCamCapture::getVideoDevicesList();
     List<String^>^ converted = gcnew List<String^>((int) devices.size());

@@ -484,7 +484,10 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
 
 double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
     if (std::isdigit(symbol)) {
-        return -8000;
+        if (isComposite)
+            return -8000;
+        else
+            return -7000;
     }
     else {
         // TIME and SCORE labelMatches.
@@ -516,7 +519,10 @@ double TimeRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) cons
         else
             return 2.5;
     case '4':
-        return 2;
+        if (isComposite)
+            return 2;
+        else
+            return 2.5;
     }
 }
 

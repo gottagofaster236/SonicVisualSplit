@@ -28,7 +28,9 @@ namespace SonicVisualSplit
                     taskIteration();
                     TimeSpan waitTime = nextIteration - DateTime.Now;
                     if (waitTime > TimeSpan.Zero)
+                    {
                         Thread.Sleep(waitTime);
+                    }
                 }
             }));
             taskThread.Start();

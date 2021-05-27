@@ -53,9 +53,13 @@ namespace SonicVisualSplit
             {
                 int index = scannedVideoSources.IndexOf(videoSource);
                 if (index != -1)
+                {
                     FrameStorage.SetVideoCapture(index);
+                }
                 else
+                {
                     FrameStorage.SetVideoCapture(FrameStorage.NO_VIDEO_CAPTURE);
+                }
             }
 
             // Update the video source selection list in Settings.

@@ -88,8 +88,11 @@ namespace SonicVisualSplit
             lock (frameAnalysisLock)
             {
                 long lastFrameTime = GetLastSavedFrameTime();
-                if (lastFrameTime == 0)  // Couldn't get the last frame time.
+                if (lastFrameTime == 0)
+                { 
+                    // Couldn't get the last frame time.
                     return;
+                }
                 
                 bool visualize;
                 lock (resultConsumers)
@@ -99,7 +102,9 @@ namespace SonicVisualSplit
 
                 bool checkForScoreScreen = (lastFrameTime - lastScoreScreenCheckFrameTime >= 1000);
                 if (checkForScoreScreen)
+                {
                     lastScoreScreenCheckFrameTime = lastFrameTime;
+                }
 
                 if (unsuccessfulStreak >= 3 || (previousResult != null && previousResult.IsBlackScreen))
                 {
@@ -129,13 +134,18 @@ namespace SonicVisualSplit
                 else if (result.RecognizedTime)
                 {
                     CheckIfFrameIsAfterTransition(result);
-                    if (!result.IsSuccessful())  // CheckIfFrameIsAfterTransition checks the analysis result.
+                    if (!result.IsSuccessful())
+                    { 
+                        // CheckIfFrameIsAfterTransition checks the analysis result.
                         return;
+                    }
 
                     SplitIfNecessary(result, checkForScoreScreen);
 
                     if (!isAfterSplit)
+                    {
                         UpdateGameTime(result);
+                    }
                 }
                 else if (previousResult != null && previousResult.RecognizedTime &&
                     (result.IsBlackScreen || result.IsWhiteScreen))
@@ -153,7 +163,9 @@ namespace SonicVisualSplit
         {
             savedFrameTimes = FrameStorage.GetSavedFramesTimes();
             if (savedFrameTimes.Count == 0)
+            {
                 return 0;
+            }
             long lastFrameTime = savedFrameTimes.Last();
 
             if (ShouldWaitAfterReset(lastFrameTime))
@@ -202,7 +214,9 @@ namespace SonicVisualSplit
         private void CheckIfFrameIsAfterTransition(AnalysisResult result)
         {
             if (frameBeforeTransition == null || previousResult == null || state.CurrentSplitIndex == -1)
+            {
                 return;
+            }
 
             if (previousResult.IsWhiteScreen)
             {
@@ -327,12 +341,18 @@ namespace SonicVisualSplit
 
             RunOnUiThreadAsync(() => {
                 if (ShouldWaitAfterReset(FrameStorage.GetCurrentTimeInMilliseconds()))
+                {
                     return;
+                }
                 // Make sure the run started and hasn't finished
                 if (state.CurrentSplitIndex == -1)
+                {
                     model.Start();
+                }
                 else if (state.CurrentSplitIndex == state.Run.Count)
+                {
                     model.UndoSplit();
+                }
                 state.SetGameTime(TimeSpan.FromMilliseconds(gameTimeCopy));
             });
         }
@@ -392,9 +412,13 @@ namespace SonicVisualSplit
                 long frameTime = savedFrameTimes[frameIndex];
                 AnalysisResult secondFrameOfSegment;
                 if (frameTime != newResult.FrameTime)
+                {
                     secondFrameOfSegment = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false, visualize: false);
+                }
                 else
+                {
                     secondFrameOfSegment = newResult;
+                }
 
                 if (!secondFrameOfSegment.RecognizedTime)
                 {
@@ -445,7 +469,9 @@ namespace SonicVisualSplit
             if (!result.IsSuccessful())
             {
                 if (isLatestFrame)
+                {
                     DeleteFrame(result);
+                }
                 return false;
             }
 
@@ -464,7 +490,9 @@ namespace SonicVisualSplit
                         > timeElapsed + timerAccuracy + marginOfError)
                 {
                     if (isLatestFrame)
+                    {
                         DeleteFrame(result);
+                    }
                     result.MarkAsIncorrectlyRecognized();
                     return false;
                 }
@@ -568,7 +596,9 @@ namespace SonicVisualSplit
                 try
                 {
                     if (Directory.Exists(destinationDirectory))
+                    {
                         Directory.Delete(destinationDirectory, recursive: true);
+                    }
                     ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
                     File.Delete(zipLocation);
                 }
@@ -624,7 +654,9 @@ namespace SonicVisualSplit
         {
             var forms = Application.OpenForms;
             if (forms.Count == 0)
+            {
                 return;
+            }
             var mainWindow = forms[0];
             mainWindow.BeginInvoke(action);
         }
@@ -637,7 +669,9 @@ namespace SonicVisualSplit
                 foreach (var resultConsumer in resultConsumers)
                 {
                     if (!resultConsumer.OnFrameAnalyzed(result))
+                    {
                         resultConsumersToRemove.Add(resultConsumer);
+                    }
                 }
 
                 foreach (var resultConsumerToRemove in resultConsumersToRemove)

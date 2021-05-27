@@ -50,7 +50,9 @@ namespace SonicVisualSplit
         void IDisposable.Dispose()
         {
             if (Disposed)
+            {
                 return;
+            }
             Disposed = true;
             frameAnalyzer.StopAnalyzingFrames();
             state.IsGameTimePaused = false;

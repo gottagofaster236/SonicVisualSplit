@@ -33,6 +33,8 @@ namespace SonicVisualSplit
         // The time of capture of the first recognized frame of the current segment.
         private long firstFrameTimeOfSegment = 0;
 
+        private bool needToConfirmFirstFrameOfSegment = false;
+
         // The previous successfully analyzed frame.
         private AnalysisResult previousResult = null;
 
@@ -108,6 +110,8 @@ namespace SonicVisualSplit
 
                 AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize);
                 SendResultToConsumers(result);
+
+                ConfirmFirstFrameOfSegmentIfNeeded(result);
 
                 if (!CheckAnalysisResult(result, isLatestFrame: true))
                 {
@@ -229,6 +233,7 @@ namespace SonicVisualSplit
         {
             gameTimeOnSegmentStart = gameTime;
             firstFrameTimeOfSegment = result.FrameTime;
+            needToConfirmFirstFrameOfSegment = true;
             previousResult = result;
 
             if (result.TimeInMilliseconds > 60)
@@ -354,12 +359,6 @@ namespace SonicVisualSplit
                     {
                         return result;
                     }
-                    else if (after)
-                    {
-                        SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
-                        /* When we're going into a transition, the screen fades out. So we **don't** reset 
-                         * the frame analyzer, because it won't find the "TIME" label on the screen once it's faded out. */
-                    }
                 }
 
                 var elapsedTime = DateTime.Now - startTime;
@@ -381,7 +380,11 @@ namespace SonicVisualSplit
         {
             /* Go over all frames to find the first frame which is consistent with the frame after it.
              * We use CheckAnalysisResult to check that. */
-            int beginIndex = savedFrameTimes.IndexOf(firstFrameTimeOfSegment) + 1;
+            int beginIndex = savedFrameTimes.FindIndex(frameTime => frameTime > firstFrameTimeOfSegment);
+            if (beginIndex == -1)
+            {
+                return;
+            }
             int endIndex = savedFrameTimes.IndexOf(newResult.FrameTime);
 
             for (int frameIndex = beginIndex; frameIndex <= endIndex; frameIndex++)
@@ -393,8 +396,13 @@ namespace SonicVisualSplit
                 else
                     secondFrameOfSegment = newResult;
 
+                if (!secondFrameOfSegment.RecognizedTime)
+                {
+                    continue;
+                }
+
                 if (secondFrameOfSegment.TimeInMilliseconds == previousResult.TimeInMilliseconds &&
-                    secondFrameOfSegment.FrameTime - previousResult.FrameTime < 30)
+                    secondFrameOfSegment.FrameTime - previousResult.FrameTime < 50)
                 {
                     /* This frame may be a duplicate of the first frame, as we are
                      * capturing a frame every 16 ms (which is less than 1/60th of a second). */
@@ -405,6 +413,7 @@ namespace SonicVisualSplit
                 if (CheckAnalysisResult(secondFrameOfSegment))
                 {
                     // The first frame of the segment (which is equal to previousResult) is presumably correct.
+                    needToConfirmFirstFrameOfSegment = false;
                     return;
                 }
                 else
@@ -416,12 +425,22 @@ namespace SonicVisualSplit
             }
         }
 
+        private void ConfirmFirstFrameOfSegmentIfNeeded(AnalysisResult result)
+        {
+            if (needToConfirmFirstFrameOfSegment)
+            {
+                CorrectFirstFrameOfSegment(result);
+            }
+        }
+
         /* Checks a frame with recognized digits, based on the previousResult.
          * Returns true if the result is (presumably) correct. */
         bool CheckAnalysisResult(AnalysisResult result, bool isLatestFrame = false, AnalysisResult previousResult = null)
         {
             if (previousResult == null)  // Default parameter.
+            {
                 previousResult = this.previousResult;
+            }
 
             if (!result.IsSuccessful())
             {
@@ -444,12 +463,6 @@ namespace SonicVisualSplit
                     || result.TimeInMilliseconds - previousResult.TimeInMilliseconds
                         > timeElapsed + timerAccuracy + marginOfError)
                 {
-                    if (isLatestFrame && previousResult.FrameTime == firstFrameTimeOfSegment)
-                    {
-                        CorrectFirstFrameOfSegment(result);
-                        return true;
-                    }
-
                     if (isLatestFrame)
                         DeleteFrame(result);
                     result.MarkAsIncorrectlyRecognized();
@@ -593,6 +606,7 @@ namespace SonicVisualSplit
                     isAfterSplit = false;
                     ingameTimerOnSplit = 0;
                     lastScoreScreenCheckFrameTime = 0;
+                    needToConfirmFirstFrameOfSegment = false;
                     ingameTimerOnLastScoreCheck = -1;
                     frameBeforeTransition = null;
                 }

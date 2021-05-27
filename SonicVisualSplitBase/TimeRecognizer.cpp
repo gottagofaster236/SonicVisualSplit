@@ -143,9 +143,6 @@ TimeRecognizer::TimeRecognizer(const std::string& gameName, const std::filesyste
 std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(cv::UMat frame) {
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter = convertFrameToGray(frame, true);
-    // We're gonna recalculate digits rectangle when we're checking for score screen.
-    digitsRect = {};
-
     bool recalculateBestScale = (bestScale == -1);
     recalculatedBestScaleLastTime = recalculateBestScale;
     std::vector<Match> timeMatches = findSymbolLocations(frameWithYellowFilter, TIME, recalculateBestScale);

@@ -263,6 +263,18 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
     if (timeMatches.empty() || scoreMatches.empty())
         return false;
     auto topTimeLabel = findTopTimeLabel(labels);
+    
+    // Location of TIME in "TIME BONUS" relative to the top time label.
+    cv::Point2f expectedTimeBonusShift;
+    if (gameName == "Sonic 1")
+        expectedTimeBonusShift = cv::Point2f(5.82f, 8.36f);
+    else if (gameName == "Sonic 2")
+        expectedTimeBonusShift = cv::Point2f(4.73f, 8.f);
+    else if (gameName == "Sonic CD")
+        expectedTimeBonusShift = cv::Point2f(4.73f, 12.36f);
+    expectedTimeBonusShift *= topTimeLabel.location.height;
+
+    float maxDifference = topTimeLabel.location.height * 3;
 
     // Make sure that the other TIME matches are valid.
     std::erase_if(timeMatches, [&](const auto& timeMatch) {
@@ -270,8 +282,9 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
             return false;
         const cv::Rect& topLocation = topTimeLabel.location;
         const cv::Rect& otherLocation = timeMatch.location;
-        return (otherLocation.y - topLocation.y < topLocation.width
-            || otherLocation.y > 3 * originalFrameHeight / 4);
+        const cv::Point2f timeBonusShift = otherLocation.tl() - topLocation.tl();
+        float difference = (float) cv::norm(timeBonusShift - expectedTimeBonusShift);
+        return difference > maxDifference;
     });
 
     /* There's always a "TIME" label on top of the screen.
@@ -445,15 +458,14 @@ void TimeRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
     for (const auto& match : matches) {
         bool intersectsWithOthers = false;
 
-        for (const auto& digit : resultSymbolLocations) {
-            const cv::Rect2f& other = digit.location;
-
-            if (std::isdigit(match.symbol) && std::isdigit(digit.symbol)) {
-                if (std::abs(match.location.x + match.location.width - (other.x + other.width)) * bestScale < 12) {
+        for (const Match& other : resultSymbolLocations) {
+            if (std::isdigit(match.symbol) && std::isdigit(other.symbol)) {
+                if (std::abs(match.location.x + match.location.width -
+                        (other.location.x + other.location.width)) * bestScale < 12) {
                     intersectsWithOthers = true;
                 }
             }
-            else if (!(match.location & other).empty()) {
+            else if (!(match.location & other.location).empty()) {
                 intersectsWithOthers = true;
             }
 

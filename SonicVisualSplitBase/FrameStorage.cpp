@@ -127,7 +127,7 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) 
 
 long long getCurrentTimeInMilliseconds() {
     long long currentTimeMs = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-    currentTimeMs += (long long) 1e9;  // Make that sure that the zero time point is far in the past.
+    currentTimeMs += (long long) 1e9;  // Make that sure that the epoch of this clock is far in the past.
     return currentTimeMs;
 }
 

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Windows.Forms;
 using System.IO.Compression;
 using System.Threading;
+using System.Diagnostics;
 
 namespace SonicVisualSplit
 {
@@ -31,7 +32,7 @@ namespace SonicVisualSplit
         private int ingameTimerOnSegmentStart = 0;
 
         // The time of capture of the first recognized frame of the current segment.
-        private long firstFrameTimeOfSegment = 0;
+        private long firstFrameTimeOfSegment = long.MinValue;
 
         private bool needToConfirmFirstFrameOfSegment = false;
 
@@ -45,7 +46,7 @@ namespace SonicVisualSplit
         private int ingameTimerOnSplit = 0;
 
         // The time of capture of the last frame that was checked for score screen.
-        private long lastScoreScreenCheckFrameTime = 0;
+        private long lastScoreScreenCheckFrameTime = long.MinValue;
 
         /* The time that was reported on the last frame with successful score screen check,
          * or -1 if the last frame was not such. */
@@ -59,7 +60,7 @@ namespace SonicVisualSplit
 
         private List<long> savedFrameTimes;
 
-        private long lastResetTime = 0;
+        private long lastResetTime = long.MinValue;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellableLoopTask frameAnalysisTask;
@@ -88,7 +89,7 @@ namespace SonicVisualSplit
             lock (frameAnalysisLock)
             {
                 long lastFrameTime = GetLastSavedFrameTime();
-                if (lastFrameTime == 0)
+                if (lastFrameTime == long.MinValue)
                 { 
                     // Couldn't get the last frame time.
                     return;
@@ -100,7 +101,7 @@ namespace SonicVisualSplit
                     visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
                 }
 
-                bool checkForScoreScreen = (lastFrameTime - lastScoreScreenCheckFrameTime >= 1000);
+                bool checkForScoreScreen = (lastFrameTime >= lastScoreScreenCheckFrameTime + 1000);
                 if (checkForScoreScreen)
                 {
                     lastScoreScreenCheckFrameTime = lastFrameTime;
@@ -158,20 +159,20 @@ namespace SonicVisualSplit
             }
         }
 
-        // Returns the last saved frame time, or 0 on error.
+        // Returns the last saved frame time, or long.MinValue on error.
         private long GetLastSavedFrameTime()
         {
             savedFrameTimes = FrameStorage.GetSavedFramesTimes();
             if (savedFrameTimes.Count == 0)
             {
-                return 0;
+                return long.MinValue;
             }
             long lastFrameTime = savedFrameTimes.Last();
 
             if (ShouldWaitAfterReset(lastFrameTime))
             {
                 FrameStorage.DeleteAllSavedFrames();
-                return 0;
+                return long.MinValue;
             }
 
             if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
@@ -366,7 +367,8 @@ namespace SonicVisualSplit
             int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
 
             var timeout = TimeSpan.FromSeconds(4);  // FindFirstRecognizedFrame is a very expensive operation.
-            var startTime = DateTime.Now;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             for (int frameIndex = startingIndex; frameIndex != fallbackIndex; frameIndex += increment)
             {
@@ -381,8 +383,7 @@ namespace SonicVisualSplit
                     }
                 }
 
-                var elapsedTime = DateTime.Now - startTime;
-                if (elapsedTime > timeout)
+                if (stopwatch.Elapsed > timeout)
                 {
                     return fallback;
                 }
@@ -526,7 +527,7 @@ namespace SonicVisualSplit
         private bool ShouldWaitAfterReset(long currentTimeInMilliseconds)
         {
             // Make sure the frames are coming from the next run.
-            return currentTimeInMilliseconds - Interlocked.Read(ref lastResetTime) < 3000;
+            return currentTimeInMilliseconds < Interlocked.Read(ref lastResetTime) + 3000;
         }
 
         private void StartAnalyzingFrames()
@@ -631,11 +632,11 @@ namespace SonicVisualSplit
                     gameTime = 0;
                     gameTimeOnSegmentStart = 0;
                     ingameTimerOnSegmentStart = 0;
-                    firstFrameTimeOfSegment = 0;
+                    firstFrameTimeOfSegment = long.MinValue;
                     previousResult = null;
                     isAfterSplit = false;
                     ingameTimerOnSplit = 0;
-                    lastScoreScreenCheckFrameTime = 0;
+                    lastScoreScreenCheckFrameTime = long.MinValue;
                     needToConfirmFirstFrameOfSegment = false;
                     ingameTimerOnLastScoreCheck = -1;
                     frameBeforeTransition = null;

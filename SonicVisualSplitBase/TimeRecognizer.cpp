@@ -279,7 +279,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
             return false;
         const cv::Rect& topLocation = topTimeLabel.location;
         const cv::Rect& otherLocation = timeMatch.location;
-        const cv::Point2f timeBonusShift = otherLocation.tl() - topLocation.tl();
+        cv::Point2f timeBonusShift = otherLocation.tl() - topLocation.tl();
         float difference = (float) cv::norm(timeBonusShift - expectedTimeBonusShift);
         return difference > maxDifference;
     });
@@ -437,11 +437,11 @@ void TimeRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches)
     
     std::erase_if(matches, [&](const Match& match) {
         double similarityCoefficient = getMinSimilarityDividedByBestSimilarity(match.symbol);
-        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         double minSimilarity = bestSimilarity * similarityCoefficient;
         double globalMinSimilarity = getGlobalMinSimilarity(match.symbol);
         minSimilarity = std::max(minSimilarity, globalMinSimilarity);
         minSimilarity = std::min(minSimilarity, globalMinSimilarity / 10);
+        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         return match.similarity / similarityMultiplier < minSimilarity;
     });
 }
@@ -493,10 +493,12 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
 
 double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
     if (std::isdigit(symbol)) {
-        if (isComposite)
-            return -8000;
-        else
-            return -7000;
+        double baselineMinSimilarity = (isComposite ? -8000 : -7000);
+        /* If a multiplier is present, that means that the symbol tends to get false matches.
+         * Therefore the minimum acceptable similarity is lowered. */
+        double multiplier = getSimilarityMultiplier(symbol);
+        multiplier = std::min(multiplier, 1.5);
+        return baselineMinSimilarity / multiplier;
     }
     else {
         // TIME and SCORE labelMatches.
@@ -520,7 +522,7 @@ double TimeRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) cons
             return 1.75;
         else
             return 2;
-    /* One is really small, so it can be misdetected, thus the coefficient is lowered.
+    /* One is really small, so it can be misdetected, therefore the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
         if (isComposite)

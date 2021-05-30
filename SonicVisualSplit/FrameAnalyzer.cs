@@ -366,7 +366,10 @@ namespace SonicVisualSplit
             int startingIndex = savedFrameTimes.IndexOf(startFrameTime) + increment;
             int fallbackIndex = savedFrameTimes.IndexOf(fallback.FrameTime);
 
-            var timeout = TimeSpan.FromSeconds(4);  // FindFirstRecognizedFrame is a very expensive operation.
+            /* FindFirstRecognizedFrame is a very expensive operation.
+             * If after == false, then we are searching for a frame before transition.
+             * We must find it before the transition ends. Otherwise, the timeout may be higher. */
+            var timeout = after ? TimeSpan.FromSeconds(8) : TimeSpan.FromSeconds(4);
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 

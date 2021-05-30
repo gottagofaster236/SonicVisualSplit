@@ -18,7 +18,7 @@ namespace SonicVisualSplit
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
         private object frameAnalysisLock = new object();
 
-        /* All times are in milliseconds from a certain 
+        /* All times are in milliseconds (since a certain time point).
          * A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
          * for example from respawn on a checkpoint to the end of the level. */
 

@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <numeric>
 #include <cctype>
+#define NOMINMAX
+#include <Windows.h>
+#include <filesystem>
+#include <opencv2/imgcodecs.hpp>
 
 
 namespace SonicVisualSplitBase {
@@ -53,6 +57,10 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
     }
 
+    if (result.errorReason == ErrorReasonEnum::NO_TIME_ON_SCREEN) {
+        lastFailedFrame = frame;
+    }
+
     if (visualize)
         visualizeResult(allMatches);
     return result;
@@ -76,6 +84,31 @@ void FrameAnalyzer::lockFrameAnalysisMutex() {
 
 void FrameAnalyzer::unlockFrameAnalysisMutex() {
     frameAnalysisMutex.unlock();
+}
+
+
+void FrameAnalyzer::saveLastFailedFrame() {
+    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
+    if (lastFailedFrame.empty())
+        return;
+
+    TCHAR savePathBuf[MAX_PATH];
+    HMODULE hm = NULL;
+    if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | 
+            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            (LPCWSTR) &saveLastFailedFrame, &hm) == 0) {
+        return;
+    }
+    if (GetModuleFileName(hm, savePathBuf, sizeof(savePathBuf)) == 0) {
+        return;
+    }
+    std::filesystem::path savePath(savePathBuf);
+    savePath = savePath.parent_path();
+    savePath /= "failedFrame.png";
+    std::wstring savePathWideStr = savePath.native();
+    // Unicode breaks here, but it's still just a debug build anyways.
+    std::string savePathStr(savePathWideStr.begin(), savePathWideStr.end());
+    cv::imwrite(savePathStr, lastFailedFrame);
 }
 
 

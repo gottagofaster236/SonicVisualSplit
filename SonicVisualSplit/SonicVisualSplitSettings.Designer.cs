@@ -44,6 +44,7 @@ namespace SonicVisualSplit
             this.togglePracticeModeButton = new System.Windows.Forms.Button();
             this.videoSourceLabel = new System.Windows.Forms.Label();
             this.videoSourceComboBox = new System.Windows.Forms.ComboBox();
+            this.saveLastFailedFrameButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).BeginInit();
             this.videoConnectorGroup.SuspendLayout();
             this.aspectRatioBox.SuspendLayout();
@@ -218,10 +219,22 @@ namespace SonicVisualSplit
             this.videoSourceComboBox.TabIndex = 16;
             this.videoSourceComboBox.TextChanged += new System.EventHandler(this.OnVideoSourceChanged);
             // 
+            // saveLastFailedFrameButton
+            // 
+            this.saveLastFailedFrameButton.Location = new System.Drawing.Point(182, 645);
+            this.saveLastFailedFrameButton.Margin = new System.Windows.Forms.Padding(4);
+            this.saveLastFailedFrameButton.Name = "saveLastFailedFrameButton";
+            this.saveLastFailedFrameButton.Size = new System.Drawing.Size(431, 28);
+            this.saveLastFailedFrameButton.TabIndex = 18;
+            this.saveLastFailedFrameButton.Text = "Save last failed frame (will save into the Components directory)";
+            this.saveLastFailedFrameButton.UseVisualStyleBackColor = true;
+            this.saveLastFailedFrameButton.Click += new System.EventHandler(this.OnSaveLastFailedFrameButtonClicked);
+            // 
             // SonicVisualSplitSettings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.saveLastFailedFrameButton);
             this.Controls.Add(this.videoSourceLabel);
             this.Controls.Add(this.videoSourceComboBox);
             this.Controls.Add(this.togglePracticeModeButton);
@@ -262,5 +275,6 @@ namespace SonicVisualSplit
         private System.Windows.Forms.Button togglePracticeModeButton;
         private System.Windows.Forms.Label videoSourceLabel;
         private System.Windows.Forms.ComboBox videoSourceComboBox;
+        private System.Windows.Forms.Button saveLastFailedFrameButton;
     }
 }

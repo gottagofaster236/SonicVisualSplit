@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
@@ -263,6 +264,11 @@ namespace SonicVisualSplit
         {
             var startInfo = new ProcessStartInfo("https://github.com/gottagofaster236/SonicVisualSplit#setting-up-video-capture");
             Process.Start(startInfo);
+        }
+
+        private async void OnSaveLastFailedFrameButtonClicked(object sender, EventArgs e)
+        {
+            await Task.Run(SonicVisualSplitWrapper.FrameAnalyzer.SaveLastFailedFrame);
         }
     }
 }

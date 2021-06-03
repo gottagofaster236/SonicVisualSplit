@@ -75,6 +75,11 @@ void FrameAnalyzer::ResetDigitsPlacement() {
 }
 
 
+void FrameAnalyzer::SaveLastFailedFrame() {
+    SonicVisualSplitBase::FrameAnalyzer::saveLastFailedFrame();
+}
+
+
 Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }

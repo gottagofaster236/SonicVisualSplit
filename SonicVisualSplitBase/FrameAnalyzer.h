@@ -29,6 +29,8 @@ public:
 
     static void unlockFrameAnalysisMutex();
 
+    static void saveLastFailedFrame();
+
     FrameAnalyzer(FrameAnalyzer& other) = delete;
     void operator=(const FrameAnalyzer&) = delete;
 
@@ -56,6 +58,8 @@ private:
     cv::UMat originalFrame;
 
     inline static int currentSplitIndex;
+
+    inline static cv::UMat lastFailedFrame;
 };
 
 }  // namespace SonicVisualSplitBase

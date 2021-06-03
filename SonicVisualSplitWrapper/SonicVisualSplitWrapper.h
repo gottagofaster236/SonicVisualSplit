@@ -39,6 +39,8 @@ public:
 
     static void ResetDigitsPlacement();
 
+    static void SaveLastFailedFrame();
+
 private:
     String^ gameName;
     String^ templatesDirectory;

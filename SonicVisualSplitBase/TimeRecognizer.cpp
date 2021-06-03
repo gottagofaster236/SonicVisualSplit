@@ -440,7 +440,7 @@ void TimeRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches)
         double minSimilarity = bestSimilarity * similarityCoefficient;
         double globalMinSimilarity = getGlobalMinSimilarity(match.symbol);
         minSimilarity = std::max(minSimilarity, globalMinSimilarity);
-        minSimilarity = std::min(minSimilarity, -1500.);  // Make sure our constraint is possible to meet.
+        minSimilarity = std::min(minSimilarity, -3500.);  // Make sure our constraint is possible to meet.
         double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         return match.similarity / similarityMultiplier < minSimilarity;
     });

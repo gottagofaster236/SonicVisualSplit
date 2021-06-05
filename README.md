@@ -42,7 +42,7 @@ You'll have to use one of the two methods to set everything up.
      (and thus isn't recommended for use with Sonic CD).
      
    - Another method is to install the *VirtualCam plugin*.
-     In recent versions of OBS Studio, it's included already (or you can download it [here](https://obsproject.com/forum/resources/obs-virtualcam.949/)).
+     For OBS, download and install it [from here](https://obsproject.com/forum/resources/obs-virtualcam.949/).
      For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      You have to start the virtual camera before using SonicVisualSplit, and select it in the video sources dropdown list.
    

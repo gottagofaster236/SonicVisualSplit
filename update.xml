@@ -111,4 +111,14 @@
 			<change>Recognition bugfix.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.1.2">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Small accuracy improvement for RGB.</change>
+		</changelog>
+	</update>
 </updates>

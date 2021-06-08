@@ -528,7 +528,7 @@ double TimeRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) cons
         if (isComposite)
             return 2;
         else
-            return 2.5;
+            return 3;
     case '4':
         if (isComposite)
             return 2;

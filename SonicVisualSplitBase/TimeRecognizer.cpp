@@ -559,7 +559,7 @@ double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
 
 cv::UMat TimeRecognizer::cropToDigitsRect(cv::UMat frame) {
     // Checking that digitsRect is inside the frame.
-    cv::Rect frameRect(0, 0, frame.cols, frame.rows);
+    cv::Rect frameRect({0, 0}, frame.size());
     if ((digitsRect & frameRect) != digitsRect) {
         return {};
     }

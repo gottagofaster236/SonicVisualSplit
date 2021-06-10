@@ -97,7 +97,7 @@ cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
 
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
-    // Checking just the rectangle with the digits (with doubled height to check more). 
+    // Checking a rectangle near the digits rectangle.
     const std::unique_ptr<TimeRecognizer>& instance = TimeRecognizer::getCurrentInstance();
     if (!instance)
         return false;
@@ -106,18 +106,24 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
         (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
 
     cv::Rect checkRect = digitsRect;
+    // Extending the checked area.
+    int leftShift = (int) (digitsRect.height * 3.5);
+    checkRect.x -= leftShift;
+    checkRect.width += leftShift;
     checkRect.height *= 2;
-    checkRect.height = std::min(checkRect.height, frame.rows - checkRect.y);
+    checkRect &= cv::Rect({0, 0}, frame.size());  // Make sure checkRect is not out of bounds.
     if (checkRect.empty())
         return false;
     frame = frame(checkRect);
 
     const cv::Scalar black(0, 0, 0), white(255, 255, 255);
-    if (checkIfImageIsSingleColor(frame, black, 40)) {
+    const double maxAvgDifference = 40;  // Allowing the color to deviate by 40 (out of 255).
+
+    if (checkIfImageIsSingleColor(frame, black, maxAvgDifference)) {
         result.isBlackScreen = true;
         return true;
     }
-    else if (checkIfImageIsSingleColor(frame, white, 25)) {
+    else if (checkIfImageIsSingleColor(frame, white, maxAvgDifference)) {
         result.isWhiteScreen = true;
         return true;
     }

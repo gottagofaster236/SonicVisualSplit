@@ -50,7 +50,9 @@ You'll have to use one of the two methods to set everything up.
  
     In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
     that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
-    
+- Make sure your capture card outputs an acceptable picture.
+   - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software. Try increasing the contrast and brightness.
+   - Check that the aspect ratio is correct. If it's stretched, fix it with your streaming software.
 - After you've setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
 choose the video connector that you use to connect your console to the capture card,
@@ -78,10 +80,9 @@ check your settings.
 Make sure you've selected the correct video mode and the correct game.
 Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
 - Note that occasional incorrectly recognized frames are fine, thanks to error detection.
-- If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software. Increase the contrast and brightness and see if it helps.
-- Make sure that the aspect ratio of the game is correct. If it's stretched, fix it with your streaming software.
 - If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.
+- If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).
 - If you've found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
 If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
 at the point where SVS fails would be appreciated.

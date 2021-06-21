@@ -90,7 +90,7 @@ cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
     }
 
     cv::UMat frame = originalFrame;
-    if (isStretchedTo16By9)
+    if (isStretchedTo16By9 && !frame.empty())
         cv::resize(frame, frame, {}, scaleFactorTo4By3, 1, cv::INTER_AREA);
     return frame;
 }

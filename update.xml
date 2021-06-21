@@ -131,4 +131,14 @@
 			<change>Improve white transition detection.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.1.4">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fixed a crash that happened with the 16:9 setting.</change>
+		</changelog>
+	</update>
 </updates>

@@ -1,5 +1,6 @@
 ﻿#include "TimeRecognizer.h"
 #include "FrameAnalyzer.h"
+#include "FrameStorage.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <fstream>
@@ -13,23 +14,29 @@
 
 namespace SonicVisualSplitBase {
 
-TimeRecognizer& TimeRecognizer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite) {
-    if (!instance || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory) {
-        instance = std::unique_ptr<TimeRecognizer>(new TimeRecognizer(gameName, templatesDirectory, isComposite));
+
+TimeRecognizer::TimeRecognizer(FrameAnalyzer& frameAnalyzer, const std::string& gameName,
+        const std::filesystem::path& templatesDirectory, bool isComposite)
+            : frameAnalyzer(frameAnalyzer), gameName(gameName), templatesDirectory(templatesDirectory),
+              isComposite(isComposite), onSourceChangedListener(*this) {
+    std::vector<char> symbolsToLoad = {TIME, SCORE};
+    for (char digit = '0'; digit <= '9'; digit++)
+        symbolsToLoad.push_back(digit);
+    for (char symbol : symbolsToLoad) {
+        templates[symbol] = loadImageAndMaskFromFile(symbol);
     }
-    return *instance;
 }
 
 
 std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         (cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result) {
     if (shouldResetDigitsPlacement) {
-        resetDigitsPlacement();
+        resetDigitsPlacementSync();
         shouldResetDigitsPlacement = false;
     }
 
     if (frame.size() != lastFrameSize) {
-        resetDigitsPlacement();
+        resetDigitsPlacementSync();
         lastFrameSize = frame.size();
     }
     prevDigitsRect = digitsRect;
@@ -93,17 +100,23 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
 
 
 void TimeRecognizer::resetDigitsPlacement() {
-    FrameAnalyzer::lockFrameAnalysisMutex();
-    if (instance) {
-        instance->bestScale = -1;
-        instance->digitsRect = {0, 0, 0, 0};
-    }
-    FrameAnalyzer::unlockFrameAnalysisMutex();
+    // Digits placement will be reset on the next call to recognizeTime.
+    shouldResetDigitsPlacement = true;
 }
 
 
-void TimeRecognizer::resetDigitsPlacementAsync() {
-    shouldResetDigitsPlacement = true;
+void TimeRecognizer::resetDigitsPlacementSync() {
+    bestScale = -1;
+    digitsRect = {0, 0, 0, 0};
+}
+
+
+TimeRecognizer::OnSourceChangedListenerImpl::OnSourceChangedListenerImpl(TimeRecognizer& timeRecognizer)
+    : timeRecognizer(timeRecognizer) {}
+
+
+void TimeRecognizer::OnSourceChangedListenerImpl::onSourceChanged() const {
+    timeRecognizer.resetDigitsPlacement();
 }
 
 
@@ -124,19 +137,11 @@ cv::Rect2f TimeRecognizer::getRelativeDigitsRect() {
 }
 
 
-const std::unique_ptr<TimeRecognizer>& TimeRecognizer::getCurrentInstance() {
-    return instance;
-}
-
-
-TimeRecognizer::TimeRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite)
-        : gameName(gameName), templatesDirectory(templatesDirectory), isComposite(isComposite) {
-    std::vector<char> symbolsToLoad = {TIME, SCORE};
-    for (char digit = '0'; digit <= '9'; digit++)
-        symbolsToLoad.push_back(digit);
-    for (char symbol : symbolsToLoad) {
-        templates[symbol] = loadImageAndMaskFromFile(symbol);
-    }
+cv::Rect TimeRecognizer::getDigitsRectFromFrameSize(cv::Size frameSize) {
+    cv::Rect2f relativeDigitsRect = getRelativeDigitsRect();
+    cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frameSize.width), (int) (relativeDigitsRect.y * frameSize.height),
+        (int) (relativeDigitsRect.width * frameSize.width), (int) (relativeDigitsRect.height * frameSize.height)};
+    return digitsRect;
 }
 
 
@@ -184,10 +189,9 @@ bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
     });
 
     for (int i = 0; i + 1 < digitMatches.size(); i++) {
-        double bestScale = TimeRecognizer::getCurrentInstance()->getBestScale();
         const cv::Rect2f& prevLocation = digitMatches[i].location, nextLocation = digitMatches[i + 1].location;
         double interval = ((nextLocation.x + nextLocation.width) -
-            (prevLocation.x + prevLocation.width)) * bestScale;
+            (prevLocation.x + prevLocation.width)) * getBestScale();
 
         if (i == 0 || i == 2) {
             /* Checking that separators (:, ' and ") aren't detected as digits.
@@ -593,7 +597,7 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
     }
 
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
-    bool recognizeWhiteTransition = (gameName == "Sonic 2" && FrameAnalyzer::getCurrentSplitIndex() == 19);
+    bool recognizeWhiteTransition = (gameName == "Sonic 2" && frameAnalyzer.getCurrentSplitIndex() == 19);
     
     if (!recognizeWhiteTransition) {
         uint8_t maxAcceptableBrightness;
@@ -601,7 +605,7 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
             // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
             maxAcceptableBrightness = 255;
         }
-        else if (gameName == "Sonic CD" && FrameAnalyzer::getCurrentSplitIndex() == 20) {
+        else if (gameName == "Sonic CD" && frameAnalyzer.getCurrentSplitIndex() == 20) {
             // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
             maxAcceptableBrightness = 90;
         }

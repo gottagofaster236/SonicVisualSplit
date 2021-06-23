@@ -1,5 +1,6 @@
 #pragma once
 #include "AnalysisResult.h"
+#include "FrameStorage.h"
 #include <opencv2/core.hpp>
 #include <vector>
 #include <map>
@@ -13,9 +14,12 @@
 
 namespace SonicVisualSplitBase {
 
+class FrameAnalyzer;
+
 class TimeRecognizer {
 public:
-    static TimeRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
+    TimeRecognizer(FrameAnalyzer& frameAnalyzer,
+        const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
     struct Match {
         cv::Rect2f location;
@@ -31,23 +35,12 @@ public:
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
-    static void resetDigitsPlacement();
-
-    // Same as resetDigitsPlacement, but non-blocking.
-    static void resetDigitsPlacementAsync();
+    void resetDigitsPlacement();
 
     // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
     double getBestScale() const;
-
-    /* Returns the rectangle where the time digits were located last time,
-     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
-     * Unlike digitsRect, it's never reset, so that it's possible to estimate
-     * the position of time digits ROI almost all the time. */
-    cv::Rect2f getRelativeDigitsRect();
-
-    /* There is never more than instance of TimeRecognizer.
-     * This function gets the current instance, or returns nullptr if there's no current instance. */
-    static const std::unique_ptr<TimeRecognizer>& getCurrentInstance();
+    
+    cv::Rect getDigitsRectFromFrameSize(cv::Size frameSize);
 
     TimeRecognizer(TimeRecognizer& other) = delete;
     void operator=(const TimeRecognizer&) = delete;
@@ -59,7 +52,11 @@ public:
     static const char TIME = 'T';
 
 private:
-    TimeRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
+    /* Returns the rectangle where the time digits were located last time,
+     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
+     * Unlike digitsRect, it's never reset, so that it's possible to estimate
+     * the position of time digits ROI almost all the time. */
+    cv::Rect2f getRelativeDigitsRect();
 
     std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame);
 
@@ -84,6 +81,8 @@ private:
     void removeOverlappingMatches(std::vector<Match>& matches);
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
+
+    void resetDigitsPlacementSync();
 
     // Returns the global minimum acceptable similarity of a symbol.
     double getGlobalMinSimilarity(char symbol) const;
@@ -120,6 +119,9 @@ private:
     std::filesystem::path templatesDirectory;
     bool isComposite;
 
+    // The FrameAnalyzer that'll be using this instance of TimeRecognizer.
+    FrameAnalyzer& frameAnalyzer;
+
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     double bestScale = -1;
 
@@ -143,9 +145,17 @@ private:
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
     // Flag for resetDigitsPlacementAsync().
-    inline static std::atomic<bool> shouldResetDigitsPlacement;
+    std::atomic<bool> shouldResetDigitsPlacement;
 
-    inline static std::unique_ptr<TimeRecognizer> instance;
+    class OnSourceChangedListenerImpl : FrameStorage::OnSourceChangedListener {
+    public:
+        OnSourceChangedListenerImpl(TimeRecognizer& timeRecognizer);
+
+        void onSourceChanged() const override;
+    private:
+        TimeRecognizer& timeRecognizer;
+    };
+    OnSourceChangedListenerImpl onSourceChangedListener;
 };
 
 }  // namespace SonicVisualSplitBase

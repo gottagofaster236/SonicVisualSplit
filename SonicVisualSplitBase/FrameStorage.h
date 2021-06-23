@@ -1,7 +1,7 @@
 #pragma once
 #include <opencv2/core.hpp>
 #include <vector>
-#include "FrameAnalyzer.h"
+#include <functional>
 
 
 namespace SonicVisualSplitBase {
@@ -40,6 +40,15 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 
 // Gets a time in milliseconds since a certain time point.
 long long getCurrentTimeInMilliseconds();
+
+class OnSourceChangedListener {
+public:
+    virtual void onSourceChanged() const = 0;
+};
+
+void addOnSourceChangedListener(const OnSourceChangedListener& listener);
+
+void removeOnSourceChangedListener(const OnSourceChangedListener& listener);
 
 /* The maximum amount of frames that can be saved in the storage.
  * When this limit is reached, no new frames are saved until deleteSavedFramesInRange is called. */

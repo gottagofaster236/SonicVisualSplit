@@ -15,17 +15,32 @@ using System::Drawing::Imaging::BitmapData;
 namespace SonicVisualSplitWrapper {
 
 FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
+        : gameName(gameName), templatesDirectory(templatesDirectory),
+          isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {
+    msclr::interop::marshal_context context;
+    std::string gameNameConverted = context.marshal_as<std::string>(gameName);
+    std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
+    auto nativeFrameAnalyzer = new SonicVisualSplitBase::FrameAnalyzer(gameNameConverted,
+        templatesDirectoryConverted, isStretchedTo16By9, isComposite);
+    nativeFrameAnalyzerPtr = System::IntPtr(nativeFrameAnalyzer);
+}
+
+
+SonicVisualSplitBase::FrameAnalyzer* getFrameAnalyzerFromIntPtr(System::IntPtr ptr) {
+    return static_cast<SonicVisualSplitBase::FrameAnalyzer*>(ptr.ToPointer());
+}
+
+
+FrameAnalyzer::~FrameAnalyzer() {
+    delete getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr);
+}
 
 
 // Converting non-managed types to managed ones to call the native version of the function
 AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize) {
-    msclr::interop::marshal_context context;
-    std::string gameNameConverted = context.marshal_as<std::string>(gameName);
-    std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
-    auto& frameAnalyzer = SonicVisualSplitBase::FrameAnalyzer::getInstance(gameNameConverted, templatesDirectoryConverted,
-                                                                           isStretchedTo16By9, isComposite);
-    SonicVisualSplitBase::AnalysisResult result = frameAnalyzer.analyzeFrame(frameTime, checkForScoreScreen, visualize);
+    auto nativeFrameAnalyzer = getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr);
+    SonicVisualSplitBase::AnalysisResult result =
+        nativeFrameAnalyzer->analyzeFrame(frameTime, checkForScoreScreen, visualize);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
     resultConverted->RecognizedTime = result.recognizedTime;
@@ -66,12 +81,21 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 
 
 void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
-    SonicVisualSplitBase::FrameAnalyzer::reportCurrentSplitIndex(currentSplitIndex);
+    getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->reportCurrentSplitIndex(currentSplitIndex);
 }
 
 
 void FrameAnalyzer::ResetDigitsPlacement() {
-    SonicVisualSplitBase::TimeRecognizer::resetDigitsPlacement();
+    getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->resetDigitsPlacement();
+}
+
+
+bool FrameAnalyzer::Equals(Object^ other) {
+    FrameAnalyzer^ frameAnalyzer = dynamic_cast<FrameAnalyzer^>(other);
+    if (!frameAnalyzer)
+        return false;
+    return gameName == frameAnalyzer->gameName && templatesDirectory == frameAnalyzer->gameName &&
+        isStretchedTo16By9 == frameAnalyzer->isStretchedTo16By9 && isComposite == frameAnalyzer->isComposite;
 }
 
 

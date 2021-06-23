@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <numeric>
 #include <cctype>
+#include <opencv2/imgcodecs.hpp>
 
 
 namespace SonicVisualSplitBase {
@@ -16,22 +17,10 @@ static std::recursive_mutex frameAnalysisMutex;
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
-FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
-        bool isStretchedTo16By9, bool isComposite) {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
-
-    if (!instance || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
-            || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isComposite != isComposite) {
-        instance = std::unique_ptr<FrameAnalyzer>(
-            new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite));
-    }
-    return *instance;
-}
-
-
 FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory,
         bool isStretchedTo16By9, bool isComposite)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
+    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite),
+      timeRecognizer(*this, gameName, templatesDirectory, isComposite) {}
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
@@ -46,10 +35,11 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
+
+    checkForResetScreen(frameTime);
     
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
-        TimeRecognizer& timeRecognizer = TimeRecognizer::getInstance(gameName, templatesDirectory, isComposite);
         allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
     }
 
@@ -66,6 +56,29 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 
 int FrameAnalyzer::getCurrentSplitIndex() {
     return currentSplitIndex;
+}
+
+
+bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
+    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
+
+    cv::UMat frame = getSavedFrame(frameTime);
+    cv::Rect digitsRect = timeRecognizer.getDigitsRectFromFrameSize(frame.size());
+    if (digitsRect.empty())
+        return false;
+    int height = digitsRect.height;
+
+    cv::Rect gameScreenRect = {
+        (int) (digitsRect.x - height * 1.545454),
+        (int) (digitsRect.y - height * 2.272727),
+        (int) (height * 29.090909),
+        (int) (height * 20.363636)
+    };
+    gameScreenRect &= cv::Rect({}, frame.size());
+    cv::imwrite("C:/tmp/supposedDigitsRect.png", frame(digitsRect));
+    frame = frame(gameScreenRect);
+    cv::imwrite("C:/tmp/gameScreenRect.png", frame);
+    return false;
 }
 
 
@@ -98,13 +111,7 @@ cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     // Checking a rectangle near the digits rectangle.
-    const std::unique_ptr<TimeRecognizer>& instance = TimeRecognizer::getCurrentInstance();
-    if (!instance)
-        return false;
-    cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
-    cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
-        (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
-
+    cv::Rect digitsRect = timeRecognizer.getDigitsRectFromFrameSize(frame.size());
     cv::Rect checkRect = digitsRect;
     // Extending the checked area.
     int leftShift = (int) (digitsRect.height * 3.5);

@@ -2,13 +2,13 @@
 #include "GameVideoCapture.h"
 #include "ObsWindowCapture.h"
 #include "VirtualCamCapture.h"
-#include "TimeRecognizer.h"
 #include "FairMutex.h"
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <atomic>
 #include <memory>
+#include <algorithm>
 #include <map>
 #include <set>
 #include <sstream>
@@ -32,8 +32,12 @@ static int currentVideoSourceIndex;
 
 static std::jthread framesThread;
 
+static std::vector<const OnSourceChangedListener*> onSourceChangedListeners;
+
+// Forward declarations.
 static void saveOneFrame();
 static void elevateFramesThreadPriority();
+
 
 void startSavingFrames() {
     stopSavingFrames();
@@ -132,6 +136,25 @@ long long getCurrentTimeInMilliseconds() {
 }
 
 
+void addOnSourceChangedListener(const OnSourceChangedListener& listener) {
+    auto findIter = std::ranges::find(onSourceChangedListeners, &listener);
+    if (findIter == onSourceChangedListeners.end())
+        onSourceChangedListeners.push_back(&listener);
+}
+
+
+void removeOnSourceChangedListener(const OnSourceChangedListener& listener) {
+    auto findIter = std::ranges::find(onSourceChangedListeners, &listener);
+    onSourceChangedListeners.erase(findIter);
+}
+
+
+static void callOnSourceChangedCallbacks() {
+    for (const OnSourceChangedListener* listener : onSourceChangedListeners)
+        listener->onSourceChanged();
+}
+
+
 void setVideoCapture(int sourceIndex) {
     std::lock_guard<yamc::fair::mutex> guard(gameVideoCaptureMutex);
 
@@ -145,7 +168,7 @@ void setVideoCapture(int sourceIndex) {
      * (since the processFrame function is different). */
     std::lock_guard<yamc::fair::mutex> guard2(savedRawFramesMutex);
     savedRawFrames.clear();
-    TimeRecognizer::resetDigitsPlacementAsync();
+    callOnSourceChangedCallbacks();
 
     currentVideoSourceIndex = sourceIndex;
 

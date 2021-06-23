@@ -29,21 +29,29 @@ public:
 };
 
 
+class SonicVisualSplitBase::FrameAnalyzer;
+
 public ref class FrameAnalyzer {
 public:
     FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
 
+    ~FrameAnalyzer();
+
     AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize);
 
-    static void ReportCurrentSplitIndex(int currentSplitIndex);
+    void ReportCurrentSplitIndex(int currentSplitIndex);
 
-    static void ResetDigitsPlacement();
+    void ResetDigitsPlacement();
+
+    virtual bool Equals(Object^ other) override;
 
 private:
     String^ gameName;
     String^ templatesDirectory;
     Boolean isStretchedTo16By9;
     Boolean isComposite;
+
+    IntPtr nativeFrameAnalyzerPtr;
 };
 
 

@@ -9,6 +9,8 @@ Splits Sonic 1, 2, and CD using IGT *(in-game time)*.
 ## System requirements
 Required OS version is **Windows 10 64-bit** (2016's Anniversary Update or newer).
 
+You have to have the latest version of [LiveSplit](http://livesplit.org/downloads/) installed.
+
 If you want to record (or stream) your game footage, you have to have [OBS Studio](https://obsproject.com/) (or other streaming software) installed.
 
 ## Installation
@@ -40,7 +42,7 @@ You'll have to use one of the two methods to set everything up.
      (and thus isn't recommended for use with Sonic CD).
      
    - Another method is to install the *VirtualCam plugin*.
-     In recent versions of OBS Studio, it's included already (or you can download it [here](https://obsproject.com/forum/resources/obs-virtualcam.949/)).
+     For OBS, download and install it [from here](https://obsproject.com/forum/resources/obs-virtualcam.949/).
      For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      You have to start the virtual camera before using SonicVisualSplit, and select it in the video sources dropdown list.
    
@@ -48,7 +50,9 @@ You'll have to use one of the two methods to set everything up.
  
     In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
     that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
-    
+- Make sure your capture card outputs an acceptable picture.
+   - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software. Try increasing the contrast and brightness.
+   - Check that the aspect ratio is correct. If it's stretched, fix it with your streaming software.
 - After you've setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
 choose the video connector that you use to connect your console to the capture card,
@@ -76,18 +80,15 @@ check your settings.
 Make sure you've selected the correct video mode and the correct game.
 Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
 - Note that occasional incorrectly recognized frames are fine, thanks to error detection.
-- If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software. Increase the contrast and brightness and see if it helps.
-- Make sure that the aspect ratio of the game is correct. If it's stretched, fix it with your streaming software.
 - If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.
+- If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).
 - If you've found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
 If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
 at the point where SVS fails would be appreciated.
 
 ## Questions / Suggestions
 If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
-
-You can also ask your question [here on Discord](https://discord.gg/BRa5X9BPGg) if you don't wanna create a GitHub account.
 
 ## For developers
 Contributions are welcome! You should probably read [BUILDING.md](BUILDING.md) on how to build the project.

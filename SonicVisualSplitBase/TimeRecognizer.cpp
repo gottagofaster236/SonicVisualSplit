@@ -143,9 +143,6 @@ TimeRecognizer::TimeRecognizer(const std::string& gameName, const std::filesyste
 std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(cv::UMat frame) {
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter = convertFrameToGray(frame, true);
-    // We're gonna recalculate digits rectangle when we're checking for score screen.
-    digitsRect = {};
-
     bool recalculateBestScale = (bestScale == -1);
     recalculatedBestScaleLastTime = recalculateBestScale;
     std::vector<Match> timeMatches = findSymbolLocations(frameWithYellowFilter, TIME, recalculateBestScale);
@@ -174,8 +171,8 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect
     }
 
     /* We've searched for "TIME" and "SCORE". (Searching "SCORE" so that it's not confused with "TIME".)
-    * We'll look for digits only in the rectangle to the right of "TIME".
-    * That's why we'll crop the frame to that rectangle. */
+     * We'll look for digits only in the rectangle to the right of "TIME".
+     * That's why we'll crop the frame to that rectangle. */
     updateDigitsRect(labelMatches);
     return labelMatches;
 }
@@ -263,6 +260,18 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
     if (timeMatches.empty() || scoreMatches.empty())
         return false;
     auto topTimeLabel = findTopTimeLabel(labels);
+    
+    // Location of TIME in "TIME BONUS" relative to the top time label.
+    cv::Point2f expectedTimeBonusShift;
+    if (gameName == "Sonic 1")
+        expectedTimeBonusShift = cv::Point2f(5.82f, 8.36f);
+    else if (gameName == "Sonic 2")
+        expectedTimeBonusShift = cv::Point2f(4.73f, 8.f);
+    else if (gameName == "Sonic CD")
+        expectedTimeBonusShift = cv::Point2f(4.73f, 12.36f);
+    expectedTimeBonusShift *= topTimeLabel.location.height;
+
+    float maxDifference = topTimeLabel.location.height * 3;
 
     // Make sure that the other TIME matches are valid.
     std::erase_if(timeMatches, [&](const auto& timeMatch) {
@@ -270,12 +279,13 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
             return false;
         const cv::Rect& topLocation = topTimeLabel.location;
         const cv::Rect& otherLocation = timeMatch.location;
-        return (otherLocation.y - topLocation.y < topLocation.width
-            || otherLocation.y > 3 * originalFrameHeight / 4);
+        cv::Point2f timeBonusShift = otherLocation.tl() - topLocation.tl();
+        float difference = (float) cv::norm(timeBonusShift - expectedTimeBonusShift);
+        return difference > maxDifference;
     });
 
     /* There's always a "TIME" label on top of the screen.
-         * But there's a second one during the score countdown screen ("TIME BONUS"). */
+     * But there's a second one during the score countdown screen ("TIME BONUS"). */
     bool isScoreScreen = timeMatches.size() >= 2;
     labels = std::move(timeMatches);
     labels.insert(labels.end(), scoreMatches.begin(), scoreMatches.end());
@@ -427,11 +437,11 @@ void TimeRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches)
     
     std::erase_if(matches, [&](const Match& match) {
         double similarityCoefficient = getMinSimilarityDividedByBestSimilarity(match.symbol);
-        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         double minSimilarity = bestSimilarity * similarityCoefficient;
         double globalMinSimilarity = getGlobalMinSimilarity(match.symbol);
         minSimilarity = std::max(minSimilarity, globalMinSimilarity);
-        minSimilarity = std::min(minSimilarity, globalMinSimilarity / 10);
+        minSimilarity = std::min(minSimilarity, -1500.);  // Make sure our constraint is possible to meet.
+        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         return match.similarity / similarityMultiplier < minSimilarity;
     });
 }
@@ -445,15 +455,14 @@ void TimeRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
     for (const auto& match : matches) {
         bool intersectsWithOthers = false;
 
-        for (const auto& digit : resultSymbolLocations) {
-            const cv::Rect2f& other = digit.location;
-
-            if (std::isdigit(match.symbol) && std::isdigit(digit.symbol)) {
-                if (std::abs(match.location.x + match.location.width - (other.x + other.width)) * bestScale < 12) {
+        for (const Match& other : resultSymbolLocations) {
+            if (std::isdigit(match.symbol) && std::isdigit(other.symbol)) {
+                if (std::abs(match.location.x + match.location.width -
+                        (other.location.x + other.location.width)) * bestScale < 12) {
                     intersectsWithOthers = true;
                 }
             }
-            else if (!(match.location & other).empty()) {
+            else if (!(match.location & other.location).empty()) {
                 intersectsWithOthers = true;
             }
 
@@ -484,7 +493,12 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
 
 double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
     if (std::isdigit(symbol)) {
-        return -8000;
+        double baselineMinSimilarity = (isComposite ? -8000 : -7000);
+        /* If a multiplier is present, that means that the symbol tends to get false matches.
+         * Therefore the minimum acceptable similarity is lowered. */
+        double multiplier = getSimilarityMultiplier(symbol);
+        multiplier = std::min(multiplier, 1.5);
+        return baselineMinSimilarity / multiplier;
     }
     else {
         // TIME and SCORE labelMatches.
@@ -508,15 +522,18 @@ double TimeRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) cons
             return 1.75;
         else
             return 2;
-    /* One is really small, so it can be misdetected, thus the coefficient is lowered.
+    /* One is really small, so it can be misdetected, therefore the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
         if (isComposite)
             return 2;
         else
-            return 2.5;
+            return 3;
     case '4':
-        return 2;
+        if (isComposite)
+            return 2;
+        else
+            return 2.5;
     }
 }
 
@@ -542,7 +559,7 @@ double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
 
 cv::UMat TimeRecognizer::cropToDigitsRect(cv::UMat frame) {
     // Checking that digitsRect is inside the frame.
-    cv::Rect frameRect(0, 0, frame.cols, frame.rows);
+    cv::Rect frameRect({0, 0}, frame.size());
     if ((digitsRect & frameRect) != digitsRect) {
         return {};
     }

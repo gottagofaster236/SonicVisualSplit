@@ -25,7 +25,9 @@ namespace SonicVisualSplit
             if (openedComponentRef.TryGetTarget(out openedComponent))
             {
                 if (!openedComponent.Disposed)
-                    ((IDisposable) openedComponent).Dispose();
+                {
+                    ((IDisposable)openedComponent).Dispose();
+                }
             }
 
             var newComponent = new SonicVisualSplitComponent(state);

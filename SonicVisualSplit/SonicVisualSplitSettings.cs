@@ -88,7 +88,9 @@ namespace SonicVisualSplit
         public void OnVideoSourcesListUpdated()
         {
             if (!IsHandleCreated)
+            {
                 return;
+            }
             try
             {
                 // Calling BeginInvoke to update the everything from the UI thread.
@@ -139,7 +141,9 @@ namespace SonicVisualSplit
             {
                 Parent.VisibleChanged += OnVisibilityChanged;
                 if (Parent.Visible)
+                {
                     OnVisibilityChanged();
+                }
             }
         }
 
@@ -163,7 +167,9 @@ namespace SonicVisualSplit
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
             if (Parent == null || !Parent.Visible)
+            {
                 return false;
+            }
 
             try
             {
@@ -200,9 +206,13 @@ namespace SonicVisualSplit
                     }
 
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                    {
                         linkArea = new LinkArea(33, 9);
+                    }
                     else
+                    {
                         linkArea = new LinkArea(0, 0);
+                    }
 
                     if (result.IsSuccessful())
                         textColor = Color.Green;

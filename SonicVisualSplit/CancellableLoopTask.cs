@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace SonicVisualSplit
@@ -23,12 +24,14 @@ namespace SonicVisualSplit
             {
                 while (shouldBeRunning)
                 {
-                    DateTime start = DateTime.Now;
-                    DateTime nextIteration = start + iterationPeriod;
+                    var stopwatch = new Stopwatch();
+                    stopwatch.Start();
                     taskIteration();
-                    TimeSpan waitTime = nextIteration - DateTime.Now;
+                    var waitTime = iterationPeriod - stopwatch.Elapsed;
                     if (waitTime > TimeSpan.Zero)
+                    {
                         Thread.Sleep(waitTime);
+                    }
                 }
             }));
             taskThread.Start();

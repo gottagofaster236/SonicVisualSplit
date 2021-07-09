@@ -1,5 +1,5 @@
 # Building
-1. Install [Visual Studio 2019](https://visualstudio.microsoft.com/vs/).
+1. Install [Visual Studio 2022](https://visualstudio.microsoft.com/ru/vs/preview/vs2022/).
 2. Install [vcpkg](https://github.com/microsoft/vcpkg), integrate it with Visual Studio (see the link).
 3. Install OpenCV: open the folder where you installed vcpkg in the command line, and execute `vcpkg install opencv:x64-windows` (takes time to build).
 in order to commit spaces instead of tabs.

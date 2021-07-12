@@ -49,6 +49,11 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 }
 
 
+void FrameAnalyzer::resetDigitsPlacement() {
+    timeRecognizer.resetDigitsPlacement();
+}
+
+
 void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
     FrameAnalyzer::currentSplitIndex = currentSplitIndex;
 }

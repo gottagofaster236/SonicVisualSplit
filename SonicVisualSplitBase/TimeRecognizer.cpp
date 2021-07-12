@@ -25,6 +25,13 @@ TimeRecognizer::TimeRecognizer(FrameAnalyzer& frameAnalyzer, const std::string& 
     for (char symbol : symbolsToLoad) {
         templates[symbol] = loadImageAndMaskFromFile(symbol);
     }
+
+    FrameStorage::addOnSourceChangedListener(onSourceChangedListener);
+}
+
+
+TimeRecognizer::~TimeRecognizer() {
+    FrameStorage::removeOnSourceChangedListener(onSourceChangedListener);
 }
 
 

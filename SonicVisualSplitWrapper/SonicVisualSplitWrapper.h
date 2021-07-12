@@ -1,5 +1,12 @@
 ﻿#pragma once
 
+
+// Forward-declaration.
+namespace SonicVisualSplitBase {
+    class FrameAnalyzer;
+}
+
+
 namespace SonicVisualSplitWrapper {
 
 using namespace System;
@@ -29,10 +36,13 @@ public:
 };
 
 
-class SonicVisualSplitBase::FrameAnalyzer;
-
 public ref class FrameAnalyzer {
 public:
+    /* Creates a new instance of FrameAnalyzer if the parameters differ from the oldInstance.
+     * Calls Dispose() for the oldInstance if the new instance  */ 
+    static FrameAnalyzer^ createNewInstanceIfNeeded(FrameAnalyzer^ oldInstance,
+        String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
+
     FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
 
     ~FrameAnalyzer();
@@ -42,8 +52,6 @@ public:
     void ReportCurrentSplitIndex(int currentSplitIndex);
 
     void ResetDigitsPlacement();
-
-    virtual bool Equals(Object^ other) override;
 
 private:
     String^ gameName;

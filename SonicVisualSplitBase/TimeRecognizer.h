@@ -21,6 +21,8 @@ public:
     TimeRecognizer(FrameAnalyzer& frameAnalyzer,
         const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
 
+    ~TimeRecognizer();
+
     struct Match {
         cv::Rect2f location;
         char symbol;
@@ -147,7 +149,7 @@ private:
     // Flag for resetDigitsPlacementAsync().
     std::atomic<bool> shouldResetDigitsPlacement;
 
-    class OnSourceChangedListenerImpl : FrameStorage::OnSourceChangedListener {
+    class OnSourceChangedListenerImpl : public FrameStorage::OnSourceChangedListener {
     public:
         OnSourceChangedListenerImpl(TimeRecognizer& timeRecognizer);
 

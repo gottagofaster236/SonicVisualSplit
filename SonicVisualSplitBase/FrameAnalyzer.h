@@ -18,6 +18,9 @@ public:
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
+    // Calls resetDigitsPlacement() for the inner TimeRecognizer.
+    void resetDigitsPlacement();
+
     // Must be called before calling analyzeFrame.
     void reportCurrentSplitIndex(int currentSplitIndex);
 

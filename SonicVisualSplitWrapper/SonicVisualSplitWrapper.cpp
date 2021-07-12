@@ -14,9 +14,32 @@ using System::Drawing::Imaging::BitmapData;
 
 namespace SonicVisualSplitWrapper {
 
+FrameAnalyzer^ FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^ oldInstance,
+    String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite)
+{
+    bool shouldCreateNewInstance = true;
+
+    if (oldInstance == nullptr) {
+        shouldCreateNewInstance =
+            oldInstance->gameName == gameName &&
+            oldInstance->templatesDirectory == templatesDirectory &&
+            oldInstance->isStretchedTo16By9 == isStretchedTo16By9 &&
+            oldInstance->isComposite == isComposite;
+    }
+
+    if (shouldCreateNewInstance) {
+        delete oldInstance;
+        return gcnew FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite);
+    }
+    else {
+        return oldInstance;
+    }
+}
+
+
 FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite)
-        : gameName(gameName), templatesDirectory(templatesDirectory),
-          isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {
+    : gameName(gameName), templatesDirectory(templatesDirectory),
+        isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {
     msclr::interop::marshal_context context;
     std::string gameNameConverted = context.marshal_as<std::string>(gameName);
     std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
@@ -87,15 +110,6 @@ void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
 
 void FrameAnalyzer::ResetDigitsPlacement() {
     getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->resetDigitsPlacement();
-}
-
-
-bool FrameAnalyzer::Equals(Object^ other) {
-    FrameAnalyzer^ frameAnalyzer = dynamic_cast<FrameAnalyzer^>(other);
-    if (!frameAnalyzer)
-        return false;
-    return gameName == frameAnalyzer->gameName && templatesDirectory == frameAnalyzer->gameName &&
-        isStretchedTo16By9 == frameAnalyzer->isStretchedTo16By9 && isComposite == frameAnalyzer->isComposite;
 }
 
 

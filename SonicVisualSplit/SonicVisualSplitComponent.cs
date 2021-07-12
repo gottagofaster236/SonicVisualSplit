@@ -54,7 +54,7 @@ namespace SonicVisualSplit
                 return;
             }
             Disposed = true;
-            frameAnalyzer.StopAnalyzingFrames();
+            frameAnalyzer.Dispose();
             state.IsGameTimePaused = false;
             videoSourcesManager.StopScanningSources();
         }

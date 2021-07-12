@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace SonicVisualSplit
 {
-    public class FrameAnalyzer
+    public class FrameAnalyzer : IDisposable
     {
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
         private object frameAnalysisLock = new object();
@@ -109,10 +109,10 @@ namespace SonicVisualSplit
 
                 if (unsuccessfulStreak >= 3 || (previousResult != null && previousResult.IsBlackScreen))
                 {
-                    SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
+                    nativeFrameAnalyzer.ResetDigitsPlacement();
                 }
 
-                SonicVisualSplitWrapper.FrameAnalyzer.ReportCurrentSplitIndex(state.CurrentSplitIndex);
+                nativeFrameAnalyzer.ReportCurrentSplitIndex(state.CurrentSplitIndex);
 
                 AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize);
                 SendResultToConsumers(result);
@@ -283,7 +283,7 @@ namespace SonicVisualSplit
                      * because in SCD zone title can be recognized as score screen. */
                     ingameTimerOnLastScoreCheck = result.TimeInMilliseconds;
                     // Recalculating to increase accuracy.
-                    SonicVisualSplitWrapper.FrameAnalyzer.ResetDigitsPlacement();
+                    nativeFrameAnalyzer.ResetDigitsPlacement();
                 }
             }
             else if (checkedForScoreScreen)
@@ -543,7 +543,7 @@ namespace SonicVisualSplit
             frameAnalysisTask.Start();
         }
 
-        public void StopAnalyzingFrames()
+        private void StopAnalyzingFrames()
         {
             frameAnalysisTask.Stop();
 
@@ -552,6 +552,12 @@ namespace SonicVisualSplit
 
             state.OnReset -= OnReset;
             OnReset();
+        }
+
+        public void Dispose()
+        {
+            StopAnalyzingFrames();
+            nativeFrameAnalyzer.Dispose();
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
@@ -568,8 +574,10 @@ namespace SonicVisualSplit
                     string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
 
                     bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
-                    nativeFrameAnalyzer = new SonicVisualSplitWrapper.FrameAnalyzer(settings.Game, templatesDirectory,
-                        settings.Stretched, isComposite: !settings.RGB);
+                    nativeFrameAnalyzer = 
+                        SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
+                            nativeFrameAnalyzer, settings.Game, templatesDirectory,
+                            settings.Stretched, isComposite: !settings.RGB);
 
                     if (!wasAnalyzingFrames)
                     {

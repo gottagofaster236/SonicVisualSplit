@@ -19,7 +19,7 @@ FrameAnalyzer^ FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^ oldInstan
 {
     bool shouldCreateNewInstance = true;
 
-    if (oldInstance == nullptr) {
+    if (oldInstance != nullptr) {
         shouldCreateNewInstance =
             oldInstance->gameName == gameName &&
             oldInstance->templatesDirectory == templatesDirectory &&

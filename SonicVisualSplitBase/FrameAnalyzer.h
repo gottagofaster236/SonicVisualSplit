@@ -33,9 +33,6 @@ public:
 
     void unlockFrameAnalysisMutex();
 
-    FrameAnalyzer(FrameAnalyzer& other) = delete;
-    void operator=(const FrameAnalyzer&) = delete;
-
 private:
     cv::UMat getSavedFrame(long long frameTime);
 

@@ -44,9 +44,6 @@ public:
     
     cv::Rect getDigitsRectFromFrameSize(cv::Size frameSize);
 
-    TimeRecognizer(TimeRecognizer& other) = delete;
-    void operator=(const TimeRecognizer&) = delete;
-
     static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 
     // We search for symbols in our code (hack hack).

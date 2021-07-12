@@ -21,10 +21,10 @@ FrameAnalyzer^ FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^ oldInstan
 
     if (oldInstance != nullptr) {
         shouldCreateNewInstance =
-            oldInstance->gameName == gameName &&
-            oldInstance->templatesDirectory == templatesDirectory &&
-            oldInstance->isStretchedTo16By9 == isStretchedTo16By9 &&
-            oldInstance->isComposite == isComposite;
+            oldInstance->gameName != gameName ||
+            oldInstance->templatesDirectory != templatesDirectory ||
+            oldInstance->isStretchedTo16By9 != isStretchedTo16By9 ||
+            oldInstance->isComposite != isComposite;
     }
 
     if (shouldCreateNewInstance) {

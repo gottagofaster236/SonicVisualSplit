@@ -553,6 +553,12 @@ double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
     // Seven is confused with one and two.
     case '7':
         return 1.15;
+    // Nine is confused with five.
+    case '9':
+        if (isComposite && gameName != "Sonic 2")
+            return 1.15;
+        else
+            return 1;
     }
 }
 

@@ -36,11 +36,13 @@ public:
 private:
     cv::UMat getSavedFrame(long long frameTime);
 
+    cv::UMat fixAspectRatioIfNeeded(cv::UMat frame);
+
     bool checkIfFrameIsSingleColor(cv::UMat frame);
 
     bool checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference);
 
-    void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches);
+    void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame);
 
     // Settings.
     const std::string gameName;
@@ -52,7 +54,6 @@ private:
 
     // Temporary fields for the functions.
     AnalysisResult result;
-    cv::UMat originalFrame;
 
     int currentSplitIndex;
 };

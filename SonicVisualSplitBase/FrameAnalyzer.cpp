@@ -30,11 +30,12 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     result.frameTime = frameTime;
     result.recognizedTime = false;
 
-    cv::UMat frame = getSavedFrame(frameTime);
-    if (frame.cols == 0 || frame.rows == 0) {
+    cv::UMat originalFrame = getSavedFrame(frameTime);
+    if (originalFrame.cols == 0 || originalFrame.rows == 0) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
+    cv::UMat frame = fixAspectRatioIfNeeded(originalFrame);
 
     checkForResetScreen(frameTime);
     
@@ -44,7 +45,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     }
 
     if (visualize)
-        visualizeResult(allMatches);
+        visualizeResult(allMatches, originalFrame);
     return result;
 }
 
@@ -68,6 +69,7 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
     std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
 
     cv::UMat frame = getSavedFrame(frameTime);
+    frame = fixAspectRatioIfNeeded(frame);
     cv::Rect digitsRect = timeRecognizer.getDigitsRectFromFrameSize(frame.size());
     if (digitsRect.empty())
         return false;
@@ -97,17 +99,20 @@ void FrameAnalyzer::unlockFrameAnalysisMutex() {
 }
 
 
-
 cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
-    originalFrame = FrameStorage::getSavedFrame(frameTime);
+    cv::UMat frame = FrameStorage::getSavedFrame(frameTime);
 
     // Make sure the frame isn't too large (that'll slow down the calculations).
-    if (originalFrame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / originalFrame.rows;
-        cv::resize(originalFrame, originalFrame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
+    if (frame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
+        double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
+        cv::resize(frame, frame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
     }
 
-    cv::UMat frame = originalFrame;
+    return frame;
+}
+
+
+cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
     if (isStretchedTo16By9 && !frame.empty())
         cv::resize(frame, frame, {}, scaleFactorTo4By3, 1, cv::INTER_AREA);
     return frame;
@@ -166,7 +171,8 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, do
 }
 
 
-void FrameAnalyzer::visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches) {
+void FrameAnalyzer::visualizeResult(
+        const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame) {
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
     for (auto match : allMatches) {

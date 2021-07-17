@@ -114,9 +114,9 @@ private:
     std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
     
     // Settings.
-    std::string gameName;
-    std::filesystem::path templatesDirectory;
-    bool isComposite;
+    const std::string gameName;
+    const std::filesystem::path templatesDirectory;
+    const bool isComposite;
 
     // The FrameAnalyzer that'll be using this instance of TimeRecognizer.
     FrameAnalyzer& frameAnalyzer;

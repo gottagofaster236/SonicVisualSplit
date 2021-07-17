@@ -43,10 +43,10 @@ private:
     void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches);
 
     // Settings.
-    std::string gameName;
-    std::filesystem::path templatesDirectory;
-    bool isStretchedTo16By9;
-    bool isComposite;
+    const std::string gameName;
+    const std::filesystem::path templatesDirectory;
+    const bool isStretchedTo16By9;
+    const bool isComposite;
 
     TimeRecognizer timeRecognizer;
 

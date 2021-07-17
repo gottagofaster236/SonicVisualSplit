@@ -33,6 +33,7 @@ static int currentVideoSourceIndex;
 static std::jthread framesThread;
 
 static std::vector<const OnSourceChangedListener*> onSourceChangedListeners;
+static std::mutex onSourceChangedListenersMutex;
 
 // Forward declarations.
 static void saveOneFrame();
@@ -137,6 +138,7 @@ long long getCurrentTimeInMilliseconds() {
 
 
 void addOnSourceChangedListener(const OnSourceChangedListener& listener) {
+    std::lock_guard<std::mutex> guard(onSourceChangedListenersMutex);
     auto findIter = std::ranges::find(onSourceChangedListeners, &listener);
     if (findIter == onSourceChangedListeners.end())
         onSourceChangedListeners.push_back(&listener);
@@ -144,12 +146,14 @@ void addOnSourceChangedListener(const OnSourceChangedListener& listener) {
 
 
 void removeOnSourceChangedListener(const OnSourceChangedListener& listener) {
+    std::lock_guard<std::mutex> guard(onSourceChangedListenersMutex);
     auto findIter = std::ranges::find(onSourceChangedListeners, &listener);
     onSourceChangedListeners.erase(findIter);
 }
 
 
 static void callOnSourceChangedCallbacks() {
+    std::lock_guard<std::mutex> guard(onSourceChangedListenersMutex);
     for (const OnSourceChangedListener* listener : onSourceChangedListeners)
         listener->onSourceChanged();
 }

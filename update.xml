@@ -141,4 +141,14 @@
 			<change>Fixed a crash that happened with the 16:9 setting.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.1.5">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Increase the accuracy for composite.</change>
+		</changelog>
+	</update>
 </updates>

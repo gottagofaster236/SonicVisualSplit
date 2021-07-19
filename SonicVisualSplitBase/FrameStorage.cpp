@@ -45,7 +45,7 @@ void startSavingFrames() {
 
     framesThread = std::jthread([](std::stop_token stopToken) {
         while (!stopToken.stop_requested()) {
-            system_clock::time_point startTime = system_clock::now(), nextIteration;
+            steady_clock::time_point startTime = steady_clock::now(), nextIteration;
             {
                 std::lock_guard<yamc::fair::mutex> guard(gameVideoCaptureMutex);
                 saveOneFrame();

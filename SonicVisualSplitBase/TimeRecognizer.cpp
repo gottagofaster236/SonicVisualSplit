@@ -133,8 +133,8 @@ double TimeRecognizer::getBestScale() const {
 
 
 cv::Rect2f TimeRecognizer::getRelativeDigitsRect() {
-    auto currentTime = std::chrono::system_clock::now();
-    if (currentTime - relativeDigitsRectUpdatedTime < std::chrono::seconds(10)) {
+    auto currentTime = std::chrono::steady_clock::now();
+    if (currentTime < relativeDigitsRectUpdatedTime + std::chrono::seconds(10)) {
         return relativeDigitsRect;
     }
     else {
@@ -310,7 +310,7 @@ void TimeRecognizer::onRecognitionSuccess() {
     relativeDigitsRect = {digitsRect.x / frameWidth, digitsRect.y / frameHeight,
         digitsRect.width / frameWidth, digitsRect.height / frameHeight};
     relativeDigitsRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure the it isn't out of bounds.
-    relativeDigitsRectUpdatedTime = std::chrono::system_clock::now();
+    relativeDigitsRectUpdatedTime = std::chrono::steady_clock::now();
 }
 
 

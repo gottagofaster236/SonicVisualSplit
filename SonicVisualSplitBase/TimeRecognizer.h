@@ -136,7 +136,7 @@ private:
     // See getRelativeDigitsRect().
     cv::Rect2f relativeDigitsRect;
 
-    std::chrono::system_clock::time_point relativeDigitsRectUpdatedTime;
+    std::chrono::steady_clock::time_point relativeDigitsRectUpdatedTime;
 
     cv::Size lastFrameSize;
 

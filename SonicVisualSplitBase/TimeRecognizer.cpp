@@ -132,10 +132,10 @@ double TimeRecognizer::getBestScale() const {
 }
 
 
-cv::Rect2f TimeRecognizer::getRelativeDigitsRect() {
+cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
     auto currentTime = std::chrono::steady_clock::now();
-    if (currentTime < relativeDigitsRectUpdatedTime + std::chrono::seconds(10)) {
-        return relativeDigitsRect;
+    if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10)) {
+        return relativeTimeRect;
     }
     else {
         // We consider the relative digits rectangle outdated now, it hasn't been updated for too long.
@@ -144,11 +144,11 @@ cv::Rect2f TimeRecognizer::getRelativeDigitsRect() {
 }
 
 
-cv::Rect TimeRecognizer::getDigitsRectFromFrameSize(cv::Size frameSize) {
-    cv::Rect2f relativeDigitsRect = getRelativeDigitsRect();
-    cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frameSize.width), (int) (relativeDigitsRect.y * frameSize.height),
-        (int) (relativeDigitsRect.width * frameSize.width), (int) (relativeDigitsRect.height * frameSize.height)};
-    return digitsRect;
+cv::Rect TimeRecognizer::getTimeRectFromFrameSize(cv::Size frameSize) {
+    cv::Rect2f relativeTimeRect = getRelativeTimeRect();
+    cv::Rect timeRect = {(int) (relativeTimeRect.x * frameSize.width), (int) (relativeTimeRect.y * frameSize.height),
+        (int) (relativeTimeRect.width * frameSize.width), (int) (relativeTimeRect.height * frameSize.height)};
+    return timeRect;
 }
 
 
@@ -307,10 +307,10 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
 void TimeRecognizer::onRecognitionSuccess() {
     float frameWidth = (float) (lastFrameSize.width * bestScale);
     float frameHeight = (float) (lastFrameSize.height * bestScale);
-    relativeDigitsRect = {digitsRect.x / frameWidth, digitsRect.y / frameHeight,
+    relativeTimeRect = {digitsRect.x / frameWidth, digitsRect.y / frameHeight,
         digitsRect.width / frameWidth, digitsRect.height / frameHeight};
-    relativeDigitsRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure the it isn't out of bounds.
-    relativeDigitsRectUpdatedTime = std::chrono::steady_clock::now();
+    relativeTimeRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure it is not out of bounds.
+    relativeTimeRectUpdatedTime = std::chrono::steady_clock::now();
 }
 
 
@@ -327,7 +327,7 @@ void TimeRecognizer::onRecognitionFailure(AnalysisResult& result) {
 
 
 void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
-    cv::Rect2f timeRect = findTopTimeLabel(labels).location;
+    timeRect = findTopTimeLabel(labels).location;
     double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.2 : 2.45);
     int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.22) * bestScale);
     int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);

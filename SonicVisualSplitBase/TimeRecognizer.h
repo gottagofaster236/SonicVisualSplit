@@ -42,7 +42,7 @@ public:
     // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
     double getBestScale() const;
     
-    cv::Rect getDigitsRectFromFrameSize(cv::Size frameSize);
+    cv::Rect getTimeRectFromFrameSize(cv::Size frameSize);
 
     static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 
@@ -55,7 +55,7 @@ private:
      * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
      * Unlike digitsRect, it's never reset, so that it's possible to estimate
      * the position of time digits ROI almost all the time. */
-    cv::Rect2f getRelativeDigitsRect();
+    cv::Rect2f getRelativeTimeRect();
 
     std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame);
 
@@ -133,10 +133,14 @@ private:
     // Needed in case if score screen check fails.
     cv::Rect prevDigitsRect;
 
-    // See getRelativeDigitsRect().
-    cv::Rect2f relativeDigitsRect;
+    // See getRelativeTimeRect().
+    cv::Rect2f relativeTimeRect;
 
-    std::chrono::steady_clock::time_point relativeDigitsRectUpdatedTime;
+    /* The bounding rectangle of the "TIME" label.
+     * (This rectangle is valid after the frame has been scaled down to bestScale). */
+    cv::Rect2f timeRect;
+
+    std::chrono::steady_clock::time_point relativeTimeRectUpdatedTime;
 
     cv::Size lastFrameSize;
 

@@ -70,19 +70,19 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
 
     cv::UMat frame = getSavedFrame(frameTime);
     frame = fixAspectRatioIfNeeded(frame);
-    cv::Rect digitsRect = timeRecognizer.getDigitsRectFromFrameSize(frame.size());
-    if (digitsRect.empty())
+    cv::Rect timeRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
+    if (timeRect.empty())
         return false;
-    int height = digitsRect.height;
+    int height = timeRect.height;
 
     cv::Rect gameScreenRect = {
-        (int) (digitsRect.x - height * 1.545454),
-        (int) (digitsRect.y - height * 2.272727),
+        (int) (timeRect.x - height * 1.545454),
+        (int) (timeRect.y - height * 2.272727),
         (int) (height * 29.090909),
         (int) (height * 20.363636)
     };
     gameScreenRect &= cv::Rect({}, frame.size());
-    cv::imwrite("C:/tmp/supposedDigitsRect.png", frame(digitsRect));
+    cv::imwrite("C:/tmp/supposedDigitsRect.png", frame(timeRect));
     frame = frame(gameScreenRect);
     cv::imwrite("C:/tmp/gameScreenRect.png", frame);
     return false;
@@ -120,8 +120,9 @@ cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
 
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
+    // STOPSHIP
     // Checking a rectangle near the digits rectangle.
-    cv::Rect digitsRect = timeRecognizer.getDigitsRectFromFrameSize(frame.size());
+    cv::Rect digitsRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
     cv::Rect checkRect = digitsRect;
     // Extending the checked area.
     int leftShift = (int) (digitsRect.height * 3.5);
@@ -132,6 +133,7 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     if (checkRect.empty())
         return false;
     frame = frame(checkRect);
+    cv::imwrite("C:/tmp/checkRect.png", frame);
 
     const cv::Scalar black(0, 0, 0), white(255, 255, 255);
     const double maxAvgDifference = 40;  // Allowing the color to deviate by 40 (out of 255).

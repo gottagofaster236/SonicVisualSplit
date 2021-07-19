@@ -85,12 +85,7 @@ void stopSavingFrames() {
 
 
 void elevateFramesThreadPriority() {
-    // Awful workaround since std::jthread doesn't native_handle in current version of MSVC.
-    std::ostringstream iss;
-    iss << framesThread.get_id();
-    DWORD threadId = std::stoi(iss.str());
-    HANDLE nativeHandle = OpenThread(THREAD_ALL_ACCESS, true, threadId);
-
+    HANDLE nativeHandle = framesThread.native_handle();
     SetThreadPriority(nativeHandle, HIGH_PRIORITY_CLASS);
 }
 

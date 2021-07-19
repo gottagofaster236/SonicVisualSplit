@@ -333,13 +333,11 @@ namespace SonicVisualSplit
         private void UpdateGameTime(AnalysisResult result)
         {
             gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
-            UpdateGameTime();
+            UpdateGameTime(gameTime);
         }
 
-        private void UpdateGameTime()
+        private void UpdateGameTime(int gameTime)
         {
-            int gameTimeCopy = gameTime;
-
             RunOnUiThreadAsync(() => {
                 if (ShouldWaitAfterReset(FrameStorage.GetCurrentTimeInMilliseconds()))
                 {
@@ -354,7 +352,7 @@ namespace SonicVisualSplit
                 {
                     model.UndoSplit();
                 }
-                state.SetGameTime(TimeSpan.FromMilliseconds(gameTimeCopy));
+                state.SetGameTime(TimeSpan.FromMilliseconds(gameTime));
             });
         }
 
@@ -657,7 +655,13 @@ namespace SonicVisualSplit
 
         private void Split()
         {
-            RunOnUiThreadAsync(() => model.Split());
+            int gameTimeCopy = gameTime;
+
+            RunOnUiThreadAsync(() => 
+            {
+                UpdateGameTime(gameTimeCopy);
+                model.Split(); 
+            });
         }
 
         /* We execute all actions that can cause the UI thread to update asynchronously,

@@ -120,14 +120,11 @@ cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
 
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
-    // STOPSHIP
     // Checking a rectangle near the digits rectangle.
-    cv::Rect digitsRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
-    cv::Rect checkRect = digitsRect;
+    cv::Rect timeRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
+    cv::Rect checkRect = timeRect;
     // Extending the checked area.
-    int leftShift = (int) (digitsRect.height * 3.5);
-    checkRect.x -= leftShift;
-    checkRect.width += leftShift;
+    checkRect.width += timeRect.height * 3;
     checkRect.height *= 2;
     checkRect &= cv::Rect({0, 0}, frame.size());  // Make sure checkRect is not out of bounds.
     if (checkRect.empty())

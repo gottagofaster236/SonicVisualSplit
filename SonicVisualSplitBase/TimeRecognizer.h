@@ -136,8 +136,7 @@ private:
     // See getRelativeTimeRect().
     cv::Rect2f relativeTimeRect;
 
-    /* The bounding rectangle of the "TIME" label.
-     * (This rectangle is valid after the frame has been scaled down to bestScale). */
+    /* The bounding rectangle of the "TIME" label on the original frame. */
     cv::Rect2f timeRect;
 
     std::chrono::steady_clock::time_point relativeTimeRectUpdatedTime;

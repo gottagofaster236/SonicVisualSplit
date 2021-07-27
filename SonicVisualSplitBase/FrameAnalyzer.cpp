@@ -68,11 +68,14 @@ int FrameAnalyzer::getCurrentSplitIndex() {
 bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
     std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
 
+    double bestScale = timeRecognizer.getBestScale();
+    if (bestScale == -1)
+        return false;
+
     cv::UMat frame = getSavedFrame(frameTime);
     frame = fixAspectRatioIfNeeded(frame);
+    cv::resize(frame, frame, {}, bestScale, bestScale, cv::INTER_AREA);
     cv::Rect timeRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
-    if (timeRect.empty())
-        return false;
     int height = timeRect.height;
 
     cv::Rect gameScreenRect = {
@@ -82,7 +85,9 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
         (int) (height * 20.363636)
     };
     gameScreenRect &= cv::Rect({}, frame.size());
-    cv::imwrite("C:/tmp/supposedDigitsRect.png", frame(timeRect));
+    if (gameScreenRect.empty())
+        return false;
+
     frame = frame(gameScreenRect);
     cv::imwrite("C:/tmp/gameScreenRect.png", frame);
     return false;

@@ -146,8 +146,12 @@ cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
 
 cv::Rect TimeRecognizer::getTimeRectFromFrameSize(cv::Size frameSize) {
     cv::Rect2f relativeTimeRect = getRelativeTimeRect();
-    cv::Rect timeRect = {(int) (relativeTimeRect.x * frameSize.width), (int) (relativeTimeRect.y * frameSize.height),
-        (int) (relativeTimeRect.width * frameSize.width), (int) (relativeTimeRect.height * frameSize.height)};
+    cv::Rect timeRect = {
+        (int) std::round(relativeTimeRect.x * frameSize.width),
+        (int) std::round(relativeTimeRect.y * frameSize.height),
+        (int) std::round(relativeTimeRect.width * frameSize.width),
+        (int) std::round(relativeTimeRect.height * frameSize.height)
+    };
     return timeRect;
 }
 
@@ -305,10 +309,10 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
 
 
 void TimeRecognizer::onRecognitionSuccess() {
-    float frameWidth = (float) (lastFrameSize.width * bestScale);
-    float frameHeight = (float) (lastFrameSize.height * bestScale);
-    relativeTimeRect = {digitsRect.x / frameWidth, digitsRect.y / frameHeight,
-        digitsRect.width / frameWidth, digitsRect.height / frameHeight};
+    int frameWidth = lastFrameSize.width;
+    int frameHeight = lastFrameSize.height;
+    relativeTimeRect = {timeRect.x / frameWidth, timeRect.y / frameHeight,
+        timeRect.width / frameWidth, timeRect.height / frameHeight};
     relativeTimeRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure it is not out of bounds.
     relativeTimeRectUpdatedTime = std::chrono::steady_clock::now();
 }
@@ -433,6 +437,20 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
 
     for (Match& match : matches) {
         match.similarity *= getSimilarityMultiplier(symbol);
+    }
+
+    // DEBUG STUFF BELOW
+    if (symbol == TIME && !matches.empty() && !recalculateBestScale) {
+        cv::Rect2f bestMatch = std::ranges::max(matches, {}, [](const Match& match) {
+            return match.similarity;
+        }).location;
+        cv::Rect actualMatch = {
+            (int) std::round(bestMatch.x * bestScale),
+            (int) std::round(bestMatch.y * bestScale),
+            (int) std::round(bestMatch.width * bestScale),
+            (int) std::round(bestMatch.height * bestScale)
+        };
+        cv::imwrite("C:/tmp/theMostAccurateTimeRect.png", frame(actualMatch));
     }
 
     return matches;

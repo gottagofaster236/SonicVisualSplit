@@ -39,10 +39,12 @@ public:
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
     void resetDigitsPlacement();
 
-    // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
+    /* Returns the scale of the image which matches the templates(i.e.digits) the best,
+     * or -1, if not calculated yet. This method is thread-safe. */
     double getBestScale() const;
     
-    cv::Rect getTimeRectFromFrameSize(cv::Size frameSize);
+    // Returns the time rect for the frame size. This method is thread-safe.
+    cv::Rect getTimeRectForFrameSize(cv::Size frameSize);
 
     static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 
@@ -122,7 +124,7 @@ private:
     FrameAnalyzer& frameAnalyzer;
 
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
-    double bestScale = -1;
+    std::atomic<double> bestScale{-1};
 
     bool recalculatedBestScaleLastTime;
 
@@ -133,8 +135,20 @@ private:
     // Needed in case if score screen check fails.
     cv::Rect prevDigitsRect;
 
+    /* cv::Rect2f is not trivially copyable, and thus 
+     * it's not possible to create std::atomic<cv::Rect2f>. */
+    struct Rect2fPOD {  
+        float x, y, width, height;
+
+        Rect2fPOD() : x(0), y(0), width(0), height(0) {}
+
+        Rect2fPOD(cv::Rect2f rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {}
+
+        operator cv::Rect2f() { return {x, y, width, height}; }
+    };
+
     // See getRelativeTimeRect().
-    cv::Rect2f relativeTimeRect;
+    std::atomic<Rect2fPOD> relativeTimeRect{Rect2fPOD()};
 
     /* The bounding rectangle of the "TIME" label on the original frame. */
     cv::Rect2f timeRect;
@@ -147,7 +161,7 @@ private:
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
     // Flag for resetDigitsPlacementAsync().
-    std::atomic<bool> shouldResetDigitsPlacement;
+    std::atomic<bool> shouldResetDigitsPlacement{false};
 
     class OnSourceChangedListenerImpl : public FrameStorage::OnSourceChangedListener {
     public:

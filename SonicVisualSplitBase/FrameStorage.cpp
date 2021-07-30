@@ -6,7 +6,6 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
-#include <atomic>
 #include <memory>
 #include <algorithm>
 #include <map>
@@ -14,6 +13,7 @@
 #include <sstream>
 #define NOMINMAX
 #include "Windows.h"
+#include <type_traits>
 using namespace std::chrono;
 
 
@@ -178,7 +178,6 @@ void setVideoCapture(int sourceIndex) {
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = std::make_unique<NullCapture>();
 }
-
 
 }  // namespace SonicVisualSplitBase
 }  // namespace FrameStorage

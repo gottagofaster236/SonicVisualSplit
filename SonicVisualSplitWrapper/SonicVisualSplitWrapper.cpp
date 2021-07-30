@@ -1,7 +1,6 @@
 ﻿#include "SonicVisualSplitWrapper.h"
 #pragma managed(push, off)
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
-#include "../SonicVisualSplitBase/TimeRecognizer.h"
 #include "../SonicVisualSplitBase/FrameStorage.h"
 #include "../SonicVisualSplitBase/VirtualCamCapture.h"
 #pragma managed(pop)

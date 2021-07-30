@@ -136,6 +136,11 @@
       <Name>SonicVisualSplitWrapper</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\SonicVisualSplitBase\TimeRecognizer.h">
+      <Link>TimeRecognizer.h</Link>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>REM You can select "C:\Program Files\LiveSplit\LiveSplit.exe"

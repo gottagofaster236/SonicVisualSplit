@@ -135,7 +135,7 @@ double TimeRecognizer::getBestScale() const {
 cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
     auto currentTime = std::chrono::steady_clock::now();
     if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10)) {
-        return relativeTimeRect;
+        return relativeTimeRect.load();
     }
     else {
         // We consider the relative digits rectangle outdated now, it hasn't been updated for too long.
@@ -144,7 +144,7 @@ cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
 }
 
 
-cv::Rect TimeRecognizer::getTimeRectFromFrameSize(cv::Size frameSize) {
+cv::Rect TimeRecognizer::getTimeRectForFrameSize(cv::Size frameSize) {
     cv::Rect2f relativeTimeRect = getRelativeTimeRect();
     cv::Rect timeRect = {
         (int) std::round(relativeTimeRect.x * frameSize.width),
@@ -311,9 +311,10 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
 void TimeRecognizer::onRecognitionSuccess() {
     int frameWidth = lastFrameSize.width;
     int frameHeight = lastFrameSize.height;
-    relativeTimeRect = {timeRect.x / frameWidth, timeRect.y / frameHeight,
+    cv::Rect2f newRelativeTimeRect = {timeRect.x / frameWidth, timeRect.y / frameHeight,
         timeRect.width / frameWidth, timeRect.height / frameHeight};
-    relativeTimeRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure it is not out of bounds.
+    newRelativeTimeRect &= cv::Rect2f(0, 0, 1, 1);  // Make sure it is not out of bounds.
+    relativeTimeRect = newRelativeTimeRect;
     relativeTimeRectUpdatedTime = std::chrono::steady_clock::now();
 }
 

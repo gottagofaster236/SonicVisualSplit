@@ -75,7 +75,7 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
     cv::UMat frame = getSavedFrame(frameTime);
     frame = fixAspectRatioIfNeeded(frame);
     cv::resize(frame, frame, {}, bestScale, bestScale, cv::INTER_AREA);
-    cv::Rect timeRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
+    cv::Rect timeRect = timeRecognizer.getTimeRectForFrameSize(frame.size());
     int height = timeRect.height;
 
     cv::Rect gameScreenRect = {
@@ -126,7 +126,7 @@ cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     // Checking a rectangle near the digits rectangle.
-    cv::Rect timeRect = timeRecognizer.getTimeRectFromFrameSize(frame.size());
+    cv::Rect timeRect = timeRecognizer.getTimeRectForFrameSize(frame.size());
     cv::Rect checkRect = timeRect;
     // Extending the checked area.
     checkRect.width += timeRect.height * 3;

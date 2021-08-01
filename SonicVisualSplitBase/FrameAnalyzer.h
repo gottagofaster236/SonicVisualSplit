@@ -55,7 +55,7 @@ private:
     // Temporary fields for the functions.
     AnalysisResult result;
 
-    int currentSplitIndex;
+    int currentSplitIndex = -1;
 };
 
 }  // namespace SonicVisualSplitBase

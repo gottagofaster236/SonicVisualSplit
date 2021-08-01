@@ -111,9 +111,14 @@ private:
 
     bool timeIncludesMilliseconds() const;
 
-    /* Loads a template image from file, separates its alpha channel.
-     * Returns a tuple of {image, binary alpha mask, count of opaque pixels}. */
-    std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
+    void loadAllTemplates();
+
+    // Returns a tuple of {gray image, binary alpha mask, count of opaque pixels}.
+    std::tuple<cv::UMat, cv::UMat, int> loadSymbolTemplate(char symbol);
+
+    cv::UMat getAlphaMask(cv::UMat image);
+
+    cv::UMat loadTemplateImageFromFile(char symbol);
     
     // Settings.
     const std::string gameName;

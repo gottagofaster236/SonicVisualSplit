@@ -19,13 +19,7 @@ TimeRecognizer::TimeRecognizer(FrameAnalyzer& frameAnalyzer, const std::string& 
         const std::filesystem::path& templatesDirectory, bool isComposite)
             : frameAnalyzer(frameAnalyzer), gameName(gameName), templatesDirectory(templatesDirectory),
               isComposite(isComposite), onSourceChangedListener(*this) {
-    std::vector<char> symbolsToLoad = {TIME, SCORE};
-    for (char digit = '0'; digit <= '9'; digit++)
-        symbolsToLoad.push_back(digit);
-    for (char symbol : symbolsToLoad) {
-        templates[symbol] = loadImageAndMaskFromFile(symbol);
-    }
-
+    loadAllTemplates();
     FrameStorage::addOnSourceChangedListener(onSourceChangedListener);
 }
 
@@ -439,21 +433,6 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
     for (Match& match : matches) {
         match.similarity *= getSimilarityMultiplier(symbol);
     }
-
-    // DEBUG STUFF BELOW
-    if (symbol == TIME && !matches.empty() && !recalculateBestScale) {
-        cv::Rect2f bestMatch = std::ranges::max(matches, {}, [](const Match& match) {
-            return match.similarity;
-        }).location;
-        cv::Rect actualMatch = {
-            (int) std::round(bestMatch.x * bestScale),
-            (int) std::round(bestMatch.y * bestScale),
-            (int) std::round(bestMatch.width * bestScale),
-            (int) std::round(bestMatch.height * bestScale)
-        };
-        cv::imwrite("C:/tmp/theMostAccurateTimeRect.png", frame(actualMatch));
-    }
-
     return matches;
 }
 
@@ -697,31 +676,54 @@ bool TimeRecognizer::timeIncludesMilliseconds() const {
 }
 
 
-std::tuple<cv::UMat, cv::UMat, int> TimeRecognizer::loadImageAndMaskFromFile(char symbol) {
+void TimeRecognizer::loadAllTemplates(){
+    std::vector<char> symbolsToLoad = {TIME, SCORE};
+    for (char digit = '0'; digit <= '9'; digit++)
+        symbolsToLoad.push_back(digit);
+
+    for (char symbol : symbolsToLoad) {
+        templates[symbol] = loadSymbolTemplate(symbol);
+    }
+}
+
+
+std::tuple<cv::UMat, cv::UMat, int> TimeRecognizer::loadSymbolTemplate(char symbol) {
+    cv::UMat image = loadTemplateImageFromFile(symbol);
+    // We double the size of the image, as then matching is more accurate.
+    cv::resize(image, image, {}, 2, 2, cv::INTER_NEAREST);
+
+    bool filterYellowColor = (symbol == TIME || symbol == SCORE);
+    cv::UMat grayImage = convertFrameToGray(image, filterYellowColor);
+
+    cv::UMat templateMask = getAlphaMask(image);
+    int opaquePixels = cv::countNonZero(templateMask);
+
+    return {grayImage, templateMask, opaquePixels};
+}
+
+
+cv::UMat TimeRecognizer::getAlphaMask(cv::UMat image) {
+    std::vector<cv::UMat> channels(4);
+    cv::split(image, channels);
+
+    cv::UMat mask = channels[3];  // Get the alpha channel.
+    cv::threshold(mask, mask, 0, 1.0, cv::THRESH_BINARY);
+    mask.convertTo(mask, CV_32F);  // Converting to CV_32F since matchTemplate does that anyway.
+
+    return mask;
+}
+
+
+cv::UMat TimeRecognizer::loadTemplateImageFromFile(char symbol) {
     // The path can contain unicode, so we read the file by ourselves.
     std::filesystem::path templatePath = templatesDirectory / (symbol + std::string(".png"));
     std::ifstream fin(templatePath, std::ios::binary);
-    std::vector<uint8_t> templateBuffer((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
+    std::vector<uint8_t> fileBuffer((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
     fin.close();
 
-    cv::UMat templateWithAlpha;
-    cv::imdecode(templateBuffer, cv::IMREAD_UNCHANGED).copyTo(templateWithAlpha);
-    cv::resize(templateWithAlpha, templateWithAlpha, {}, 2, 2, cv::INTER_NEAREST);
-    // We double the size of the image, as then matching is more accurate.
-    
-    bool filterYellowColor = (symbol == TIME || symbol == SCORE);
-    cv::UMat templateImage = convertFrameToGray(templateWithAlpha, filterYellowColor);
-
-    std::vector<cv::UMat> templateChannels(4);
-    cv::split(templateWithAlpha, templateChannels);
-
-    cv::UMat templateMask = templateChannels[3];  // Get the alpha channel.
-    cv::threshold(templateMask, templateMask, 0, 1.0, cv::THRESH_BINARY);
-    templateMask.convertTo(templateMask, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
-
-    int opaquePixels = cv::countNonZero(templateMask);
-
-    return {templateImage, templateMask, opaquePixels};
+    cv::UMat templateImage;
+    cv::imdecode(fileBuffer, cv::IMREAD_UNCHANGED).copyTo(templateImage);
+    return templateImage;
 }
 
 

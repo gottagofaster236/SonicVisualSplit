@@ -660,7 +660,7 @@ namespace SonicVisualSplit
             RunOnUiThreadAsync(() => 
             {
                 UpdateGameTime(gameTimeCopy);
-                model.Split(); 
+                model.Split();
             });
         }
 
@@ -674,7 +674,14 @@ namespace SonicVisualSplit
                 return;
             }
             var mainWindow = forms[0];
-            mainWindow.BeginInvoke(action);
+            if (mainWindow.InvokeRequired)
+            {
+                mainWindow.BeginInvoke(action);
+            }
+            else
+            {
+                action();
+            }
         }
 
         private void SendResultToConsumers(AnalysisResult result)

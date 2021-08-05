@@ -166,13 +166,7 @@ namespace SonicVisualSplit
 
         public bool OnFrameAnalyzed(AnalysisResult result)
         {
-            if (Parent == null || !Parent.Visible)
-            {
-                return false;
-            }
-
-            try
-            {
+            try {
                 // Calling BeginInvoke to update the everything from the UI thread.
                 BeginInvoke((MethodInvoker)delegate
                 {

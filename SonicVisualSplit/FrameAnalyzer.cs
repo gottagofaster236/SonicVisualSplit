@@ -68,6 +68,7 @@ namespace SonicVisualSplit
     
         private LiveSplitState state;
         private ITimerModel model;
+        private volatile int currentSplitIndex;
         private SonicVisualSplitSettings settings;
 
         public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings)
@@ -81,6 +82,7 @@ namespace SonicVisualSplit
 
             UnpackTemplatesArrayIfNeeded();
 
+            StartObservingCurrentSplitIndex();
             frameAnalysisTask = new CancellableLoopTask(AnalyzeFrame, ANALYZE_FRAME_PERIOD);
         }
 
@@ -112,7 +114,7 @@ namespace SonicVisualSplit
                     nativeFrameAnalyzer.ResetDigitsPlacement();
                 }
 
-                nativeFrameAnalyzer.ReportCurrentSplitIndex(state.CurrentSplitIndex);
+                nativeFrameAnalyzer.ReportCurrentSplitIndex(currentSplitIndex);
 
                 AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize);
                 SendResultToConsumers(result);
@@ -214,7 +216,7 @@ namespace SonicVisualSplit
 
         private void CheckIfFrameIsAfterTransition(AnalysisResult result)
         {
-            if (frameBeforeTransition == null || previousResult == null || state.CurrentSplitIndex == -1)
+            if (frameBeforeTransition == null || previousResult == null || currentSplitIndex == -1)
             {
                 return;
             }
@@ -294,7 +296,7 @@ namespace SonicVisualSplit
 
         private void HandleFirstFrameOfTransition(AnalysisResult result)
         {
-            bool isLastSplit = state.CurrentSplitIndex == state.Run.Count - 1;
+            bool isLastSplit = currentSplitIndex == state.Run.Count - 1;
 
             // In Sonic CD the timer stops before the ending transition, no need to update the time.
             if (result.IsBlackScreen || (result.IsWhiteScreen && isLastSplit && settings.Game != "Sonic CD"))
@@ -316,13 +318,13 @@ namespace SonicVisualSplit
             }
             else if (result.IsBlackScreen)
             {
-                if (settings.Game == "Sonic 1" && state.CurrentSplitIndex == 17)
+                if (settings.Game == "Sonic 1" && currentSplitIndex == 17)
                 {
                     /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
                      * If it's actually a death, you have to manually undo the split. */
                     Split();
                 }
-                else if (settings.Game == "Sonic 2" && (state.CurrentSplitIndex == 17 || state.CurrentSplitIndex == 18))
+                else if (settings.Game == "Sonic 2" && (currentSplitIndex == 17 || currentSplitIndex == 18))
                 {
                     // Same for Sonic 2's Sky Chase and Wing Fortress.
                     Split();
@@ -344,11 +346,11 @@ namespace SonicVisualSplit
                     return;
                 }
                 // Make sure the run started and hasn't finished
-                if (state.CurrentSplitIndex == -1)
+                if (currentSplitIndex == -1)
                 {
                     model.Start();
                 }
-                else if (state.CurrentSplitIndex == state.Run.Count)
+                else if (currentSplitIndex == state.Run.Count)
                 {
                     model.UndoSplit();
                 }
@@ -555,6 +557,7 @@ namespace SonicVisualSplit
         public void Dispose()
         {
             StopAnalyzingFrames();
+            StopObservingCurrentSplitIndex();
             nativeFrameAnalyzer.Dispose();
         }
 
@@ -657,11 +660,43 @@ namespace SonicVisualSplit
         {
             int gameTimeCopy = gameTime;
 
-            RunOnUiThreadAsync(() => 
+            RunOnUiThreadAsync(() =>
             {
                 UpdateGameTime(gameTimeCopy);
                 model.Split();
             });
+        }
+
+        /* LiveSplitState can only be used from UI thread,
+         * hence it's not possible to use state.CurrentStateIndex directly. */
+        private void StartObservingCurrentSplitIndex()
+        {
+            state.OnSplit += UpdateCurrentSplitIndex;
+            state.OnUndoSplit += UpdateCurrentSplitIndex;
+            state.OnSkipSplit += UpdateCurrentSplitIndex;
+            state.OnStart += UpdateCurrentSplitIndex;
+            state.OnReset += UpdateCurrentSplitIndex;
+            UpdateCurrentSplitIndex();
+        }
+
+        // See StartObservingCurrentSplitIndex().
+        private void StopObservingCurrentSplitIndex()
+        {
+            state.OnSplit -= UpdateCurrentSplitIndex;
+            state.OnUndoSplit -= UpdateCurrentSplitIndex;
+            state.OnSkipSplit -= UpdateCurrentSplitIndex;
+            state.OnStart -= UpdateCurrentSplitIndex;
+            state.OnReset -= UpdateCurrentSplitIndex;
+        }
+
+        private void UpdateCurrentSplitIndex(object sender = null, EventArgs e = null)
+        {
+            currentSplitIndex = state.CurrentSplitIndex;
+        }
+
+        private void UpdateCurrentSplitIndex(object sender, TimerPhase timerPhase)
+        {
+            UpdateCurrentSplitIndex();
         }
 
         /* We execute all actions that can cause the UI thread to update asynchronously,

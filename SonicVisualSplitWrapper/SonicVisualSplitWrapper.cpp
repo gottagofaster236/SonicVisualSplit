@@ -13,9 +13,8 @@ using System::Drawing::Imaging::BitmapData;
 
 namespace SonicVisualSplitWrapper {
 
-FrameAnalyzer^ FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^ oldInstance,
-    String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite)
-{
+void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance,
+        String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite) {
     bool shouldCreateNewInstance = true;
 
     if (oldInstance != nullptr) {
@@ -28,10 +27,7 @@ FrameAnalyzer^ FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^ oldInstan
 
     if (shouldCreateNewInstance) {
         delete oldInstance;
-        return gcnew FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite);
-    }
-    else {
-        return oldInstance;
+        oldInstance = gcnew FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite);
     }
 }
 

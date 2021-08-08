@@ -40,10 +40,8 @@ public ref class FrameAnalyzer {
 public:
     /* Creates a new instance of FrameAnalyzer if the parameters differ from the oldInstance.
      * Calls Dispose() for the oldInstance if the new instance  */ 
-    static FrameAnalyzer^ createNewInstanceIfNeeded(FrameAnalyzer^ oldInstance,
+    static void createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance,
         String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
-
-    FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
 
     ~FrameAnalyzer();
 
@@ -54,6 +52,8 @@ public:
     void ResetDigitsPlacement();
 
 private:
+    FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
+
     String^ gameName;
     String^ templatesDirectory;
     Boolean isStretchedTo16By9;

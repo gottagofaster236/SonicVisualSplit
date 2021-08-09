@@ -17,10 +17,8 @@ static std::recursive_mutex frameAnalysisMutex;
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
-FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory,
-        bool isStretchedTo16By9, bool isComposite)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite),
-      timeRecognizer(*this, gameName, templatesDirectory, isComposite) {}
+FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings)
+    : settings(settings), timeRecognizer(*this, settings) {}
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
@@ -60,7 +58,7 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
-int FrameAnalyzer::getCurrentSplitIndex() {
+int FrameAnalyzer::getCurrentSplitIndex() const {
     return currentSplitIndex;
 }
 
@@ -118,7 +116,7 @@ cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
 
 
 cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
-    if (isStretchedTo16By9 && !frame.empty())
+    if (settings.isStretchedTo16By9 && !frame.empty())
         cv::resize(frame, frame, {}, scaleFactorTo4By3, 1, cv::INTER_AREA);
     return frame;
 }
@@ -148,7 +146,7 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
         result.isWhiteScreen = true;
         return true;
     }
-    else if (gameName == "Sonic 2") {
+    else if (settings.gameName == "Sonic 2") {
         /* Sonic 2 has a transition where it shows the act name in front of a red/blue background.
          * We just check that there's no white on the screen. */
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
@@ -180,7 +178,7 @@ void FrameAnalyzer::visualizeResult(
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
     for (auto match : allMatches) {
-        if (isStretchedTo16By9) {
+        if (settings.isStretchedTo16By9) {
             match.location.x /= scaleFactorTo4By3;
             match.location.width /= scaleFactorTo4By3;
         }

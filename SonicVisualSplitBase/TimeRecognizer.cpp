@@ -15,10 +15,8 @@
 namespace SonicVisualSplitBase {
 
 
-TimeRecognizer::TimeRecognizer(FrameAnalyzer& frameAnalyzer, const std::string& gameName,
-        const std::filesystem::path& templatesDirectory, bool isComposite)
-            : frameAnalyzer(frameAnalyzer), gameName(gameName), templatesDirectory(templatesDirectory),
-              isComposite(isComposite), onSourceChangedListener(*this) {
+TimeRecognizer::TimeRecognizer(const FrameAnalyzer& frameAnalyzer, const AnalysisSettings& settings)
+        : frameAnalyzer(frameAnalyzer), settings(settings), onSourceChangedListener(*this) {
     loadAllTemplates();
     FrameStorage::addOnSourceChangedListener(onSourceChangedListener);
 }
@@ -220,7 +218,7 @@ bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
     else
         requiredDigitsCount = 3;
 
-    if (isComposite) {
+    if (settings.isComposite) {
         while (digitMatches.size() > requiredDigitsCount && digitMatches.back().symbol == '1')
             digitMatches.pop_back();
     }
@@ -272,11 +270,11 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
     
     // Location of TIME in "TIME BONUS" relative to the top time label.
     cv::Point2f expectedTimeBonusShift;
-    if (gameName == "Sonic 1")
+    if (settings.gameName == "Sonic 1")
         expectedTimeBonusShift = cv::Point2f(5.82f, 8.36f);
-    else if (gameName == "Sonic 2")
+    else if (settings.gameName == "Sonic 2")
         expectedTimeBonusShift = cv::Point2f(4.73f, 8.f);
-    else if (gameName == "Sonic CD")
+    else if (settings.gameName == "Sonic CD")
         expectedTimeBonusShift = cv::Point2f(4.73f, 12.36f);
     expectedTimeBonusShift *= topTimeLabel.location.height;
 
@@ -327,7 +325,7 @@ void TimeRecognizer::onRecognitionFailure(AnalysisResult& result) {
 
 void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
     timeRect = findTopTimeLabel(labels).location;
-    double rightBorderCoefficient = (gameName == "Sonic CD" ? 3.2 : 2.45);
+    double rightBorderCoefficient = (settings.gameName == "Sonic CD" ? 3.2 : 2.45);
     int digitsRectLeft = (int) ((timeRect.x + timeRect.width * 1.22) * bestScale);
     int digitsRectRight = (int) ((timeRect.x + timeRect.width * rightBorderCoefficient) * bestScale);
     int digitsRectTop = (int) ((timeRect.y - timeRect.height * 0.1) * bestScale);
@@ -502,7 +500,7 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
 
 double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
     if (std::isdigit(symbol)) {
-        double baselineMinSimilarity = (isComposite ? -8000 : -7000);
+        double baselineMinSimilarity = (settings.isComposite ? -8000 : -7000);
         /* If a multiplier is present, that means that the symbol tends to get false matches.
          * Therefore the minimum acceptable similarity is lowered. */
         double multiplier = getSimilarityMultiplier(symbol);
@@ -511,7 +509,7 @@ double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
     }
     else {
         // TIME and SCORE labelMatches.
-        if (isComposite)
+        if (settings.isComposite)
             return -3500;
         else
             return -7000;
@@ -527,19 +525,19 @@ double TimeRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) cons
         return 2;
     // We use "TIME" to detect the score screen, so we want to be sure.
     case TIME:
-        if (isComposite)
+        if (settings.isComposite)
             return 1.75;
         else
             return 2;
     /* One is really small, so it can be misdetected, therefore the coefficient is lowered.
      * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
     case '1':
-        if (isComposite)
+        if (settings.isComposite)
             return 2;
         else
             return 3;
     case '4':
-        if (isComposite)
+        if (settings.isComposite)
             return 2;
         else
             return 2.5;
@@ -564,7 +562,7 @@ double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
         return 1.15;
     // Nine is confused with five.
     case '9':
-        if (isComposite && gameName != "Sonic 2")
+        if (settings.isComposite && settings.gameName != "Sonic 2")
             return 1.15;
         else
             return 1;
@@ -608,15 +606,15 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
     }
 
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
-    bool recognizeWhiteTransition = (gameName == "Sonic 2" && frameAnalyzer.getCurrentSplitIndex() == 19);
+    bool recognizeWhiteTransition = (settings.gameName == "Sonic 2" && frameAnalyzer.getCurrentSplitIndex() == 19);
     
     if (!recognizeWhiteTransition) {
         uint8_t maxAcceptableBrightness;
-        if (gameName == "Sonic 2") {
+        if (settings.gameName == "Sonic 2") {
             // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
             maxAcceptableBrightness = 255;
         }
-        else if (gameName == "Sonic CD" && frameAnalyzer.getCurrentSplitIndex() == 20) {
+        else if (settings.gameName == "Sonic CD" && frameAnalyzer.getCurrentSplitIndex() == 20) {
             // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
             maxAcceptableBrightness = 90;
         }
@@ -672,7 +670,7 @@ cv::UMat TimeRecognizer::convertFrameToGray(cv::UMat frame, bool filterYellowCol
 
 
 bool TimeRecognizer::timeIncludesMilliseconds() const {
-    return gameName == "Sonic CD";
+    return settings.gameName == "Sonic CD";
 }
 
 
@@ -688,7 +686,7 @@ void TimeRecognizer::loadAllTemplates(){
 
 
 std::tuple<cv::UMat, cv::UMat, int> TimeRecognizer::loadSymbolTemplate(char symbol) {
-    cv::UMat image = loadTemplateImageFromFile(symbol);
+    cv::UMat image = settings.loadTemplateImageFromFile(symbol);
     // We double the size of the image, as then matching is more accurate.
     cv::resize(image, image, {}, 2, 2, cv::INTER_NEAREST);
 
@@ -712,20 +710,6 @@ cv::UMat TimeRecognizer::getAlphaMask(cv::UMat image) {
 
     return mask;
 }
-
-
-cv::UMat TimeRecognizer::loadTemplateImageFromFile(char symbol) {
-    // The path can contain unicode, so we read the file by ourselves.
-    std::filesystem::path templatePath = templatesDirectory / (symbol + std::string(".png"));
-    std::ifstream fin(templatePath, std::ios::binary);
-    std::vector<uint8_t> fileBuffer((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
-    fin.close();
-
-    cv::UMat templateImage;
-    cv::imdecode(fileBuffer, cv::IMREAD_UNCHANGED).copyTo(templateImage);
-    return templateImage;
-}
-
 
 bool TimeRecognizer::Match::operator==(const Match& other) const = default;
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "TimeRecognizer.h"
+#include "AnalysisSettings.h"
 #include "AnalysisResult.h"
 #include <opencv2/core.hpp>
 #include <filesystem>
@@ -14,7 +15,7 @@ namespace SonicVisualSplitBase {
 // This class finds the digits on the game frame (and gets a few other parameters, see AnalysisResult).
 class FrameAnalyzer {
 public:
-    FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isStretchedTo16By9, bool isComposite);
+    FrameAnalyzer(const AnalysisSettings& settings);
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
@@ -24,7 +25,7 @@ public:
     // Must be called before calling analyzeFrame.
     void reportCurrentSplitIndex(int currentSplitIndex);
 
-    int getCurrentSplitIndex();
+    int getCurrentSplitIndex() const;
 
     bool checkForResetScreen(long long frameTime);
 
@@ -44,17 +45,11 @@ private:
 
     void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame);
 
-    // Settings.
-    const std::string gameName;
-    const std::filesystem::path templatesDirectory;
-    const bool isStretchedTo16By9;
-    const bool isComposite;
-
+    const AnalysisSettings settings;
     TimeRecognizer timeRecognizer;
 
     // Temporary fields for the functions.
     AnalysisResult result;
-
     int currentSplitIndex = -1;
 };
 

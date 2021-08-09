@@ -573,11 +573,12 @@ namespace SonicVisualSplit
                     string livesplitComponents = GetLivesplitComponentsDirectory();
                     string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
                     string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
+                    var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,
+                        settings.Stretched, isComposite: !settings.RGB);
 
                     bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
                     SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
-                        ref nativeFrameAnalyzer, settings.Game, templatesDirectory,
-                        settings.Stretched, isComposite: !settings.RGB);
+                        ref nativeFrameAnalyzer, analysisSettings);
 
                     if (!wasAnalyzingFrames)
                     {

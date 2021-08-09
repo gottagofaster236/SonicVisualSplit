@@ -119,6 +119,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AnalysisSettings.cpp" />
     <ClCompile Include="FrameStorage.cpp" />
     <ClCompile Include="FrameAnalyzer.cpp" />
     <ClCompile Include="GameVideoCapture.cpp" />
@@ -134,6 +135,7 @@
     <ClInclude Include="FrameAnalyzer.h" />
     <ClInclude Include="GameVideoCapture.h" />
     <ClInclude Include="ObsWindowCapture.h" />
+    <ClInclude Include="AnalysisSettings.h" />
     <ClInclude Include="TimeRecognizer.h" />
     <ClInclude Include="VirtualCamCapture.h" />
     <ClInclude Include="WindowCapture.h" />

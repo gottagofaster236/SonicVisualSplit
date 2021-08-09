@@ -14,21 +14,34 @@ using System::Collections::Generic::List;
 using System::Drawing::Rectangle;
 using System::Drawing::Bitmap;
 
+public ref class AnalysisSettings {
+public:
+    AnalysisSettings(String^ gameName, String^ templatesDirectory,
+        Boolean isStretchedTo16By9, Boolean isComposite);
+
+    Boolean Equals(Object^ other) override;
+
+    property String^ GameName;
+    property String^ TemplatesDirectory;
+    property Boolean IsStretchedTo16By9;
+    property Boolean IsComposite;
+};
+
 public enum class ErrorReasonEnum {
     VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_ERROR
 };
 
 public ref class AnalysisResult {
 public:
-    Boolean RecognizedTime;
-    Int32 TimeInMilliseconds;
-    String^ TimeString;
-    Boolean IsScoreScreen;
-    Boolean IsBlackScreen;
-    Boolean IsWhiteScreen;
-    Bitmap^ VisualizedFrame;
-    ErrorReasonEnum ErrorReason;
-    Int64 FrameTime;
+    property Boolean RecognizedTime;
+    property Int32 TimeInMilliseconds;
+    property String^ TimeString;
+    property Boolean IsScoreScreen;
+    property Boolean IsBlackScreen;
+    property Boolean IsWhiteScreen;
+    property Bitmap^ VisualizedFrame;
+    property ErrorReasonEnum ErrorReason;
+    property Int64 FrameTime;
 
     Boolean IsSuccessful();
     void MarkAsIncorrectlyRecognized();
@@ -41,7 +54,7 @@ public:
     /* Creates a new instance of FrameAnalyzer if the parameters differ from the oldInstance.
      * Calls Dispose() for the oldInstance if the new instance  */ 
     static void createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance,
-        String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
+        AnalysisSettings^ settings);
 
     ~FrameAnalyzer();
 
@@ -52,13 +65,9 @@ public:
     void ResetDigitsPlacement();
 
 private:
-    FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite);
+    FrameAnalyzer(AnalysisSettings^ settings);
 
-    String^ gameName;
-    String^ templatesDirectory;
-    Boolean isStretchedTo16By9;
-    Boolean isComposite;
-
+    AnalysisSettings^ settings;
     IntPtr nativeFrameAnalyzerPtr;
 };
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "AnalysisSettings.h"
 #include "AnalysisResult.h"
 #include "FrameStorage.h"
 #include <opencv2/core.hpp>
@@ -18,8 +19,7 @@ class FrameAnalyzer;
 
 class TimeRecognizer {
 public:
-    TimeRecognizer(FrameAnalyzer& frameAnalyzer,
-        const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
+    TimeRecognizer(const FrameAnalyzer& frameAnalyzer, const AnalysisSettings& settings);
 
     ~TimeRecognizer();
 
@@ -117,16 +117,11 @@ private:
     std::tuple<cv::UMat, cv::UMat, int> loadSymbolTemplate(char symbol);
 
     cv::UMat getAlphaMask(cv::UMat image);
-
-    cv::UMat loadTemplateImageFromFile(char symbol);
     
-    // Settings.
-    const std::string gameName;
-    const std::filesystem::path templatesDirectory;
-    const bool isComposite;
+    const AnalysisSettings settings;
 
     // The FrameAnalyzer that'll be using this instance of TimeRecognizer.
-    FrameAnalyzer& frameAnalyzer;
+    const FrameAnalyzer& frameAnalyzer;
 
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     std::atomic<double> bestScale{-1};

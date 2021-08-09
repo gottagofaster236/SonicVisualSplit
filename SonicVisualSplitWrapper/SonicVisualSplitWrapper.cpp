@@ -13,33 +13,45 @@ using System::Drawing::Imaging::BitmapData;
 
 namespace SonicVisualSplitWrapper {
 
-void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance,
-        String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite) {
-    bool shouldCreateNewInstance = true;
+AnalysisSettings::AnalysisSettings(String^ gameName, String^ templatesDirectory,
+        Boolean isStretchedTo16By9, Boolean isComposite) {
+    GameName = gameName;
+    TemplatesDirectory = templatesDirectory;
+    IsStretchedTo16By9 = isStretchedTo16By9;
+    IsComposite = isComposite;
+}
 
-    if (oldInstance != nullptr) {
-        shouldCreateNewInstance =
-            oldInstance->gameName != gameName ||
-            oldInstance->templatesDirectory != templatesDirectory ||
-            oldInstance->isStretchedTo16By9 != isStretchedTo16By9 ||
-            oldInstance->isComposite != isComposite;
-    }
+
+Boolean AnalysisSettings::Equals(Object^ other) {
+    AnalysisSettings^ otherSettings = dynamic_cast<AnalysisSettings^>(other);
+    return otherSettings &&
+        otherSettings->GameName == GameName &&
+        otherSettings->TemplatesDirectory == TemplatesDirectory &&
+        otherSettings->IsStretchedTo16By9 == IsStretchedTo16By9 &&
+        otherSettings->IsComposite == IsComposite;
+}
+
+
+void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance, AnalysisSettings^ settings) {
+    bool shouldCreateNewInstance = 
+        oldInstance == nullptr || !oldInstance->settings->Equals(settings);
 
     if (shouldCreateNewInstance) {
         delete oldInstance;
-        oldInstance = gcnew FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite);
+        oldInstance = gcnew FrameAnalyzer(settings);
     }
 }
 
 
-FrameAnalyzer::FrameAnalyzer(String^ gameName, String^ templatesDirectory, Boolean isStretchedTo16By9, Boolean isComposite)
-    : gameName(gameName), templatesDirectory(templatesDirectory),
-        isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {
+FrameAnalyzer::FrameAnalyzer(AnalysisSettings^ settings) : settings(settings) {
     msclr::interop::marshal_context context;
-    std::string gameNameConverted = context.marshal_as<std::string>(gameName);
-    std::wstring templatesDirectoryConverted = context.marshal_as<std::wstring>(templatesDirectory);
-    auto nativeFrameAnalyzer = new SonicVisualSplitBase::FrameAnalyzer(gameNameConverted,
-        templatesDirectoryConverted, isStretchedTo16By9, isComposite);
+    std::string gameNameConverted = context.marshal_as<std::string>(settings->GameName);
+    std::wstring templatesDirectoryConverted = 
+        context.marshal_as<std::wstring>(settings->TemplatesDirectory);
+    SonicVisualSplitBase::AnalysisSettings nativeSettings = {gameNameConverted,
+        templatesDirectoryConverted, settings->IsStretchedTo16By9, settings->IsComposite};
+
+    auto nativeFrameAnalyzer = new SonicVisualSplitBase::FrameAnalyzer(nativeSettings);
     nativeFrameAnalyzerPtr = System::IntPtr(nativeFrameAnalyzer);
 }
 

@@ -46,11 +46,15 @@ private:
     void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame);
 
     const AnalysisSettings settings;
+
     TimeRecognizer timeRecognizer;
 
-    // Temporary fields for the functions.
-    AnalysisResult result;
     int currentSplitIndex = -1;
+
+    const cv::UMat resetTemplate;
+
+    // Temporary field for the functions.
+    AnalysisResult result;
 };
 
 }  // namespace SonicVisualSplitBase

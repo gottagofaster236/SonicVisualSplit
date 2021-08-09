@@ -18,7 +18,8 @@ static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings)
-    : settings(settings), timeRecognizer(*this, settings) {}
+    : settings(settings), timeRecognizer(*this, settings), 
+        resetTemplate(settings.loadTemplateImageFromFile('R')) { }
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {

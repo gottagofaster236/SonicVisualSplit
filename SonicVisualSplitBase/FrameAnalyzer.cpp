@@ -78,10 +78,10 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
     int height = timeRect.height;
 
     cv::Rect gameScreenRect = {
-        (int) (timeRect.x - height * 1.545454),
-        (int) (timeRect.y - height * 2.272727),
-        (int) (height * 29.090909),
-        (int) (height * 20.363636)
+        (int) (timeRect.x - height / 11. * 17.),
+        (int) (timeRect.y - height / 11. * 25.),
+        (int) (height / 11. * 320.),
+        (int) (height / 11. * 224.)
     };
     gameScreenRect &= cv::Rect({}, frame.size());
     if (gameScreenRect.empty())

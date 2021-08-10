@@ -126,7 +126,8 @@ double TimeRecognizer::getBestScale() const {
 
 cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
     auto currentTime = std::chrono::steady_clock::now();
-    if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10)) {
+    // FIXME!!!
+    if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10) || true) {
         return relativeTimeRect.load();
     }
     else {

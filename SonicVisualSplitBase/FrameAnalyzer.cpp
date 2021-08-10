@@ -87,9 +87,14 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
     if (gameScreenRect.empty())
         return false;
 
-    frame = frame(gameScreenRect);
-    cv::imwrite("C:/tmp/gameScreenRect.png", frame);
-    return false;
+    cv::UMat gameScreen = frame(gameScreenRect);
+    cv::resize(gameScreen, gameScreen, resetTemplate.size(), 0, 0, cv::INTER_AREA);
+    cv::imwrite("C:/tmp/gameScreenResized.png", gameScreen);
+    
+    double squareDifference = cv::norm(gameScreen, resetTemplate, cv::NORM_L2SQR);
+    double avgSquareDifference = squareDifference / gameScreen.total();
+    const double maxAvgDifference = 40;  // Allowing the color to deviate by 40 (out of 255).
+    return avgSquareDifference < maxAvgDifference* maxAvgDifference * 3;  // Three channels, so multiplying by 3.
 }
 
 
@@ -134,7 +139,6 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     if (checkRect.empty())
         return false;
     frame = frame(checkRect);
-    cv::imwrite("C:/tmp/checkRect.png", frame);
 
     const cv::Scalar black(0, 0, 0), white(255, 255, 255);
     const double maxAvgDifference = 40;  // Allowing the color to deviate by 40 (out of 255).

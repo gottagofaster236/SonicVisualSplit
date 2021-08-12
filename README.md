@@ -51,7 +51,8 @@ You'll have to use one of the two methods to set everything up.
     In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
     that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
 - Make sure your capture card outputs an acceptable picture.
-   - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software. Try increasing the contrast and brightness.
+   - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software.
+     Try increasing gamma/brightness.
    - Check that the aspect ratio is correct. If it's stretched, fix it with your streaming software.
 - After you've setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
@@ -68,7 +69,7 @@ To toggle the practice mode, right-click LiveSplit, select "Control", and click 
 Alternatively, you can go to component settings (as described in the previous section), and click the "Toggle practice mode" button there.
 
 ## Known limitations
-- If you die on *Scrap Brain 3* in Sonic 1, you'll have to undo the split manually (the game time will be correct anyways).
+- If you die on *Scrap Brain 3* in Sonic 1, you'll hхave to undo the split manually (the game time will be correct anyways).
 - Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
 - In Sonic 2, when you hit the boss, the timer is flashing and SVS fails to recognize that.
 This is fine, it'll recover soon after.

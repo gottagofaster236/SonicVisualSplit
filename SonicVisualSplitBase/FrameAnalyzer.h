@@ -51,7 +51,7 @@ private:
 
     int currentSplitIndex = -1;
 
-    const cv::UMat resetTemplate;
+    cv::UMat resetTemplate;
 
     // Temporary field for the functions.
     AnalysisResult result;

@@ -8,6 +8,7 @@
 #include <numeric>
 #include <cctype>
 #include <opencv2/imgcodecs.hpp>
+#include <Windows.h>
 
 
 namespace SonicVisualSplitBase {
@@ -17,9 +18,12 @@ static std::recursive_mutex frameAnalysisMutex;
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
-FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings)
-    : settings(settings), timeRecognizer(*this, settings), 
-        resetTemplate(settings.loadTemplateImageFromFile('R')) { }
+FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
+        settings(settings), timeRecognizer(*this, settings) {
+    resetTemplate = settings.loadTemplateImageFromFile('R');
+    // Removing the alpha channel.
+    cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
+}
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
@@ -36,7 +40,12 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     }
     cv::UMat frame = fixAspectRatioIfNeeded(originalFrame);
 
-    checkForResetScreen(frameTime);
+    LPCTSTR outputString;
+    if (checkForResetScreen(frameTime))
+        outputString = TEXT("Reset screen!\n");
+    else
+        outputString = TEXT("No reset screen!\n");
+    OutputDebugString(outputString);
     
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
@@ -89,12 +98,25 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
 
     cv::UMat gameScreen = frame(gameScreenRect);
     cv::resize(gameScreen, gameScreen, resetTemplate.size(), 0, 0, cv::INTER_AREA);
-    cv::imwrite("C:/tmp/gameScreenResized.png", gameScreen);
+    // cv::imwrite("C:/tmp/gameScreenResized.png", gameScreen);
+
+    /* Cropping the images, so that even in case of a small error
+     * the computed game screen won't contain outer areas. */
+    const double borderRatio = 0.1;
+    cv::Size borderSize(
+        (int) (resetTemplate.cols * borderRatio), 
+        (int) (resetTemplate.rows * borderRatio)
+    );
+    cv::Rect cropRect(borderSize, resetTemplate.size() - borderSize * 2);
+    gameScreen = gameScreen(cropRect);
+    cv::UMat resetTemplateCropped = resetTemplate(cropRect);
+    // cv::imwrite("C:/tmp/gameScreenCropped.png", gameScreen);
+    // cv::imwrite("C:/tmp/resetTemplateCropped.png", resetTemplateCropped);
     
-    double squareDifference = cv::norm(gameScreen, resetTemplate, cv::NORM_L2SQR);
+    double squareDifference = cv::norm(gameScreen, resetTemplateCropped, cv::NORM_L2SQR);
     double avgSquareDifference = squareDifference / gameScreen.total();
-    const double maxAvgDifference = 40;  // Allowing the color to deviate by 40 (out of 255).
-    return avgSquareDifference < maxAvgDifference* maxAvgDifference * 3;  // Three channels, so multiplying by 3.
+    const double maxAvgDifference = 50;  // Allowing the color to deviate by 40 (out of 255).
+    return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
 }
 
 

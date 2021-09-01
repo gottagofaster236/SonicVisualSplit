@@ -8,7 +8,6 @@
 #include <numeric>
 #include <cctype>
 #include <opencv2/imgcodecs.hpp>
-#include <Windows.h>
 
 
 namespace SonicVisualSplitBase {
@@ -39,13 +38,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         return result;
     }
     cv::UMat frame = fixAspectRatioIfNeeded(originalFrame);
-
-    LPCTSTR outputString;
-    if (checkForResetScreen(frameTime))
-        outputString = TEXT("Reset screen!\n");
-    else
-        outputString = TEXT("No reset screen!\n");
-    OutputDebugString(outputString);
+    bool resetScreenCheckResult = checkForResetScreen(frameTime);
     
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
@@ -98,24 +91,23 @@ bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
 
     cv::UMat gameScreen = frame(gameScreenRect);
     cv::resize(gameScreen, gameScreen, resetTemplate.size(), 0, 0, cv::INTER_AREA);
-    // cv::imwrite("C:/tmp/gameScreenResized.png", gameScreen);
 
-    /* Cropping the images, so that even in case of a small error
-     * the computed game screen won't contain outer areas. */
+    // Cropping the reset template
     const double borderRatio = 0.1;
     cv::Size borderSize(
         (int) (resetTemplate.cols * borderRatio), 
         (int) (resetTemplate.rows * borderRatio)
     );
     cv::Rect cropRect(borderSize, resetTemplate.size() - borderSize * 2);
-    gameScreen = gameScreen(cropRect);
+    cv::UMat gameScreenCropped = gameScreen(cropRect);
     cv::UMat resetTemplateCropped = resetTemplate(cropRect);
-    // cv::imwrite("C:/tmp/gameScreenCropped.png", gameScreen);
-    // cv::imwrite("C:/tmp/resetTemplateCropped.png", resetTemplateCropped);
-    
-    double squareDifference = cv::norm(gameScreen, resetTemplateCropped, cv::NORM_L2SQR);
+
+    cv::UMat result;
+    cv::matchTemplate(gameScreen, resetTemplateCropped, result, cv::TM_SQDIFF);
+    double squareDifference;
+    cv::minMaxLoc(result, &bestDifference);
     double avgSquareDifference = squareDifference / gameScreen.total();
-    const double maxAvgDifference = 50;  // Allowing the color to deviate by 40 (out of 255).
+    const double maxAvgDifference = 35;  // Allowing the color to deviate by 40 (out of 255).
     return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
 }
 

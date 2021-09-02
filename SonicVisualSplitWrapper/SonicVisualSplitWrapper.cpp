@@ -115,8 +115,8 @@ void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
-void FrameAnalyzer::ResetDigitsPlacement() {
-    getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->resetDigitsPlacement();
+void FrameAnalyzer::ResetDigitsPositions() {
+    getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->resetDigitsPositions();
 }
 
 

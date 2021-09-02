@@ -51,8 +51,8 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 }
 
 
-void FrameAnalyzer::resetDigitsPlacement() {
-    timeRecognizer.resetDigitsPlacement();
+void FrameAnalyzer::resetDigitsPositions() {
+    timeRecognizer.resetDigitsPositions();
 }
 
 

@@ -111,7 +111,7 @@ namespace SonicVisualSplit
 
                 if (unsuccessfulStreak >= 3 || (previousResult != null && previousResult.IsBlackScreen))
                 {
-                    nativeFrameAnalyzer.ResetDigitsPlacement();
+                    nativeFrameAnalyzer.ResetDigitsPositions();
                 }
 
                 nativeFrameAnalyzer.ReportCurrentSplitIndex(currentSplitIndex);
@@ -285,7 +285,7 @@ namespace SonicVisualSplit
                      * because in SCD zone title can be recognized as score screen. */
                     ingameTimerOnLastScoreCheck = result.TimeInMilliseconds;
                     // Recalculating to increase accuracy.
-                    nativeFrameAnalyzer.ResetDigitsPlacement();
+                    nativeFrameAnalyzer.ResetDigitsPositions();
                 }
             }
             else if (checkedForScoreScreen)

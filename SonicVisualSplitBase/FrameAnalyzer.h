@@ -19,8 +19,8 @@ public:
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
-    // See TimeRecognizer::resetDigitsPlacement.
-    void resetDigitsPlacement();
+    // See TimeRecognizer::resetDigitsPositions.
+    void resetDigitsPositions();
 
     /* Reports the current LiveSplit split index.
      * Should be up-to-date upon calling analyzeFrame(). */

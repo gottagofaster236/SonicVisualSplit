@@ -97,7 +97,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
 }
 
 
-void TimeRecognizer::resetDigitsPlacement() {
+void TimeRecognizer::resetDigitsPositions() {
     // Digits placement will be reset on the next call to recognizeTime.
     shouldResetDigitsPlacement = true;
 }
@@ -114,7 +114,7 @@ TimeRecognizer::OnSourceChangedListenerImpl::OnSourceChangedListenerImpl(TimeRec
 
 
 void TimeRecognizer::OnSourceChangedListenerImpl::onSourceChanged() const {
-    timeRecognizer.resetDigitsPlacement();
+    timeRecognizer.resetDigitsPositions();
 }
 
 
@@ -319,7 +319,7 @@ void TimeRecognizer::onRecognitionFailure(AnalysisResult& result) {
     result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
     if (recalculatedBestScaleLastTime) {
         // We recalculated everything but failed. Make sure those results aren't saved.
-        resetDigitsPlacement();
+        resetDigitsPositions();
     }
     else {
         digitsRect = prevDigitsRect;

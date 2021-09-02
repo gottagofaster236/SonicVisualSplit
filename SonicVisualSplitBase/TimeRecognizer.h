@@ -37,7 +37,7 @@ public:
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
-    void resetDigitsPlacement();
+    void resetDigitsPositions();
 
     /* Returns the scale of the image which matches the templates(i.e.digits) the best,
      * or -1, if not calculated yet. This method is thread-safe. */

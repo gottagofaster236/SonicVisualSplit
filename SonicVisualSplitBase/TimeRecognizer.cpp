@@ -9,7 +9,6 @@
 #include <utility>
 #include <cctype>
 #include <cmath>
-#include <cassert>
 
 
 namespace SonicVisualSplitBase {
@@ -126,8 +125,7 @@ double TimeRecognizer::getBestScale() const {
 
 cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
     auto currentTime = std::chrono::steady_clock::now();
-    // FIXME!!!
-    if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10) || true) {
+    if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10)) {
         return relativeTimeRect.load();
     }
     else {

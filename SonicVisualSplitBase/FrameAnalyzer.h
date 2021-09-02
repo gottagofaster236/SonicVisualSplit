@@ -19,13 +19,12 @@ public:
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
-    // Calls resetDigitsPlacement() for the inner TimeRecognizer.
+    // See TimeRecognizer::resetDigitsPlacement.
     void resetDigitsPlacement();
 
-    // Must be called before calling analyzeFrame.
+    /* Reports the current LiveSplit split index.
+     * Should be up-to-date upon calling analyzeFrame(). */
     void reportCurrentSplitIndex(int currentSplitIndex);
-
-    int getCurrentSplitIndex() const;
 
     bool checkForResetScreen(long long frameTime);
 
@@ -48,8 +47,6 @@ private:
     const AnalysisSettings settings;
 
     TimeRecognizer timeRecognizer;
-
-    int currentSplitIndex = -1;
 
     cv::UMat resetTemplate;
 

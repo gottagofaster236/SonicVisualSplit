@@ -18,7 +18,7 @@ static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
-        settings(settings), timeRecognizer(*this, settings) {
+        settings(settings), timeRecognizer(settings) {
     resetTemplate = settings.loadTemplateImageFromFile('R');
     // Removing the alpha channel.
     cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
@@ -57,12 +57,7 @@ void FrameAnalyzer::resetDigitsPlacement() {
 
 
 void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
-    FrameAnalyzer::currentSplitIndex = currentSplitIndex;
-}
-
-
-int FrameAnalyzer::getCurrentSplitIndex() const {
-    return currentSplitIndex;
+    timeRecognizer.reportCurrentSplitIndex(currentSplitIndex);
 }
 
 

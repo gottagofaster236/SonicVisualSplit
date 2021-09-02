@@ -14,8 +14,8 @@
 namespace SonicVisualSplitBase {
 
 
-TimeRecognizer::TimeRecognizer(const FrameAnalyzer& frameAnalyzer, const AnalysisSettings& settings)
-        : frameAnalyzer(frameAnalyzer), settings(settings), onSourceChangedListener(*this) {
+TimeRecognizer::TimeRecognizer(const AnalysisSettings& settings) : 
+        settings(settings), onSourceChangedListener(*this) {
     loadAllTemplates();
     FrameStorage::addOnSourceChangedListener(onSourceChangedListener);
 }
@@ -144,6 +144,11 @@ cv::Rect TimeRecognizer::getTimeRectForFrameSize(cv::Size frameSize) {
         (int) std::round(relativeTimeRect.height * frameSize.height)
     };
     return timeRect;
+}
+
+
+void TimeRecognizer::reportCurrentSplitIndex(int currentSplitIndex) {
+    this->currentSplitIndex = currentSplitIndex;
 }
 
 
@@ -605,7 +610,7 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
     }
 
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
-    bool recognizeWhiteTransition = (settings.gameName == "Sonic 2" && frameAnalyzer.getCurrentSplitIndex() == 19);
+    bool recognizeWhiteTransition = (settings.gameName == "Sonic 2" && currentSplitIndex == 19);
     
     if (!recognizeWhiteTransition) {
         uint8_t maxAcceptableBrightness;
@@ -613,7 +618,7 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
             // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
             maxAcceptableBrightness = 255;
         }
-        else if (settings.gameName == "Sonic CD" && frameAnalyzer.getCurrentSplitIndex() == 20) {
+        else if (settings.gameName == "Sonic CD" && currentSplitIndex == 20) {
             // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
             maxAcceptableBrightness = 90;
         }

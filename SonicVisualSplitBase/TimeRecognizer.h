@@ -19,7 +19,7 @@ class FrameAnalyzer;
 
 class TimeRecognizer {
 public:
-    TimeRecognizer(const FrameAnalyzer& frameAnalyzer, const AnalysisSettings& settings);
+    TimeRecognizer(const AnalysisSettings& settings);
 
     ~TimeRecognizer();
 
@@ -45,6 +45,10 @@ public:
     
     // Returns the time rect for the frame size. This method is thread-safe.
     cv::Rect getTimeRectForFrameSize(cv::Size frameSize);
+
+    /* Reports the current LiveSplit split index.
+     * Should be up-to-date upon calling recognizeTime(). */
+    void reportCurrentSplitIndex(int currentSplitIndex);
 
     static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 
@@ -120,9 +124,6 @@ private:
     
     const AnalysisSettings settings;
 
-    // The FrameAnalyzer that'll be using this instance of TimeRecognizer.
-    const FrameAnalyzer& frameAnalyzer;
-
     // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
     std::atomic<double> bestScale{-1};
 
@@ -162,6 +163,9 @@ private:
 
     // Flag for resetDigitsPlacementAsync().
     std::atomic<bool> shouldResetDigitsPlacement{false};
+
+    // The split index that LiveSplit is currently at.
+    int currentSplitIndex = -1;
 
     class OnSourceChangedListenerImpl : public FrameStorage::OnSourceChangedListener {
     public:

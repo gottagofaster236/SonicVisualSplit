@@ -60,6 +60,8 @@ public:
 
     AnalysisResult^ AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize);
 
+    Boolean CheckForResetScreen(Int64 frameTime);
+
     void ReportCurrentSplitIndex(int currentSplitIndex);
 
     void ResetDigitsPositions();

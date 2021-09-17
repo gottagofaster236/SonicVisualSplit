@@ -110,6 +110,12 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 }
 
 
+Boolean FrameAnalyzer::CheckForResetScreen(Int64 frameTime)
+{
+    return getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->checkForResetScreen(frameTime);
+}
+
+
 void FrameAnalyzer::ReportCurrentSplitIndex(int currentSplitIndex) {
     getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->reportCurrentSplitIndex(currentSplitIndex);
 }

@@ -123,20 +123,8 @@ double TimeRecognizer::getBestScale() const {
 }
 
 
-cv::Rect2f TimeRecognizer::getRelativeTimeRect() {
-    auto currentTime = std::chrono::steady_clock::now();
-    if (currentTime < relativeTimeRectUpdatedTime + std::chrono::seconds(10)) {
-        return relativeTimeRect.load();
-    }
-    else {
-        // We consider the relative digits rectangle outdated now, it hasn't been updated for too long.
-        return {};
-    }
-}
-
-
 cv::Rect TimeRecognizer::getTimeRectForFrameSize(cv::Size frameSize) {
-    cv::Rect2f relativeTimeRect = getRelativeTimeRect();
+    cv::Rect2f relativeTimeRect = this->relativeTimeRect.load();
     cv::Rect timeRect = {
         (int) std::round(relativeTimeRect.x * frameSize.width),
         (int) std::round(relativeTimeRect.y * frameSize.height),
@@ -144,6 +132,11 @@ cv::Rect TimeRecognizer::getTimeRectForFrameSize(cv::Size frameSize) {
         (int) std::round(relativeTimeRect.height * frameSize.height)
     };
     return timeRect;
+}
+
+
+std::chrono::steady_clock::duration TimeRecognizer::getTimeSinceDigitsPositionsLastUpdated() {
+    return std::chrono::steady_clock::now() - relativeTimeRectUpdatedTime;
 }
 
 

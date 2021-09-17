@@ -139,6 +139,10 @@ cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     // Checking a rectangle near the digits rectangle.
+    if (timeRecognizer.getTimeSinceDigitsPositionsLastUpdated() > std::chrono::seconds(10)) {
+        // The rectangle is outdated now.
+        return false;
+    }
     cv::Rect timeRect = timeRecognizer.getTimeRectForFrameSize(frame.size());
     cv::Rect checkRect = timeRect;
     // Extending the checked area.

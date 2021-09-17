@@ -39,12 +39,15 @@ public:
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
     void resetDigitsPositions();
 
-    /* Returns the scale of the image which matches the templates(i.e.digits) the best,
+    /* Returns the scale of the image which matches the templates (i.e. digits) the best,
      * or -1, if not calculated yet. This method is thread-safe. */
     double getBestScale() const;
     
-    // Returns the time rect for the frame size. This method is thread-safe.
+    /* Returns the time rect for the frame size. Returns an empty rectangle if not calculated yet.
+     * This method is thread-safe. */
     cv::Rect getTimeRectForFrameSize(cv::Size frameSize);
+
+    std::chrono::steady_clock::duration getTimeSinceDigitsPositionsLastUpdated();
 
     /* Reports the current LiveSplit split index.
      * Should be up-to-date upon calling recognizeTime(). */
@@ -57,12 +60,6 @@ public:
     static const char TIME = 'T';
 
 private:
-    /* Returns the rectangle where the time digits were located last time,
-     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
-     * Unlike digitsRect, it's never reset, so that it's possible to estimate
-     * the position of time digits ROI almost all the time. */
-    cv::Rect2f getRelativeTimeRect();
-
     std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame);
 
     bool checkRecognizedDigits(std::vector<Match>& digitMatches);
@@ -148,7 +145,10 @@ private:
         operator cv::Rect2f() { return {x, y, width, height}; }
     };
 
-    // See getRelativeTimeRect().
+    /* The rectangle where the time digits were located last time,
+     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
+     * Unlike digitsRect, it's never reset, so that it's possible to estimate
+     * the position of time digits ROI almost all the time. */
     std::atomic<Rect2fPOD> relativeTimeRect{Rect2fPOD()};
 
     /* The bounding rectangle of the "TIME" label on the original frame. */

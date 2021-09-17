@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <numeric>
 #include <cctype>
-#include <opencv2/imgcodecs.hpp>
 
 
 namespace SonicVisualSplitBase {

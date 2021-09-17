@@ -28,13 +28,13 @@ TimeRecognizer::~TimeRecognizer() {
 
 std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         (cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result) {
-    if (shouldResetDigitsPlacement) {
-        resetDigitsPlacementSync();
-        shouldResetDigitsPlacement = false;
+    if (shouldResetDigitsPositions) {
+        resetDigitsPositionsSync();
+        shouldResetDigitsPositions = false;
     }
 
     if (frame.size() != lastFrameSize) {
-        resetDigitsPlacementSync();
+        resetDigitsPositionsSync();
         lastFrameSize = frame.size();
     }
     prevDigitsRect = digitsRect;
@@ -99,11 +99,11 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
 
 void TimeRecognizer::resetDigitsPositions() {
     // Digits placement will be reset on the next call to recognizeTime.
-    shouldResetDigitsPlacement = true;
+    shouldResetDigitsPositions = true;
 }
 
 
-void TimeRecognizer::resetDigitsPlacementSync() {
+void TimeRecognizer::resetDigitsPositionsSync() {
     bestScale = -1;
     digitsRect = {0, 0, 0, 0};
 }

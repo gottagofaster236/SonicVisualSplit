@@ -84,7 +84,7 @@ private:
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
 
-    void resetDigitsPlacementSync();
+    void resetDigitsPositionsSync();
 
     // Returns the global minimum acceptable similarity of a symbol.
     double getGlobalMinSimilarity(char symbol) const;
@@ -161,8 +161,8 @@ private:
     // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
-    // Flag for resetDigitsPlacementAsync().
-    std::atomic<bool> shouldResetDigitsPlacement{false};
+    // Flag for resetDigitsPositionsAsync().
+    std::atomic<bool> shouldResetDigitsPositions{false};
 
     // The split index that LiveSplit is currently at.
     int currentSplitIndex = -1;

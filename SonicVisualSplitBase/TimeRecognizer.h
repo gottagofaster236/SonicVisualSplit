@@ -121,42 +121,40 @@ private:
     
     const AnalysisSettings settings;
 
-    // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
-    std::atomic<double> bestScale{-1};
+    /* cv::Rect is not trivially copyable, and thus 
+     * it's not possible to create std::atomic of it. */
+    template <class T>
+    struct RectPOD {
+        T x, y, width, height;
 
-    bool recalculatedBestScaleLastTime;
+        RectPOD() : x(0), y(0), width(0), height(0) {}
 
-    /* The rectangle where the time digits are located (i.e. we don't search the whole frame).
-     * (This rectangle is valid after the frame has been scaled down to bestScale). */
-    cv::Rect digitsRect;
+        RectPOD(cv::Rect_<T> rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {}
 
-    // Needed in case if score screen check fails.
-    cv::Rect prevDigitsRect;
-
-    /* cv::Rect2f is not trivially copyable, and thus 
-     * it's not possible to create std::atomic<cv::Rect2f>. */
-    struct Rect2fPOD {  
-        float x, y, width, height;
-
-        Rect2fPOD() : x(0), y(0), width(0), height(0) {}
-
-        Rect2fPOD(cv::Rect2f rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {}
-
-        operator cv::Rect2f() { return {x, y, width, height}; }
+        operator cv::Rect_<T>() { return {x, y, width, height}; }
     };
 
-    /* The rectangle where the time digits were located last time,
-     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
-     * Unlike digitsRect, it's never reset, so that it's possible to estimate
-     * the position of time digits ROI almost all the time. */
-    std::atomic<Rect2fPOD> relativeTimeRect{Rect2fPOD()};
+    struct DigitsLocations {
+        /* Scale of the image which matches the templates(i.e.digits) the best.
+         * -1, if not calculated yet. */
+        double bestScale = -1;
 
-    /* The bounding rectangle of the "TIME" label on the original frame. */
-    cv::Rect2f timeRect;
+        /* The rectangle where the time digits are located
+         * after the frame has been scaled down to bestScale. */
+        cv::Rect digitsRect;
 
-    std::chrono::steady_clock::time_point relativeTimeRectUpdatedTime;
+        /* The bounding rectangle of the "TIME" label
+         * after the frame has been scaled down to bestScale. */
+        cv::Rect2f timeRect;
 
-    cv::Size lastFrameSize;
+        cv::Size frameSize;
+
+        long long frameTime;
+    };
+
+    DigitsLocations digitsLocations;
+
+    DigitsLocations lastSuccessfulDigitsLocations;
 
     // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
@@ -174,8 +172,7 @@ private:
         void onSourceChanged() const override;
     private:
         TimeRecognizer& timeRecognizer;
-    };
-    OnSourceChangedListenerImpl onSourceChangedListener;
+    } onSourceChangedListener;
 };
 
 }  // namespace SonicVisualSplitBase

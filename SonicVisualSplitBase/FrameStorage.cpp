@@ -13,7 +13,6 @@
 #include <sstream>
 #define NOMINMAX
 #include "Windows.h"
-#include <type_traits>
 using namespace std::chrono;
 
 

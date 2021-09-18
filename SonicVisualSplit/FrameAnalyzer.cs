@@ -90,12 +90,12 @@ namespace SonicVisualSplit
         {
             lock (frameAnalysisLock)
             {
-                long lastFrameTime = GetLastSavedFrameTime();
-                if (lastFrameTime == long.MinValue)
-                { 
-                    // Couldn't get the last frame time.
+                savedFrameTimes = GetSavedFrameTimes();
+                if (!savedFrameTimes.Any())
+                {
                     return;
                 }
+                long lastFrameTime = savedFrameTimes.Last();
                 
                 bool visualize;
                 lock (resultConsumers)
@@ -161,20 +161,21 @@ namespace SonicVisualSplit
             }
         }
 
-        // Returns the last saved frame time, or long.MinValue on error.
-        private long GetLastSavedFrameTime()
+        /* Gets the list of the times of saved frames, or an empty list in case of error.
+         * This function is thread-safe. */
+        private List<long> GetSavedFrameTimes()
         {
-            savedFrameTimes = FrameStorage.GetSavedFramesTimes();
-            if (savedFrameTimes.Count == 0)
+            List<long> savedFrameTimes = FrameStorage.GetSavedFramesTimes();
+            if (!savedFrameTimes.Any())
             {
-                return long.MinValue;
+                return savedFrameTimes;
             }
             long lastFrameTime = savedFrameTimes.Last();
 
             if (ShouldWaitAfterReset(lastFrameTime))
             {
                 FrameStorage.DeleteAllSavedFrames();
-                return long.MinValue;
+                return new List<long>();
             }
 
             if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
@@ -182,9 +183,10 @@ namespace SonicVisualSplit
                 /* The frames are not saved if there are too many saved already (to prevent an OOM).
                  * In this case we unfortunately have to delete the old frames, even if we need them. */
                 FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+                return new List<long> { lastFrameTime };
             }
 
-            return lastFrameTime;
+            return savedFrameTimes;
         }
 
         private void CheckIfNextStageStarted(AnalysisResult result, bool checkedForScoreScreen)

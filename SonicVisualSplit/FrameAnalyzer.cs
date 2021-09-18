@@ -161,8 +161,7 @@ namespace SonicVisualSplit
             }
         }
 
-        /* Gets the list of the times of saved frames, or an empty list in case of error.
-         * This function is thread-safe. */
+        // Gets the list of the times of saved frames, or an empty list in case of error.
         private List<long> GetSavedFrameTimes()
         {
             List<long> savedFrameTimes = FrameStorage.GetSavedFramesTimes();

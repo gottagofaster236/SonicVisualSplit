@@ -64,8 +64,10 @@ namespace SonicVisualSplit
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellableLoopTask frameAnalysisTask;
-        private static readonly TimeSpan ANALYZE_FRAME_PERIOD = TimeSpan.FromMilliseconds(200);
-    
+        private static readonly TimeSpan FRAME_ANALYSIS_PERIOD = TimeSpan.FromMilliseconds(200);
+        private CancellableLoopTask resetCheckTask;
+        private static readonly TimeSpan RESET_CHECK_PERIOD = TimeSpan.FromMilliseconds(200);
+
         private LiveSplitState state;
         private ITimerModel model;
         private volatile int currentSplitIndex;
@@ -83,7 +85,8 @@ namespace SonicVisualSplit
             UnpackTemplatesArrayIfNeeded();
 
             StartObservingCurrentSplitIndex();
-            frameAnalysisTask = new CancellableLoopTask(AnalyzeFrame, ANALYZE_FRAME_PERIOD);
+            frameAnalysisTask = new CancellableLoopTask(AnalyzeFrame, FRAME_ANALYSIS_PERIOD);
+            resetCheckTask = new CancellableLoopTask(CheckForReset, RESET_CHECK_PERIOD);
         }
 
         private void AnalyzeFrame()
@@ -158,6 +161,19 @@ namespace SonicVisualSplit
 
                 previousResult = result;
                 FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+            }
+        }
+
+        private void CheckForReset()
+        {
+            if (currentSplitIndex == -1)
+            {
+                // Run is not started, no point in checking for reset.
+                return;
+            }
+            else if (nativeFrameAnalyzer.CheckForResetScreen())
+            {
+                RunOnUiThreadAsync(() => model.Reset(updateSplits: true));
             }
         }
 
@@ -542,11 +558,13 @@ namespace SonicVisualSplit
 
             FrameStorage.StartSavingFrames();
             frameAnalysisTask.Start();
+            resetCheckTask.Start();
         }
 
         private void StopAnalyzingFrames()
         {
             frameAnalysisTask.Stop();
+            resetCheckTask.Stop();
 
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();

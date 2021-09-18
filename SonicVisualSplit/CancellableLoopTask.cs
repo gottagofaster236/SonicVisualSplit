@@ -20,7 +20,7 @@ namespace SonicVisualSplit
         public void Start()
         {
             shouldBeRunning = true;
-            taskThread = new Thread(new ThreadStart(() =>
+            taskThread = new Thread(() =>
             {
                 while (shouldBeRunning)
                 {
@@ -33,7 +33,7 @@ namespace SonicVisualSplit
                         Thread.Sleep(waitTime);
                     }
                 }
-            }));
+            });
             taskThread.Start();
         }
 

@@ -26,7 +26,7 @@ public:
      * Should be up-to-date upon calling analyzeFrame(). */
     void reportCurrentSplitIndex(int currentSplitIndex);
 
-    bool checkForResetScreen(long long frameTime);
+    bool checkForResetScreen();
 
     // This header is included by C++/CLI, which doesn't have <mutex>.
     void lockFrameAnalysisMutex();
@@ -34,7 +34,7 @@ public:
     void unlockFrameAnalysisMutex();
 
 private:
-    cv::UMat getSavedFrame(long long frameTime);
+    cv::UMat reduceFrameSize(cv::UMat frame);
 
     cv::UMat fixAspectRatioIfNeeded(cv::UMat frame);
 

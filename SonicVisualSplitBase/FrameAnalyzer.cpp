@@ -31,13 +31,13 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     result.frameTime = frameTime;
     result.recognizedTime = false;
 
-    cv::UMat originalFrame = getSavedFrame(frameTime);
-    if (originalFrame.cols == 0 || originalFrame.rows == 0) {
+    cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
+    originalFrame = reduceFrameSize(originalFrame);
+    if (originalFrame.empty()) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
     cv::UMat frame = fixAspectRatioIfNeeded(originalFrame);
-    bool resetScreenCheckResult = checkForResetScreen(frameTime);
     
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
@@ -60,15 +60,19 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
-bool FrameAnalyzer::checkForResetScreen(long long frameTime) {
+bool FrameAnalyzer::checkForResetScreen() {
     std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
 
     double bestScale = timeRecognizer.getBestScale();
     if (bestScale == -1)
         return false;
 
-    cv::UMat frame = getSavedFrame(frameTime);
+    cv::UMat frame = FrameStorage::getLastSavedFrame();
+    frame = reduceFrameSize(frame);
+    if (frame.empty())
+        return false;
     frame = fixAspectRatioIfNeeded(frame);
+
     cv::resize(frame, frame, {}, bestScale, bestScale, cv::INTER_AREA);
     cv::Rect timeRect = timeRecognizer.getTimeRectForFrameSize(frame.size());
     int height = timeRect.height;
@@ -116,15 +120,12 @@ void FrameAnalyzer::unlockFrameAnalysisMutex() {
 }
 
 
-cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
-    cv::UMat frame = FrameStorage::getSavedFrame(frameTime);
-
+cv::UMat FrameAnalyzer::reduceFrameSize(cv::UMat frame) {
     // Make sure the frame isn't too large (that'll slow down the calculations).
     if (frame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
         double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
         cv::resize(frame, frame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
     }
-
     return frame;
 }
 

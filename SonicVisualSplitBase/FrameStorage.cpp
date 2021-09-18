@@ -23,10 +23,10 @@ namespace FrameStorage {
  * It is crucial to use cv::Mat instead of cv::UMat here,
  * because saving frames in VRAM can cause the program to get out of VRAM and start corrupting itself. */
 static std::map<long long, cv::Mat> savedRawFrames;
-static yamc::fair::mutex savedRawFramesMutex;
+static yamc::fair::recursive_mutex savedRawFramesMutex;
 
 static std::unique_ptr<GameVideoCapture> gameVideoCapture = std::make_unique<NullCapture>();
-static yamc::fair::mutex gameVideoCaptureMutex;
+static yamc::fair::recursive_mutex gameVideoCaptureMutex;
 static int currentVideoSourceIndex;
 
 static std::jthread framesThread;
@@ -46,7 +46,7 @@ void startSavingFrames() {
         while (!stopToken.stop_requested()) {
             steady_clock::time_point startTime = steady_clock::now(), nextIteration;
             {
-                std::lock_guard<yamc::fair::mutex> guard(gameVideoCaptureMutex);
+                std::lock_guard<yamc::fair::recursive_mutex> guard(gameVideoCaptureMutex);
                 saveOneFrame();
                 nextIteration = startTime + gameVideoCapture->getDelayAfterLastFrame();
             }
@@ -63,7 +63,7 @@ void startSavingFrames() {
 
 
 void saveOneFrame() {
-    std::lock_guard<yamc::fair::mutex> guard(savedRawFramesMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard(savedRawFramesMutex);
 
     if (savedRawFrames.size() == MAX_CAPACITY)
         return;
@@ -92,7 +92,7 @@ void elevateFramesThreadPriority() {
 std::vector<long long> getSavedFramesTimes() {
     std::vector<long long> savedFramesTimes;
     {
-        std::lock_guard<yamc::fair::mutex> guard(savedRawFramesMutex);
+        std::lock_guard<yamc::fair::recursive_mutex> guard(savedRawFramesMutex);
         for (const auto& [frameTime, frame] : savedRawFrames)
             savedFramesTimes.push_back(frameTime);
     }
@@ -101,8 +101,8 @@ std::vector<long long> getSavedFramesTimes() {
 
 
 cv::UMat getSavedFrame(long long frameTime) {
-    std::lock_guard<yamc::fair::mutex> guard1(gameVideoCaptureMutex);
-    std::lock_guard<yamc::fair::mutex> guard2(savedRawFramesMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard1(gameVideoCaptureMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard2(savedRawFramesMutex);
     
     // Return an empty UMat if no capture is specified.
     if (!gameVideoCapture)
@@ -116,8 +116,20 @@ cv::UMat getSavedFrame(long long frameTime) {
 }
 
 
+cv::UMat getLastSavedFrame() {
+    // Locking beforehand to avoid the race condition.
+    std::lock_guard<yamc::fair::recursive_mutex> guard1(gameVideoCaptureMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard2(savedRawFramesMutex);
+
+    if (savedRawFrames.empty())
+        return {};
+    long long lastSavedFrame = savedRawFrames.rbegin()->first;
+    return getSavedFrame(lastSavedFrame);
+}
+
+
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime) {
-    std::lock_guard<yamc::fair::mutex> guard(savedRawFramesMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard(savedRawFramesMutex);
     /* Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime).
      * std::map is sorted by key (i.e. frame time). */
     savedRawFrames.erase(savedRawFrames.lower_bound(beginFrameTime), savedRawFrames.lower_bound(endFrameTime));
@@ -154,7 +166,7 @@ static void callOnSourceChangedCallbacks() {
 
 
 void setVideoCapture(int sourceIndex) {
-    std::lock_guard<yamc::fair::mutex> guard(gameVideoCaptureMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard(gameVideoCaptureMutex);
 
     if (currentVideoSourceIndex == sourceIndex) {
         // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
@@ -164,7 +176,7 @@ void setVideoCapture(int sourceIndex) {
 
     /* We've changed the capture, now the previous frames are now useless
      * (since the processFrame function is different). */
-    std::lock_guard<yamc::fair::mutex> guard2(savedRawFramesMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard2(savedRawFramesMutex);
     savedRawFrames.clear();
     callOnSourceChangedCallbacks();
 

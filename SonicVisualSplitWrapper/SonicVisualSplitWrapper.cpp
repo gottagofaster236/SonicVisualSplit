@@ -110,9 +110,8 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 }
 
 
-Boolean FrameAnalyzer::CheckForResetScreen(Int64 frameTime)
-{
-    return getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->checkForResetScreen(frameTime);
+Boolean FrameAnalyzer::CheckForResetScreen() {
+    return getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr)->checkForResetScreen();
 }
 
 

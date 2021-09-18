@@ -35,6 +35,11 @@ std::vector<long long> getSavedFramesTimes();
  * (2) the frame storage doesn't contain this frame. */
 cv::UMat getSavedFrame(long long frameTime);
 
+/* Same as getSavedFrame().
+ * Used to avoid the race condition when you first get 
+ * the last frame time and **then** call getSavedFrame(frameTime). */
+cv::UMat getLastSavedFrame();
+
 // Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 

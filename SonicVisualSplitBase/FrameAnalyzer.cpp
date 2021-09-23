@@ -100,7 +100,7 @@ bool FrameAnalyzer::checkForResetScreen() {
     double squareDifference;
     cv::minMaxLoc(result, &squareDifference);
     double avgSquareDifference = squareDifference / gameScreen.total();
-    const double maxAvgDifference = 35;  // Allowing the color to deviate by 40 (out of 255).
+    const double maxAvgDifference = 30;  // Allowing the color to deviate by 40 (out of 255).
     return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
 }
 

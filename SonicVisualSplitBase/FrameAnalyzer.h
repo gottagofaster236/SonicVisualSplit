@@ -31,7 +31,9 @@ public:
 private:
     cv::UMat reduceFrameSize(cv::UMat frame);
 
-    cv::UMat fixAspectRatioIfNeeded(cv::UMat frame);
+    cv::UMat fixAspectRatio(cv::UMat frame);
+
+    double getAspectRatioScaleFactor();
 
     bool checkIfFrameIsSingleColor(cv::UMat frame);
 

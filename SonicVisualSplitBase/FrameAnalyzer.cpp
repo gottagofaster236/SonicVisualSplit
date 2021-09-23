@@ -11,9 +11,6 @@
 
 namespace SonicVisualSplitBase {
 
-static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
-
-
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
         settings(settings), timeRecognizer(settings) {
     resetTemplate = settings.loadTemplateImageFromFile('R');
@@ -33,7 +30,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
-    cv::UMat frame = fixAspectRatioIfNeeded(originalFrame);
+    cv::UMat frame = fixAspectRatio(originalFrame);
     
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
@@ -65,7 +62,7 @@ bool FrameAnalyzer::checkForResetScreen() {
     frame = reduceFrameSize(frame);
     if (frame.empty())
         return false;
-    frame = fixAspectRatioIfNeeded(frame);
+    frame = fixAspectRatio(frame);
     if (frame.size() != digitsLocation.frameSize)
         return false;
 
@@ -83,20 +80,11 @@ bool FrameAnalyzer::checkForResetScreen() {
         return false;
 
     cv::UMat gameScreen = frame(gameScreenRect);
-    cv::resize(gameScreen, gameScreen, resetTemplate.size(), 0, 0, cv::INTER_AREA);
-
-    // Cropping the reset template
-    const double borderRatio = 0.1;
-    cv::Size borderSize(
-        (int) (resetTemplate.cols * borderRatio), 
-        (int) (resetTemplate.rows * borderRatio)
-    );
-    cv::Rect cropRect(borderSize, resetTemplate.size() - borderSize * 2);
-    cv::UMat gameScreenCropped = gameScreen(cropRect);
-    cv::UMat resetTemplateCropped = resetTemplate(cropRect);
+    const cv::Size genesisResolution = {320, 224};
+    cv::resize(gameScreen, gameScreen, genesisResolution, 0, 0, cv::INTER_AREA);
 
     cv::UMat result;
-    cv::matchTemplate(gameScreen, resetTemplateCropped, result, cv::TM_SQDIFF);
+    cv::matchTemplate(gameScreen, resetTemplate, result, cv::TM_SQDIFF);
     double squareDifference;
     cv::minMaxLoc(result, &squareDifference);
     double avgSquareDifference = squareDifference / gameScreen.total();
@@ -115,10 +103,22 @@ cv::UMat FrameAnalyzer::reduceFrameSize(cv::UMat frame) {
 }
 
 
-cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
+cv::UMat FrameAnalyzer::fixAspectRatio(cv::UMat frame) {
     if (settings.isStretchedTo16By9 && !frame.empty())
-        cv::resize(frame, frame, {}, scaleFactorTo4By3, 1, cv::INTER_AREA);
+        cv::resize(frame, frame, {}, getAspectRatioScaleFactor(), 1, cv::INTER_AREA);
     return frame;
+}
+
+
+double FrameAnalyzer::getAspectRatioScaleFactor() {
+    const double scaleFactor16by9To4By3 = (4 / 3.) / (16 / 9.);
+    // Genesis' resolution is not actually 4 by 3, so it has to be fixed too.
+    const double scaleFactor4By3ToGenesis = (320 / 224.) / (4 / 3.);
+
+    if (settings.isStretchedTo16By9)
+        return scaleFactor16by9To4By3 * scaleFactor4By3ToGenesis;
+    else
+        return scaleFactor4By3ToGenesis;
 }
 
 
@@ -185,10 +185,11 @@ void FrameAnalyzer::visualizeResult(
         const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame) {
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
+    double aspectRatioScaleFactor = getAspectRatioScaleFactor();
     for (auto match : allMatches) {
         if (settings.isStretchedTo16By9) {
-            match.location.x /= scaleFactorTo4By3;
-            match.location.width /= scaleFactorTo4By3;
+            match.location.x /= aspectRatioScaleFactor;
+            match.location.width /= aspectRatioScaleFactor;
         }
         cv::rectangle(result.visualizedFrame, match.location, cv::Scalar(0, 0, 255), lineThickness);
     }

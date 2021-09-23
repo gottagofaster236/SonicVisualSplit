@@ -11,11 +11,10 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
+#include "TrivialTypes.h"
 
 
 namespace SonicVisualSplitBase {
-
-class FrameAnalyzer;
 
 class TimeRecognizer {
 public:
@@ -39,13 +38,27 @@ public:
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
     void resetDigitsPositions();
 
-    /* Returns the scale of the image which matches the templates (i.e. digits) the best,
-     * or -1, if not calculated yet. This method is thread-safe. */
-    double getBestScale() const;
-    
-    /* Returns the time rect for the frame size. Returns an empty rectangle if not calculated yet.
-     * This method is thread-safe. */
-    cv::Rect getTimeRectForFrameSize(cv::Size frameSize);
+    struct DigitsPositions {
+        /* Scale of the image which matches the templates (i.e.digits) the best.
+         * -1, if not calculated yet. */
+        double bestScale = -1;
+
+        /* The rectangle where the time digits are located
+         * after the frame has been scaled down to bestScale. */
+        RectTrivial digitsRect;
+
+        /* The bounding rectangle of the "TIME" label
+         * after the frame has been scaled down to bestScale. */
+        RectTrivial timeRect;
+
+        // The size of the frame for which the above properties hold true.
+        SizeTrivial frameSize;
+
+        bool isValid() const;
+    };
+
+    // This method is thread-safe.
+    DigitsPositions getLastSuccessfulDigitsPositions();
 
     std::chrono::steady_clock::duration getTimeSinceDigitsPositionsLastUpdated();
 
@@ -121,40 +134,13 @@ private:
     
     const AnalysisSettings settings;
 
-    /* cv::Rect is not trivially copyable, and thus 
-     * it's not possible to create std::atomic of it. */
-    template <class T>
-    struct RectPOD {
-        T x, y, width, height;
+    DigitsPositions curDigitsPositions;
 
-        RectPOD() : x(0), y(0), width(0), height(0) {}
+    bool recalculatedBestScaleLastTime;
 
-        RectPOD(cv::Rect_<T> rect) : x(rect.x), y(rect.y), width(rect.width), height(rect.height) {}
+    std::atomic<DigitsPositions> lastSuccessfulDigitsPositions;
 
-        operator cv::Rect_<T>() { return {x, y, width, height}; }
-    };
-
-    struct DigitsLocations {
-        /* Scale of the image which matches the templates(i.e.digits) the best.
-         * -1, if not calculated yet. */
-        double bestScale = -1;
-
-        /* The rectangle where the time digits are located
-         * after the frame has been scaled down to bestScale. */
-        cv::Rect digitsRect;
-
-        /* The bounding rectangle of the "TIME" label
-         * after the frame has been scaled down to bestScale. */
-        cv::Rect2f timeRect;
-
-        cv::Size frameSize;
-
-        long long frameTime;
-    };
-
-    DigitsLocations digitsLocations;
-
-    DigitsLocations lastSuccessfulDigitsLocations;
+    std::chrono::steady_clock::time_point lastRecognitionSuccessTime;
 
     // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;

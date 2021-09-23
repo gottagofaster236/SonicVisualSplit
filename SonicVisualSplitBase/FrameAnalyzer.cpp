@@ -63,8 +63,8 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 bool FrameAnalyzer::checkForResetScreen() {
     std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
 
-    double bestScale = timeRecognizer.getBestScale();
-    if (bestScale == -1)
+    auto digitsPositions = timeRecognizer.getLastSuccessfulDigitsPositions();
+    if (!digitsPositions.isValid())
         return false;
 
     cv::UMat frame = FrameStorage::getLastSavedFrame();
@@ -72,16 +72,17 @@ bool FrameAnalyzer::checkForResetScreen() {
     if (frame.empty())
         return false;
     frame = fixAspectRatioIfNeeded(frame);
+    if (frame.size() != digitsPositions.frameSize)
+        return false;
 
-    cv::resize(frame, frame, {}, bestScale, bestScale, cv::INTER_AREA);
-    cv::Rect timeRect = timeRecognizer.getTimeRectForFrameSize(frame.size());
-    int height = timeRect.height;
+    cv::resize(frame, frame, {}, digitsPositions.bestScale, digitsPositions.bestScale, cv::INTER_AREA);
+    const cv::Rect& timeRect = digitsPositions.timeRect;
 
     cv::Rect gameScreenRect = {
-        (int) (timeRect.x - height / 11. * 17.),
-        (int) (timeRect.y - height / 11. * 25.),
-        (int) (height / 11. * 320.),
-        (int) (height / 11. * 224.)
+        (int) (timeRect.x - timeRect.height / 11. * 17.),
+        (int) (timeRect.y - timeRect.height / 11. * 25.),
+        (int) (timeRect.height / 11. * 320.),
+        (int) (timeRect.height / 11. * 224.)
     };
     gameScreenRect &= cv::Rect({}, frame.size());
     if (gameScreenRect.empty())
@@ -143,10 +144,15 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
         // The rectangle is outdated now.
         return false;
     }
-    cv::Rect timeRect = timeRecognizer.getTimeRectForFrameSize(frame.size());
-    cv::Rect checkRect = timeRect;
+    auto digitsPositions = timeRecognizer.getLastSuccessfulDigitsPositions();
+    if (!digitsPositions.isValid() || digitsPositions.frameSize != frame.size())
+        return false;
+    const auto& bestScale = digitsPositions.bestScale;
+    const auto& timeRect = digitsPositions.timeRect;
+    cv::Rect checkRect = {(int) (timeRect.x / bestScale), (int) (timeRect.y / bestScale),
+        (int) (timeRect.width / bestScale), (int) (timeRect.height / bestScale)};
     // Extending the checked area.
-    checkRect.width += timeRect.height * 3;
+    checkRect.width += checkRect.height * 3;
     checkRect.height *= 2;
     checkRect &= cv::Rect({0, 0}, frame.size());  // Make sure checkRect is not out of bounds.
     if (checkRect.empty())

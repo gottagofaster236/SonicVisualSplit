@@ -16,7 +16,8 @@ namespace SonicVisualSplit
     public class FrameAnalyzer : IDisposable
     {
         private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
-        private object frameAnalysisLock = new object();
+        private ReaderWriterLock nativeFrameAnalyzerLock = new ReaderWriterLock();
+        // Not using ReaderWriterLockSlim to guarantee fairness.
 
         /* All times are in milliseconds (since a certain time point).
          * A segment (not to be confused with LiveSplit's segment) is a continuous timespan of gameplay,
@@ -77,7 +78,7 @@ namespace SonicVisualSplit
         {
             this.state = state;
             model = new TimerModel() { CurrentState = state };
-            
+
             this.settings = settings;
             this.settings.FrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
@@ -91,7 +92,8 @@ namespace SonicVisualSplit
 
         private void AnalyzeFrame()
         {
-            lock (frameAnalysisLock)
+            nativeFrameAnalyzerLock.AcquireReaderLock(Timeout.Infinite);
+            try
             {
                 savedFrameTimes = GetSavedFrameTimes();
                 if (!savedFrameTimes.Any())
@@ -99,7 +101,7 @@ namespace SonicVisualSplit
                     return;
                 }
                 long lastFrameTime = savedFrameTimes.Last();
-                
+
                 bool visualize;
                 lock (resultConsumers)
                 {
@@ -141,7 +143,7 @@ namespace SonicVisualSplit
                 {
                     CheckIfFrameIsAfterTransition(result);
                     if (!result.IsSuccessful())
-                    { 
+                    {
                         // CheckIfFrameIsAfterTransition checks the analysis result.
                         return;
                     }
@@ -162,6 +164,10 @@ namespace SonicVisualSplit
                 previousResult = result;
                 FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
             }
+            finally
+            {
+                nativeFrameAnalyzerLock.ReleaseReaderLock();
+            }
         }
 
         private void CheckForReset()
@@ -171,9 +177,17 @@ namespace SonicVisualSplit
                 // Run is not started, no point in checking for reset.
                 return;
             }
-            else if (nativeFrameAnalyzer.CheckForResetScreen())
+            nativeFrameAnalyzerLock.AcquireReaderLock(Timeout.Infinite);
+            try
             {
-                RunOnUiThreadAsync(() => model.Reset(updateSplits: true));
+                if (nativeFrameAnalyzer.CheckForResetScreen())
+                {
+                    RunOnUiThreadAsync(() => model.Reset(updateSplits: true));
+                }
+            }
+            finally
+            {
+                nativeFrameAnalyzerLock.ReleaseReaderLock();
             }
         }
 
@@ -584,7 +598,8 @@ namespace SonicVisualSplit
         {
             bool haveToStopAnalyzingFrames = false;
 
-            lock (frameAnalysisLock)
+            nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
+            try
             {
                 if (!settings.IsPracticeMode)
                 {
@@ -609,6 +624,10 @@ namespace SonicVisualSplit
                     haveToStopAnalyzingFrames = true;
                     // Stopping the thread outside of the lock
                 }
+            }
+            finally
+            {
+                nativeFrameAnalyzerLock.ReleaseWriterLock();
             }
 
             if (haveToStopAnalyzingFrames)
@@ -654,7 +673,8 @@ namespace SonicVisualSplit
 
             Task.Run(() =>
             {
-                lock (frameAnalysisLock)
+                nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
+                try
                 {
                     // IsGameTimePaused is reset too, bring it back to true.
                     state.IsGameTimePaused = true;
@@ -671,6 +691,10 @@ namespace SonicVisualSplit
                     needToConfirmFirstFrameOfSegment = false;
                     ingameTimerOnLastScoreCheck = -1;
                     frameBeforeTransition = null;
+                }
+                finally
+                {
+                    nativeFrameAnalyzerLock.ReleaseWriterLock();
                 }
             });
         }

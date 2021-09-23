@@ -64,7 +64,7 @@ public:
 
     void ReportCurrentSplitIndex(int currentSplitIndex);
 
-    void ResetDigitsPositions();
+    void ResetDigitsLocation();
 
 private:
     FrameAnalyzer(AnalysisSettings^ settings);

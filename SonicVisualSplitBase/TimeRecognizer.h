@@ -36,9 +36,9 @@ public:
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
-    void resetDigitsPositions();
+    void resetDigitsLocation();
 
-    struct DigitsPositions {
+    struct DigitsLocation {
         /* Scale of the image which matches the templates (i.e.digits) the best.
          * -1, if not calculated yet. */
         double bestScale = -1;
@@ -58,9 +58,9 @@ public:
     };
 
     // This method is thread-safe.
-    DigitsPositions getLastSuccessfulDigitsPositions();
+    DigitsLocation getLastSuccessfulDigitsLocation();
 
-    std::chrono::steady_clock::duration getTimeSinceDigitsPositionsLastUpdated();
+    std::chrono::steady_clock::duration getTimeSinceDigitsLocationLastUpdated();
 
     /* Reports the current LiveSplit split index.
      * Should be up-to-date upon calling recognizeTime(). */
@@ -97,7 +97,7 @@ private:
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
 
-    void resetDigitsPositionsSync();
+    void resetDigitsLocationSync();
 
     // Returns the global minimum acceptable similarity of a symbol.
     double getGlobalMinSimilarity(char symbol) const;
@@ -134,19 +134,19 @@ private:
     
     const AnalysisSettings settings;
 
-    DigitsPositions curDigitsPositions;
+    DigitsLocation curDigitsLocation;
 
     bool recalculatedBestScaleLastTime;
 
-    std::atomic<DigitsPositions> lastSuccessfulDigitsPositions;
+    std::atomic<DigitsLocation> lastSuccessfulDigitsLocation;
 
     std::chrono::steady_clock::time_point lastRecognitionSuccessTime;
 
     // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
-    // Flag for resetDigitsPositionsAsync().
-    std::atomic<bool> shouldResetDigitsPositions{false};
+    // Flag for resetDigitsLocationAsync().
+    std::atomic<bool> shouldResetDigitsLocation{false};
 
     // The split index that LiveSplit is currently at.
     int currentSplitIndex = -1;

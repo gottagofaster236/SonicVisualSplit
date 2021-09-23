@@ -28,20 +28,20 @@ TimeRecognizer::~TimeRecognizer() {
 
 std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         (cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result) {
-    if (shouldResetDigitsPositions) {
-        resetDigitsPositionsSync();
-        shouldResetDigitsPositions = false;
+    if (shouldResetDigitsLocation) {
+        resetDigitsLocationSync();
+        shouldResetDigitsLocation = false;
     }
 
-    if (frame.size() != curDigitsPositions.frameSize) {
-        resetDigitsPositionsSync();
-        curDigitsPositions.frameSize = frame.size();
+    if (frame.size() != curDigitsLocation.frameSize) {
+        resetDigitsLocationSync();
+        curDigitsLocation.frameSize = frame.size();
     }
 
     std::vector<Match> allMatches;
 
-    if (curDigitsPositions.isValid()) {
-        cv::resize(frame, frame, {}, curDigitsPositions.bestScale, curDigitsPositions.bestScale);
+    if (curDigitsLocation.isValid()) {
+        cv::resize(frame, frame, {}, curDigitsLocation.bestScale, curDigitsLocation.bestScale);
         recalculatedBestScaleLastTime = false;
     }
     else {
@@ -50,14 +50,14 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
     }
     if (checkForScoreScreen) {
         std::vector<Match> labels = findLabelsAndUpdateDigitsRect(frame);
-        if (curDigitsPositions.digitsRect.empty())
-            curDigitsPositions.digitsRect = lastSuccessfulDigitsPositions.load().digitsRect;
-        if (!curDigitsPositions.isValid()) {
+        if (curDigitsLocation.digitsRect.empty())
+            curDigitsLocation.digitsRect = lastSuccessfulDigitsLocation.load().digitsRect;
+        if (!curDigitsLocation.isValid()) {
             onRecognitionFailure(result);
             return allMatches;
         }
         if (recalculatedBestScaleLastTime)
-            cv::resize(frame, frame, {}, curDigitsPositions.bestScale, curDigitsPositions.bestScale);
+            cv::resize(frame, frame, {}, curDigitsLocation.bestScale, curDigitsLocation.bestScale);
         result.isScoreScreen = doCheckForScoreScreen(labels, frame.rows);
         allMatches.insert(allMatches.end(), labels.begin(), labels.end());
     }
@@ -74,8 +74,8 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
 
         for (Match& match : matches) {
             // The frame is cropped to digitsRect to speed up the search. Now we have to compensate for that.
-            match.location += cv::Point2f((float) (curDigitsPositions.digitsRect.x / curDigitsPositions.bestScale),
-                (float) (curDigitsPositions.digitsRect.y / curDigitsPositions.bestScale));
+            match.location += cv::Point2f((float) (curDigitsLocation.digitsRect.x / curDigitsLocation.bestScale),
+                (float) (curDigitsLocation.digitsRect.y / curDigitsLocation.bestScale));
         }
         digitMatches.insert(digitMatches.end(), matches.begin(), matches.end());
     }
@@ -97,18 +97,18 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
 }
 
 
-void TimeRecognizer::resetDigitsPositions() {
+void TimeRecognizer::resetDigitsLocation() {
     // Digits placement will be reset on the next call to recognizeTime.
-    shouldResetDigitsPositions = true;
+    shouldResetDigitsLocation = true;
 }
 
-bool TimeRecognizer::DigitsPositions::isValid() const {
+bool TimeRecognizer::DigitsLocation::isValid() const {
     return bestScale != -1 && !digitsRect.empty();
 }
 
 
-void TimeRecognizer::resetDigitsPositionsSync() {
-    curDigitsPositions = DigitsPositions();
+void TimeRecognizer::resetDigitsLocationSync() {
+    curDigitsLocation = DigitsLocation();
 }
 
 
@@ -117,16 +117,16 @@ TimeRecognizer::OnSourceChangedListenerImpl::OnSourceChangedListenerImpl(TimeRec
 
 
 void TimeRecognizer::OnSourceChangedListenerImpl::onSourceChanged() const {
-    timeRecognizer.resetDigitsPositions();
+    timeRecognizer.resetDigitsLocation();
 }
 
 
-TimeRecognizer::DigitsPositions TimeRecognizer::getLastSuccessfulDigitsPositions(){
-    return lastSuccessfulDigitsPositions;
+TimeRecognizer::DigitsLocation TimeRecognizer::getLastSuccessfulDigitsLocation(){
+    return lastSuccessfulDigitsLocation;
 }
 
 
-std::chrono::steady_clock::duration TimeRecognizer::getTimeSinceDigitsPositionsLastUpdated() {
+std::chrono::steady_clock::duration TimeRecognizer::getTimeSinceDigitsLocationLastUpdated() {
     return std::chrono::steady_clock::now() - lastRecognitionSuccessTime;
 }
 
@@ -139,7 +139,7 @@ void TimeRecognizer::reportCurrentSplitIndex(int currentSplitIndex) {
 std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(cv::UMat frame) {
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter = convertFrameToGray(frame, true);
-    bool recalculateBestScale = (curDigitsPositions.bestScale == -1);
+    bool recalculateBestScale = (curDigitsLocation.bestScale == -1);
     recalculatedBestScaleLastTime = recalculateBestScale;
     std::vector<Match> timeMatches = findSymbolLocations(frameWithYellowFilter, TIME, recalculateBestScale);
     if (timeMatches.empty())
@@ -151,7 +151,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect
     if (recalculateBestScale) {
         // bestScale is calculated already after we found "TIME".
         cv::resize(frameWithYellowFilter, frameWithYellowFilter, {},
-            curDigitsPositions.bestScale, curDigitsPositions.bestScale, cv::INTER_AREA);
+            curDigitsLocation.bestScale, curDigitsLocation.bestScale, cv::INTER_AREA);
     }
     std::vector<Match> scoreMatches = findSymbolLocations(frameWithYellowFilter, SCORE, false);
     if (scoreMatches.empty())
@@ -182,7 +182,7 @@ bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
     for (int i = 0; i + 1 < digitMatches.size(); i++) {
         const cv::Rect2f& prevLocation = digitMatches[i].location, nextLocation = digitMatches[i + 1].location;
         double interval = ((nextLocation.x + nextLocation.width) -
-            (prevLocation.x + prevLocation.width)) * curDigitsPositions.bestScale;
+            (prevLocation.x + prevLocation.width)) * curDigitsLocation.bestScale;
 
         if (i == 0 || i == 2) {
             /* Checking that separators (:, ' and ") aren't detected as digits.
@@ -289,7 +289,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
 
 
 void TimeRecognizer::onRecognitionSuccess() {
-    lastSuccessfulDigitsPositions = curDigitsPositions;
+    lastSuccessfulDigitsLocation = curDigitsLocation;
     lastRecognitionSuccessTime = std::chrono::steady_clock::now();
 }
 
@@ -298,18 +298,18 @@ void TimeRecognizer::onRecognitionFailure(AnalysisResult& result) {
     result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
     if (recalculatedBestScaleLastTime) {
         // We recalculated everything but failed. Make sure those results aren't saved.
-        resetDigitsPositions();
+        resetDigitsLocation();
     }
     else {
-        curDigitsPositions = lastSuccessfulDigitsPositions;
+        curDigitsLocation = lastSuccessfulDigitsLocation;
     }
 }
 
 
 void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
     cv::Rect2f timeRectScaled = findTopTimeLabel(labels).location;
-    const double& bestScale = curDigitsPositions.bestScale;
-    auto& timeRect = curDigitsPositions.timeRect;
+    const double& bestScale = curDigitsLocation.bestScale;
+    auto& timeRect = curDigitsLocation.timeRect;
     timeRect = {(int) (timeRectScaled.x * bestScale), (int) (timeRectScaled.y * bestScale),
         (int) (timeRectScaled.width * bestScale), (int) (timeRectScaled.height * bestScale)};
     double rightBorderCoefficient = (settings.gameName == "Sonic CD" ? 3.2 : 2.45);
@@ -317,7 +317,7 @@ void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
     int digitsRectRight = (int) (timeRect.x + timeRect.width * rightBorderCoefficient);
     int digitsRectTop = (int) (timeRect.y - timeRect.height * 0.1);
     int digitsRectBottom = (int) (timeRect.y + timeRect.height * 1.1);
-    curDigitsPositions.digitsRect = {digitsRectLeft, digitsRectTop,
+    curDigitsLocation.digitsRect = {digitsRectLeft, digitsRectTop,
         digitsRectRight - digitsRectLeft, digitsRectBottom - digitsRectTop};
 }
 
@@ -380,7 +380,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
             double bestSimilarityForScale = -minimumSqdiff / opaquePixels;
             if (bestSimilarityForScales < bestSimilarityForScale) {
                 bestSimilarityForScales = bestSimilarityForScale;
-                curDigitsPositions.bestScale = scale;
+                curDigitsLocation.bestScale = scale;
             }
             else {
                 // This is not the best scale.
@@ -410,7 +410,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
             }
 
             // The frame is resized to the bestScale, so the match rectangle will be different.
-            const double& bestScale = curDigitsPositions.bestScale;
+            const double& bestScale = curDigitsLocation.bestScale;
             cv::Rect2f matchRect((float) (x / bestScale), (float) (y / bestScale),
                 (float) (templateImage.cols / bestScale), (float) (templateImage.rows / bestScale));
             matches.push_back({matchRect, symbol, similarity});
@@ -454,7 +454,7 @@ void TimeRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
         for (const Match& other : resultSymbolLocations) {
             if (std::isdigit(match.symbol) && std::isdigit(other.symbol)) {
                 if (std::abs(match.location.x + match.location.width -
-                        (other.location.x + other.location.width)) * curDigitsPositions.bestScale < 12) {
+                        (other.location.x + other.location.width)) * curDigitsLocation.bestScale < 12) {
                     intersectsWithOthers = true;
                 }
             }
@@ -483,7 +483,7 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
     std::erase_if(digitMatches, [&](const Match& match) {
         // If the difference in the y coordinates is more than one pixel, we consider it a wrong match.
         return std::abs(match.location.y - bestMatchLocation.y)
-            * curDigitsPositions.bestScale > 1.5;
+            * curDigitsLocation.bestScale > 1.5;
     });
 }
 
@@ -563,7 +563,7 @@ double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
 cv::UMat TimeRecognizer::cropToDigitsRect(cv::UMat frame) {
     // Checking that digitsRect is inside the frame.
     cv::Rect frameRect({0, 0}, frame.size());
-    const cv::Rect& digitsRect = curDigitsPositions.digitsRect;
+    const cv::Rect& digitsRect = curDigitsLocation.digitsRect;
     if ((digitsRect & frameRect) != digitsRect) {
         return {};
     }

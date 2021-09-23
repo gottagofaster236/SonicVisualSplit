@@ -11,8 +11,6 @@
 
 namespace SonicVisualSplitBase {
 
-static std::recursive_mutex frameAnalysisMutex;
-
 static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
 
 
@@ -25,8 +23,6 @@ FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
 
 
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
-
     result = AnalysisResult();
     result.frameTime = frameTime;
     result.recognizedTime = false;
@@ -50,8 +46,8 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 }
 
 
-void FrameAnalyzer::resetDigitsPositions() {
-    timeRecognizer.resetDigitsPositions();
+void FrameAnalyzer::resetDigitsLocation() {
+    timeRecognizer.resetDigitsLocation();
 }
 
 
@@ -61,10 +57,8 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 
 
 bool FrameAnalyzer::checkForResetScreen() {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
-
-    auto digitsPositions = timeRecognizer.getLastSuccessfulDigitsPositions();
-    if (!digitsPositions.isValid())
+    auto digitsLocation = timeRecognizer.getLastSuccessfulDigitsLocation();
+    if (!digitsLocation.isValid())
         return false;
 
     cv::UMat frame = FrameStorage::getLastSavedFrame();
@@ -72,11 +66,11 @@ bool FrameAnalyzer::checkForResetScreen() {
     if (frame.empty())
         return false;
     frame = fixAspectRatioIfNeeded(frame);
-    if (frame.size() != digitsPositions.frameSize)
+    if (frame.size() != digitsLocation.frameSize)
         return false;
 
-    cv::resize(frame, frame, {}, digitsPositions.bestScale, digitsPositions.bestScale, cv::INTER_AREA);
-    const cv::Rect& timeRect = digitsPositions.timeRect;
+    cv::resize(frame, frame, {}, digitsLocation.bestScale, digitsLocation.bestScale, cv::INTER_AREA);
+    const cv::Rect& timeRect = digitsLocation.timeRect;
 
     cv::Rect gameScreenRect = {
         (int) (timeRect.x - timeRect.height / 11. * 17.),
@@ -111,16 +105,6 @@ bool FrameAnalyzer::checkForResetScreen() {
 }
 
 
-void FrameAnalyzer::lockFrameAnalysisMutex() {
-    frameAnalysisMutex.lock();
-}
-
-
-void FrameAnalyzer::unlockFrameAnalysisMutex() {
-    frameAnalysisMutex.unlock();
-}
-
-
 cv::UMat FrameAnalyzer::reduceFrameSize(cv::UMat frame) {
     // Make sure the frame isn't too large (that'll slow down the calculations).
     if (frame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
@@ -140,15 +124,15 @@ cv::UMat FrameAnalyzer::fixAspectRatioIfNeeded(cv::UMat frame) {
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     // Checking a rectangle near the digits rectangle.
-    if (timeRecognizer.getTimeSinceDigitsPositionsLastUpdated() > std::chrono::seconds(10)) {
+    if (timeRecognizer.getTimeSinceDigitsLocationLastUpdated() > std::chrono::seconds(10)) {
         // The rectangle is outdated now.
         return false;
     }
-    auto digitsPositions = timeRecognizer.getLastSuccessfulDigitsPositions();
-    if (!digitsPositions.isValid() || digitsPositions.frameSize != frame.size())
+    auto digitsLocation = timeRecognizer.getLastSuccessfulDigitsLocation();
+    if (!digitsLocation.isValid() || digitsLocation.frameSize != frame.size())
         return false;
-    const auto& bestScale = digitsPositions.bestScale;
-    const auto& timeRect = digitsPositions.timeRect;
+    const auto& bestScale = digitsLocation.bestScale;
+    const auto& timeRect = digitsLocation.timeRect;
     cv::Rect checkRect = {(int) (timeRect.x / bestScale), (int) (timeRect.y / bestScale),
         (int) (timeRect.width / bestScale), (int) (timeRect.height / bestScale)};
     // Extending the checked area.

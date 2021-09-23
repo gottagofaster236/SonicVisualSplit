@@ -19,19 +19,14 @@ public:
 
     AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
 
-    // See TimeRecognizer::resetDigitsPositions.
-    void resetDigitsPositions();
+    // See TimeRecognizer::resetDigitsLocation.
+    void resetDigitsLocation();
 
     /* Reports the current LiveSplit split index.
      * Should be up-to-date upon calling analyzeFrame(). */
     void reportCurrentSplitIndex(int currentSplitIndex);
 
     bool checkForResetScreen();
-
-    // This header is included by C++/CLI, which doesn't have <mutex>.
-    void lockFrameAnalysisMutex();
-
-    void unlockFrameAnalysisMutex();
 
 private:
     cv::UMat reduceFrameSize(cv::UMat frame);

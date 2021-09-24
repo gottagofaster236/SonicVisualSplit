@@ -591,7 +591,7 @@ namespace SonicVisualSplit
         {
             StopAnalyzingFrames();
             StopObservingCurrentSplitIndex();
-            nativeFrameAnalyzer.Dispose();
+            nativeFrameAnalyzer?.Dispose();
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)

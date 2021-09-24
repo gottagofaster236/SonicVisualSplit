@@ -53,6 +53,8 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
+static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ);
+
 bool FrameAnalyzer::checkForResetScreen() {
     auto digitsLocation = timeRecognizer.getLastSuccessfulDigitsLocation();
     if (!digitsLocation.isValid())
@@ -83,13 +85,30 @@ bool FrameAnalyzer::checkForResetScreen() {
     const cv::Size genesisResolution = {320, 224};
     cv::resize(gameScreen, gameScreen, genesisResolution, 0, 0, cv::INTER_AREA);
 
-    cv::UMat result;
-    cv::matchTemplate(gameScreen, resetTemplate, result, cv::TM_SQDIFF);
+    cv::UMat result = matchTemplateWithColor(gameScreen, resetTemplate);
     double squareDifference;
     cv::minMaxLoc(result, &squareDifference);
-    double avgSquareDifference = squareDifference / gameScreen.total();
-    const double maxAvgDifference = 30;  // Allowing the color to deviate by 40 (out of 255).
+    double avgSquareDifference = squareDifference / resetTemplate.total();
+    const double maxAvgDifference = 60;  // Out of 255.
     return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
+}
+
+
+static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ) {
+    std::vector<cv::UMat> imageChannels(3);
+    cv::split(image, imageChannels);
+    std::vector<cv::UMat> templateChannels(3);
+    cv::split(templ, templateChannels);
+    cv::UMat singleChannelResult;
+    cv::UMat result;
+    for (int i = 0; i < 3; i++) {
+        cv::matchTemplate(imageChannels[i], templateChannels[i], singleChannelResult, cv::TM_SQDIFF);
+        if (i == 0)
+            result = singleChannelResult;
+        else
+            cv::add(result, singleChannelResult, result);
+    }
+    return singleChannelResult;
 }
 
 

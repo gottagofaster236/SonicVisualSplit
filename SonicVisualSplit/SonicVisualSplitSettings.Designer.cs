@@ -44,6 +44,7 @@ namespace SonicVisualSplit
             this.togglePracticeModeButton = new System.Windows.Forms.Button();
             this.videoSourceLabel = new System.Windows.Forms.Label();
             this.videoSourceComboBox = new System.Windows.Forms.ComboBox();
+            this.autoResetCheckbox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).BeginInit();
             this.videoConnectorGroup.SuspendLayout();
             this.aspectRatioBox.SuspendLayout();
@@ -65,7 +66,7 @@ namespace SonicVisualSplit
             this.copyrightLabel.AutoSize = true;
             this.copyrightLabel.Location = new System.Drawing.Point(16, 27);
             this.copyrightLabel.Name = "copyrightLabel";
-            this.copyrightLabel.Size = new System.Drawing.Size(259, 17);
+            this.copyrightLabel.Size = new System.Drawing.Size(241, 16);
             this.copyrightLabel.TabIndex = 4;
             this.copyrightLabel.Text = "SonicVisualSplit by gottagofaster, 2021.";
             // 
@@ -74,7 +75,7 @@ namespace SonicVisualSplit
             this.settingsLabel.AutoSize = true;
             this.settingsLabel.Location = new System.Drawing.Point(16, 564);
             this.settingsLabel.Name = "settingsLabel";
-            this.settingsLabel.Size = new System.Drawing.Size(136, 17);
+            this.settingsLabel.Size = new System.Drawing.Size(126, 16);
             this.settingsLabel.TabIndex = 6;
             this.settingsLabel.Text = "Video input settings:";
             // 
@@ -94,7 +95,7 @@ namespace SonicVisualSplit
             this.selectGameLabel.AutoSize = true;
             this.selectGameLabel.Location = new System.Drawing.Point(17, 514);
             this.selectGameLabel.Name = "selectGameLabel";
-            this.selectGameLabel.Size = new System.Drawing.Size(90, 17);
+            this.selectGameLabel.Size = new System.Drawing.Size(86, 16);
             this.selectGameLabel.TabIndex = 10;
             this.selectGameLabel.Text = "Select game:";
             // 
@@ -105,7 +106,7 @@ namespace SonicVisualSplit
             this.compositeButton.Location = new System.Drawing.Point(5, 21);
             this.compositeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.compositeButton.Name = "compositeButton";
-            this.compositeButton.Size = new System.Drawing.Size(117, 21);
+            this.compositeButton.Size = new System.Drawing.Size(115, 20);
             this.compositeButton.TabIndex = 0;
             this.compositeButton.TabStop = true;
             this.compositeButton.Text = "Composite/RF";
@@ -118,7 +119,7 @@ namespace SonicVisualSplit
             this.rgbButton.Location = new System.Drawing.Point(5, 47);
             this.rgbButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.rgbButton.Name = "rgbButton";
-            this.rgbButton.Size = new System.Drawing.Size(59, 21);
+            this.rgbButton.Size = new System.Drawing.Size(57, 20);
             this.rgbButton.TabIndex = 1;
             this.rgbButton.Text = "RGB";
             this.rgbButton.UseVisualStyleBackColor = true;
@@ -131,7 +132,7 @@ namespace SonicVisualSplit
             this.fourByThreeButton.Location = new System.Drawing.Point(7, 21);
             this.fourByThreeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.fourByThreeButton.Name = "fourByThreeButton";
-            this.fourByThreeButton.Size = new System.Drawing.Size(106, 21);
+            this.fourByThreeButton.Size = new System.Drawing.Size(97, 20);
             this.fourByThreeButton.TabIndex = 0;
             this.fourByThreeButton.TabStop = true;
             this.fourByThreeButton.Text = "4:3 (normal)";
@@ -144,7 +145,7 @@ namespace SonicVisualSplit
             this.sixteenByNineButton.Location = new System.Drawing.Point(7, 47);
             this.sixteenByNineButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.sixteenByNineButton.Name = "sixteenByNineButton";
-            this.sixteenByNineButton.Size = new System.Drawing.Size(130, 21);
+            this.sixteenByNineButton.Size = new System.Drawing.Size(118, 20);
             this.sixteenByNineButton.TabIndex = 1;
             this.sixteenByNineButton.Text = "16:9 (stretched)";
             this.sixteenByNineButton.UseVisualStyleBackColor = true;
@@ -168,9 +169,9 @@ namespace SonicVisualSplit
             this.aspectRatioBox.Controls.Add(this.fourByThreeButton);
             this.aspectRatioBox.Controls.Add(this.sixteenByNineButton);
             this.aspectRatioBox.Location = new System.Drawing.Point(340, 564);
-            this.aspectRatioBox.Margin = new System.Windows.Forms.Padding(4);
+            this.aspectRatioBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.aspectRatioBox.Name = "aspectRatioBox";
-            this.aspectRatioBox.Padding = new System.Windows.Forms.Padding(4);
+            this.aspectRatioBox.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.aspectRatioBox.Size = new System.Drawing.Size(172, 75);
             this.aspectRatioBox.TabIndex = 12;
             this.aspectRatioBox.TabStop = false;
@@ -190,8 +191,8 @@ namespace SonicVisualSplit
             // 
             // togglePracticeModeButton
             // 
-            this.togglePracticeModeButton.Location = new System.Drawing.Point(17, 645);
-            this.togglePracticeModeButton.Margin = new System.Windows.Forms.Padding(4);
+            this.togglePracticeModeButton.Location = new System.Drawing.Point(207, 650);
+            this.togglePracticeModeButton.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.togglePracticeModeButton.Name = "togglePracticeModeButton";
             this.togglePracticeModeButton.Size = new System.Drawing.Size(157, 28);
             this.togglePracticeModeButton.TabIndex = 15;
@@ -204,7 +205,7 @@ namespace SonicVisualSplit
             this.videoSourceLabel.AutoSize = true;
             this.videoSourceLabel.Location = new System.Drawing.Point(17, 64);
             this.videoSourceLabel.Name = "videoSourceLabel";
-            this.videoSourceLabel.Size = new System.Drawing.Size(136, 17);
+            this.videoSourceLabel.Size = new System.Drawing.Size(129, 16);
             this.videoSourceLabel.TabIndex = 17;
             this.videoSourceLabel.Text = "Select video source:";
             // 
@@ -218,10 +219,25 @@ namespace SonicVisualSplit
             this.videoSourceComboBox.TabIndex = 16;
             this.videoSourceComboBox.TextChanged += new System.EventHandler(this.OnVideoSourceChanged);
             // 
+            // autoResetCheckbox
+            // 
+            this.autoResetCheckbox.AutoSize = true;
+            this.autoResetCheckbox.Checked = true;
+            this.autoResetCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.autoResetCheckbox.Location = new System.Drawing.Point(20, 655);
+            this.autoResetCheckbox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.autoResetCheckbox.Name = "autoResetCheckbox";
+            this.autoResetCheckbox.Size = new System.Drawing.Size(166, 20);
+            this.autoResetCheckbox.TabIndex = 18;
+            this.autoResetCheckbox.Text = "Enable automatic reset";
+            this.autoResetCheckbox.UseVisualStyleBackColor = true;
+            this.autoResetCheckbox.CheckedChanged += new System.EventHandler(this.OnAutoResetEnabledChanged);
+            // 
             // SonicVisualSplitSettings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.autoResetCheckbox);
             this.Controls.Add(this.videoSourceLabel);
             this.Controls.Add(this.videoSourceComboBox);
             this.Controls.Add(this.togglePracticeModeButton);
@@ -262,5 +278,6 @@ namespace SonicVisualSplit
         private System.Windows.Forms.Button togglePracticeModeButton;
         private System.Windows.Forms.Label videoSourceLabel;
         private System.Windows.Forms.ComboBox videoSourceComboBox;
+        private System.Windows.Forms.CheckBox autoResetCheckbox;
     }
 }

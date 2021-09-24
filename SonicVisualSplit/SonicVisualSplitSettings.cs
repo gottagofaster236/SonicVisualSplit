@@ -14,6 +14,7 @@ namespace SonicVisualSplit
         public bool RGB { get; private set; }
         public bool Stretched { get; private set; }
         public string Game { get; private set; }
+        public bool AutoResetEnabled { get; private set; }
         public bool IsPracticeMode { get; private set; }
 
         public event EventHandler SettingsChanged;
@@ -28,10 +29,11 @@ namespace SonicVisualSplit
             InitializeComponent();
             Disposed += OnDisposed;
 
-            // default values of the settings
+            // Default values of the settings.
             RGB = false;
             Stretched = false;
             Game = "Sonic 1";
+            AutoResetEnabled = true;
 
             gamesComboBox.Items.AddRange(new string[] {
                 "Sonic 1",
@@ -56,7 +58,8 @@ namespace SonicVisualSplit
                 SettingsHelper.CreateSetting(document, parent, "VideoSource", VideoSource) ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
-                SettingsHelper.CreateSetting(document, parent, "Game", Game);
+                SettingsHelper.CreateSetting(document, parent, "Game", Game) ^
+                SettingsHelper.CreateSetting(document, parent, "AutoResetEnabled", AutoResetEnabled);
         }
 
         public void SetSettings(XmlNode settings)
@@ -76,11 +79,14 @@ namespace SonicVisualSplit
             int gameIndex = gamesComboBox.FindStringExact(Game);
             if (gameIndex == -1)
             {
-                // No such game found, the settings are from previous version?
+                // No such game found, the settings are from a previous version?
                 gameIndex = 0;
                 Game = "Sonic 1";
             }
             gamesComboBox.SelectedIndex = gameIndex;
+
+            AutoResetEnabled = SettingsHelper.ParseBool(settings["AutoResetEnabled"], true);
+            autoResetCheckbox.Checked = AutoResetEnabled;
 
             OnSettingsChanged();
         }
@@ -130,6 +136,12 @@ namespace SonicVisualSplit
         private void OnGameChanged(object sender, EventArgs e)
         {
             Game = (string) gamesComboBox.SelectedItem;
+            OnSettingsChanged();
+        }
+
+        private void OnAutoResetEnabledChanged(object sender, EventArgs e)
+        {
+            AutoResetEnabled = autoResetCheckbox.Checked;
             OnSettingsChanged();
         }
 

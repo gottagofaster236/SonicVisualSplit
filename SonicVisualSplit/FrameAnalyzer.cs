@@ -67,7 +67,7 @@ namespace SonicVisualSplit
         private CancellableLoopTask frameAnalysisTask;
         private static readonly TimeSpan FRAME_ANALYSIS_PERIOD = TimeSpan.FromMilliseconds(200);
         private CancellableLoopTask resetCheckTask;
-        private static readonly TimeSpan RESET_CHECK_PERIOD = TimeSpan.FromMilliseconds(200);
+        private static readonly TimeSpan RESET_CHECK_PERIOD = TimeSpan.FromMilliseconds(800);
 
         private LiveSplitState state;
         private ITimerModel model;

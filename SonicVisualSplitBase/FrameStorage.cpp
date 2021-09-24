@@ -85,7 +85,7 @@ void stopSavingFrames() {
 
 void elevateFramesThreadPriority() {
     HANDLE nativeHandle = framesThread.native_handle();
-    SetThreadPriority(nativeHandle, HIGH_PRIORITY_CLASS);
+    SetThreadPriority(nativeHandle, THREAD_PRIORITY_ABOVE_NORMAL);
 }
 
 

@@ -310,8 +310,8 @@ void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
     cv::Rect2f timeRectScaled = findTopTimeLabel(labels).location;
     const double& bestScale = curDigitsLocation.bestScale;
     auto& timeRect = curDigitsLocation.timeRect;
-    timeRect = {(int) (timeRectScaled.x * bestScale), (int) (timeRectScaled.y * bestScale),
-        (int) (timeRectScaled.width * bestScale), (int) (timeRectScaled.height * bestScale)};
+    timeRect = {(int) std::round(timeRectScaled.x * bestScale), (int) std::round(timeRectScaled.y * bestScale),
+        (int) std::round(timeRectScaled.width * bestScale), (int) std::round(timeRectScaled.height * bestScale)};
     double rightBorderCoefficient = (settings.gameName == "Sonic CD" ? 3.2 : 2.45);
     int digitsRectLeft = (int) (timeRect.x + timeRect.width * 1.22);
     int digitsRectRight = (int) (timeRect.x + timeRect.width * rightBorderCoefficient);

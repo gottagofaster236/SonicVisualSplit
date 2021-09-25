@@ -603,26 +603,12 @@ namespace SonicVisualSplit
             {
                 if (!settings.IsPracticeMode)
                 {
-                    // finding the path with template images for the game
-                    string livesplitComponents = GetLivesplitComponentsDirectory();
-                    string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
-                    string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
-                    var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,
-                        settings.Stretched, isComposite: !settings.RGB);
-
-                    bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
-                    SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
-                        ref nativeFrameAnalyzer, analysisSettings);
-
-                    if (!wasAnalyzingFrames)
-                    {
-                        StartAnalyzingFrames();
-                    }
+                    RecreateNativeFrameAnalyzer();
                 }
                 else if (nativeFrameAnalyzer != null)
                 {
+                    // Stop the thread outside of the lock to avoid deadlock.
                     haveToStopAnalyzingFrames = true;
-                    // Stopping the thread outside of the lock
                 }
             }
             finally
@@ -634,6 +620,26 @@ namespace SonicVisualSplit
             {
                 StopAnalyzingFrames();
                 nativeFrameAnalyzer = null;
+            }
+        }
+
+        private void RecreateNativeFrameAnalyzer()
+        {
+            // Find the path with the template images for the game.
+            string livesplitComponents = GetLivesplitComponentsDirectory();
+            string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
+            string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
+
+            var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,
+                settings.Stretched, isComposite: !settings.RGB);
+
+            bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
+            SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
+                ref nativeFrameAnalyzer, analysisSettings);
+
+            if (!wasAnalyzingFrames)
+            {
+                StartAnalyzingFrames();
             }
         }
 

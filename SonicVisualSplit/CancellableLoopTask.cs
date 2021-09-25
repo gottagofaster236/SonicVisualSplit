@@ -4,6 +4,7 @@ using System.Threading;
 
 namespace SonicVisualSplit
 {
+    // Represents a task that's executed repeatedly. This class isn't thread-safe.
     class CancellableLoopTask
     {
         private TaskIteration taskIteration;
@@ -19,6 +20,10 @@ namespace SonicVisualSplit
 
         public void Start()
         {
+            if (shouldBeRunning)
+            {
+                return;
+            }
             shouldBeRunning = true;
             taskThread = new Thread(() =>
             {
@@ -40,7 +45,8 @@ namespace SonicVisualSplit
         public void Stop()
         {
             shouldBeRunning = false;
-            taskThread?.Join();  // Wait for the thread to finish.
+            taskThread?.Join();
+            taskThread = null;
         }
 
         public delegate void TaskIteration();

@@ -89,7 +89,7 @@ bool FrameAnalyzer::checkForResetScreen() {
     double squareDifference;
     cv::minMaxLoc(result, &squareDifference);
     double avgSquareDifference = squareDifference / resetTemplate.total();
-    const double maxAvgDifference = 30;  // Out of 255.
+    const double maxAvgDifference = 40;  // Out of 255.
     return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
 }
 

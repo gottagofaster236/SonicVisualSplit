@@ -1,15 +1,16 @@
-﻿using LiveSplit.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SonicVisualSplitWrapper;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using System.IO.Compression;
 using System.Threading;
 using System.Diagnostics;
+using LiveSplit.Model;
+using SonicVisualSplitWrapper;
+using static SonicVisualSplit.SonicVisualSplitComponent;
 
 namespace SonicVisualSplit
 {
@@ -572,13 +573,11 @@ namespace SonicVisualSplit
 
             FrameStorage.StartSavingFrames();
             frameAnalysisTask.Start();
-            resetCheckTask.Start();
         }
 
         private void StopAnalyzingFrames()
         {
             frameAnalysisTask.Stop();
-            resetCheckTask.Stop();
 
             FrameStorage.StopSavingFrames();
             FrameStorage.DeleteAllSavedFrames();
@@ -590,56 +589,58 @@ namespace SonicVisualSplit
         public void Dispose()
         {
             StopAnalyzingFrames();
+            resetCheckTask.Stop();
             StopObservingCurrentSplitIndex();
             nativeFrameAnalyzer?.Dispose();
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
         {
-            bool haveToStopAnalyzingFrames = false;
-
-            nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
-            try
+            if (!settings.IsPracticeMode)
             {
-                if (!settings.IsPracticeMode)
-                {
-                    RecreateNativeFrameAnalyzer();
-                }
-                else if (nativeFrameAnalyzer != null)
-                {
-                    // Stop the thread outside of the lock to avoid deadlock.
-                    haveToStopAnalyzingFrames = true;
-                }
+                RecreateNativeFrameAnalyzer();
             }
-            finally
-            {
-                nativeFrameAnalyzerLock.ReleaseWriterLock();
-            }
-
-            if (haveToStopAnalyzingFrames)
+            else if (nativeFrameAnalyzer != null)
             {
                 StopAnalyzingFrames();
                 nativeFrameAnalyzer = null;
+            }
+            
+            if (settings.AutoResetEnabled && !settings.IsPracticeMode)
+            {
+                resetCheckTask.Start();
+            }
+            else
+            {
+                resetCheckTask.Stop();
             }
         }
 
         private void RecreateNativeFrameAnalyzer()
         {
-            // Find the path with the template images for the game.
-            string livesplitComponents = GetLivesplitComponentsDirectory();
-            string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
-            string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
-
-            var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,
-                settings.Stretched, isComposite: !settings.RGB);
-
-            bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
-            SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
-                ref nativeFrameAnalyzer, analysisSettings);
-
-            if (!wasAnalyzingFrames)
+            nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
+            try
             {
-                StartAnalyzingFrames();
+                // Find the path with the template images for the game.
+                string livesplitComponents = GetLivesplitComponentsDirectory();
+                string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
+                string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
+
+                var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,
+                    settings.Stretched, isComposite: !settings.RGB);
+
+                bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
+                SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
+                    ref nativeFrameAnalyzer, analysisSettings);
+
+                if (!wasAnalyzingFrames)
+                {
+                    StartAnalyzingFrames();
+                }
+            }
+            finally
+            {
+                nativeFrameAnalyzerLock.ReleaseWriterLock();
             }
         }
 
@@ -748,42 +749,13 @@ namespace SonicVisualSplit
             UpdateCurrentSplitIndex();
         }
 
-        /* We execute all actions that can cause the UI thread to update asynchronously,
-         * because if UI thread is waiting for frame analyzer thread to finish (StopAnalyzingFrames), this can cause a deadlock. */
-        private void RunOnUiThreadAsync(Action action)
-        {
-            var forms = Application.OpenForms;
-            if (forms.Count == 0)
-            {
-                return;
-            }
-            var mainWindow = forms[0];
-            if (mainWindow.InvokeRequired)
-            {
-                mainWindow.BeginInvoke(action);
-            }
-            else
-            {
-                action();
-            }
-        }
-
         private void SendResultToConsumers(AnalysisResult result)
         {
             lock (resultConsumers)
             {
-                var resultConsumersToRemove = new List<IResultConsumer>();
                 foreach (var resultConsumer in resultConsumers)
                 {
-                    if (!resultConsumer.OnFrameAnalyzed(result))
-                    {
-                        resultConsumersToRemove.Add(resultConsumer);
-                    }
-                }
-
-                foreach (var resultConsumerToRemove in resultConsumersToRemove)
-                {
-                    resultConsumers.Remove(resultConsumerToRemove);
+                    resultConsumer.OnFrameAnalyzed(result);
                 }
             }
         }
@@ -814,8 +786,8 @@ namespace SonicVisualSplit
 
         public interface IResultConsumer
         {
-            // Callback to do something with the analysis result. Return value: true if the consumer wants to continue to receive frames.
-            bool OnFrameAnalyzed(AnalysisResult result);
+            // Callback to do something with the analysis result.
+            void OnFrameAnalyzed(AnalysisResult result);
 
             bool VisualizeAnalysisResult { get; }
         }

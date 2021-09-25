@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
 using SonicVisualSplitWrapper;
+using System.Threading;
 
 namespace SonicVisualSplit
 {
@@ -23,10 +24,13 @@ namespace SonicVisualSplit
         public IDictionary<string, Action> ContextMenuControls { get; private set; }
 
         public bool Disposed { get; private set; } = false;
+
+        private static Thread mainThread;
         
         public SonicVisualSplitComponent(LiveSplitState state)
         {
             this.state = state;
+            mainThread = Thread.CurrentThread;
             internalComponent = new InfoTextComponent("Time on screen (SVS)", "Wait..");
 
             ContextMenuControls = new Dictionary<string, Action>();
@@ -106,24 +110,30 @@ namespace SonicVisualSplit
 
         public bool VisualizeAnalysisResult => false;
 
-        public bool OnFrameAnalyzed(AnalysisResult result)
+        public void OnFrameAnalyzed(AnalysisResult result)
         {
-            if (result.RecognizedTime)
+            RunOnUiThreadAsync(() =>
             {
-                internalComponent.InformationValue = result.TimeString;
-            }
-            else
-            {
-                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                if (settings.IsPracticeMode)
                 {
-                    internalComponent.InformationValue = "Video Disconnected";
+                    return;
+                }
+                if (result.RecognizedTime)
+                {
+                    internalComponent.InformationValue = result.TimeString;
                 }
                 else
                 {
-                    internalComponent.InformationValue = "-";
+                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                    {
+                        internalComponent.InformationValue = "Video Disconnected";
+                    }
+                    else
+                    {
+                        internalComponent.InformationValue = "-";
+                    }
                 }
-            }
-            return true;
+            });
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
@@ -136,6 +146,32 @@ namespace SonicVisualSplit
             {
                 internalComponent.InformationValue = "Wait..";
             }
+        }
+
+        /* We execute all actions that can cause the UI thread to update asynchronously
+         * in order to avoid deadlocks. */
+        public static void RunOnUiThreadAsync(Action action)
+        {
+            var currentThread = Thread.CurrentThread;
+            if (currentThread.ManagedThreadId == mainThread.ManagedThreadId)
+            {
+                action();
+            }
+            else
+            {
+                var mainWindow = GetMainWindow();
+                mainWindow?.BeginInvoke(action);
+            }
+        }
+
+        private static Control GetMainWindow()
+        {
+            var forms = Application.OpenForms;
+            if (forms.Count == 0)
+            {
+                return null;
+            }
+            return forms[0];
         }
     }
 }

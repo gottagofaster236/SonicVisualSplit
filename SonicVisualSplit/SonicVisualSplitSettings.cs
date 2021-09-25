@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
 using SonicVisualSplitWrapper;
+using static SonicVisualSplit.SonicVisualSplitComponent;
 
 namespace SonicVisualSplit
 {
@@ -93,20 +94,11 @@ namespace SonicVisualSplit
 
         public void OnVideoSourcesListUpdated()
         {
-            if (!IsHandleCreated)
+            RunOnUiThreadAsync(() =>
             {
-                return;
-            }
-            try
-            {
-                // Calling BeginInvoke to update the everything from the UI thread.
-                BeginInvoke((MethodInvoker)delegate
-                {
-                    videoSourceComboBox.Items.Clear();
-                    videoSourceComboBox.Items.AddRange(VideoSourcesManager.VideoSources.ToArray());
-                });
-            }
-            catch (InvalidOperationException) { }
+                videoSourceComboBox.Items.Clear();
+                videoSourceComboBox.Items.AddRange(VideoSourcesManager.VideoSources.ToArray());
+            });
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -176,71 +168,65 @@ namespace SonicVisualSplit
             FrameAnalyzer.RemoveResultConsumer(this);
         }
 
-        public bool OnFrameAnalyzed(AnalysisResult result)
+        public void OnFrameAnalyzed(AnalysisResult result)
         {
-            try {
-                // Calling BeginInvoke to update the everything from the UI thread.
-                BeginInvoke((MethodInvoker)delegate
-                {
-                    gameCapturePreview.Image = result.VisualizedFrame;
-                    string resultText = null;
-                    LinkArea linkArea;
-                    Color textColor;
-
-                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                    {
-                        resultText = "Video disconnected. Read more at this link.";
-                    }
-                    else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
-                    {
-                        resultText = "Can't recognize the time.";
-                    }
-                    else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
-                    {
-                        if (result.IsBlackScreen)
-                        {
-                            resultText = "Black transition screen.";
-                        }
-                        else if (result.IsWhiteScreen)
-                        {
-                            resultText = "White transition screen.";
-                        }
-                        else
-                        {
-                            resultText = $"Recognized time digits: {result.TimeString}.";
-                        }
-                    }
-
-                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                    {
-                        linkArea = new LinkArea(33, 9);
-                    }
-                    else
-                    {
-                        linkArea = new LinkArea(0, 0);
-                    }
-
-                    if (result.IsSuccessful())
-                        textColor = Color.Green;
-                    else
-                        textColor = Color.Black;
-
-                    if (recognitionResultsLabel.Text != resultText)
-                    {
-                        // Frequent updates break the LinkLabel. So we check if we actually have to update.
-                        recognitionResultsLabel.Text = resultText;
-                        recognitionResultsLabel.LinkArea = linkArea;
-                        recognitionResultsLabel.ForeColor = textColor;
-                    }
-                });
-            }
-            catch (InvalidOperationException)
+            RunOnUiThreadAsync(() =>
             {
-                /* We have a race condition (checking for parent visibility and THEN calling BeginInvoke).
-                 * Thus we may sometimes call BeginInvoke after the control was destroyed. */
-                return false;
-            }
-            return true;
+                if (IsPracticeMode)
+                {
+                    return;
+                }
+                gameCapturePreview.Image = result.VisualizedFrame;
+                string resultText = null;
+                LinkArea linkArea;
+                Color textColor;
+
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                {
+                    resultText = "Video disconnected. Read more at this link.";
+                }
+                else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                {
+                    resultText = "Can't recognize the time.";
+                }
+                else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
+                {
+                    if (result.IsBlackScreen)
+                    {
+                        resultText = "Black transition screen.";
+                    }
+                    else if (result.IsWhiteScreen)
+                    {
+                        resultText = "White transition screen.";
+                    }
+                    else
+                    {
+                        resultText = $"Recognized time digits: {result.TimeString}.";
+                    }
+                }
+
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                {
+                    linkArea = new LinkArea(33, 9);
+                }
+                else
+                {
+                    linkArea = new LinkArea(0, 0);
+                }
+
+                if (result.IsSuccessful())
+                    textColor = Color.Green;
+                else
+                    textColor = Color.Black;
+
+                if (recognitionResultsLabel.Text != resultText)
+                {
+                    // Frequent updates break the LinkLabel. So we check if we actually have to update.
+                    recognitionResultsLabel.Text = resultText;
+                    recognitionResultsLabel.LinkArea = linkArea;
+                    recognitionResultsLabel.ForeColor = textColor;
+                }
+            });
         }
 
         private void OnSettingsChanged()

@@ -11,10 +11,13 @@
 
 namespace SonicVisualSplitBase {
 
+static const cv::Size genesisResolution = {320, 224};
+
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
         settings(settings), timeRecognizer(settings) {
     resetTemplate = settings.loadTemplateImageFromFile('R');
-    // Removing the alpha channel.
+    resetTemplate = resetTemplate(getResetTemplateCropRect());
+    // Remove the alpha channel.
     cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
 }
 
@@ -53,8 +56,6 @@ void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
-static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ);
-
 bool FrameAnalyzer::checkForResetScreen() {
     auto digitsLocation = timeRecognizer.getLastSuccessfulDigitsLocation();
     if (!digitsLocation.isValid())
@@ -82,8 +83,8 @@ bool FrameAnalyzer::checkForResetScreen() {
         return false;
 
     cv::UMat gameScreen = frame(gameScreenRect);
-    const cv::Size genesisResolution = {320, 224};
     cv::resize(gameScreen, gameScreen, genesisResolution, 0, 0, cv::INTER_AREA);
+    gameScreen = gameScreen(getResetTemplateSearchArea());
 
     cv::UMat result = matchTemplateWithColor(gameScreen, resetTemplate);
     double squareDifference;
@@ -91,24 +92,6 @@ bool FrameAnalyzer::checkForResetScreen() {
     double avgSquareDifference = squareDifference / resetTemplate.total();
     const double maxAvgDifference = 40;  // Out of 255.
     return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
-}
-
-
-static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ) {
-    std::vector<cv::UMat> imageChannels(3);
-    cv::split(image, imageChannels);
-    std::vector<cv::UMat> templateChannels(3);
-    cv::split(templ, templateChannels);
-    cv::UMat singleChannelResult;
-    cv::UMat result;
-    for (int i = 0; i < 3; i++) {
-        cv::matchTemplate(imageChannels[i], templateChannels[i], singleChannelResult, cv::TM_SQDIFF);
-        if (i == 0)
-            result = singleChannelResult;
-        else
-            cv::add(result, singleChannelResult, result);
-    }
-    return singleChannelResult;
 }
 
 
@@ -138,6 +121,54 @@ double FrameAnalyzer::getAspectRatioScaleFactor() {
         return scaleFactor16by9To4By3 * scaleFactor4By3ToGenesis;
     else
         return scaleFactor4By3ToGenesis;
+}
+
+
+cv::Rect FrameAnalyzer::getResetTemplateCropRect() {
+    if (settings.gameName == "Sonic 1") {
+        // Use almost the whole screen (while leaving some wiggle room).
+        return {32, 22, 256, 180};
+    }
+    else if (settings.gameName == "Sonic 2") {
+        // Match the last "L" of "Emerald Hill" and the digit "1" of "Zone 1".
+        return {264, 56, 22, 51};
+    }
+    else {  // Sonic CD
+        // Match the Eggman-shaped mountain.
+        return {6, 102, 67, 47};
+    }
+}
+
+
+cv::Rect FrameAnalyzer::getResetTemplateSearchArea() {
+    // Compensate for any error
+    int widthBorder = genesisResolution.width / 10;
+    int heightBorder = genesisResolution.height / 10;
+    cv::Rect templateCropRect = getResetTemplateCropRect();
+    templateCropRect.x -= widthBorder;
+    templateCropRect.y -= heightBorder;
+    templateCropRect.width += widthBorder * 2;
+    templateCropRect.height += heightBorder * 2;
+    templateCropRect &= cv::Rect({0, 0}, genesisResolution);
+    return templateCropRect;
+}
+
+
+cv::UMat FrameAnalyzer::matchTemplateWithColor(cv::UMat image, cv::UMat templ) {
+    std::vector<cv::UMat> imageChannels(3);
+    cv::split(image, imageChannels);
+    std::vector<cv::UMat> templateChannels(3);
+    cv::split(templ, templateChannels);
+    cv::UMat singleChannelResult;
+    cv::UMat result;
+    for (int i = 0; i < 3; i++) {
+        cv::matchTemplate(imageChannels[i], templateChannels[i], singleChannelResult, cv::TM_SQDIFF);
+        if (i == 0)
+            result = singleChannelResult;
+        else
+            cv::add(result, singleChannelResult, result);
+    }
+    return singleChannelResult;
 }
 
 
@@ -207,8 +238,8 @@ void FrameAnalyzer::visualizeResult(
     double aspectRatioScaleFactor = getAspectRatioScaleFactor();
     for (auto match : allMatches) {
         if (settings.isStretchedTo16By9) {
-            match.location.x /= aspectRatioScaleFactor;
-            match.location.width /= aspectRatioScaleFactor;
+            match.location.x /= (float) aspectRatioScaleFactor;
+            match.location.width /= (float) aspectRatioScaleFactor;
         }
         cv::rectangle(result.visualizedFrame, match.location, cv::Scalar(0, 0, 255), lineThickness);
     }

@@ -35,6 +35,12 @@ private:
 
     double getAspectRatioScaleFactor();
 
+    cv::Rect getResetTemplateCropRect();
+
+    cv::Rect getResetTemplateSearchArea();
+
+    static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ);
+
     bool checkIfFrameIsSingleColor(cv::UMat frame);
 
     bool checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference);

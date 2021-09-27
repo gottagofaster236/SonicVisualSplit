@@ -164,6 +164,11 @@ namespace SonicVisualSplit
             }
         }
 
+        public static bool CanRunOnUiThreadAsync()
+        {
+            return GetMainWindow() != null;
+        }
+
         private static Control GetMainWindow()
         {
             var forms = Application.OpenForms;

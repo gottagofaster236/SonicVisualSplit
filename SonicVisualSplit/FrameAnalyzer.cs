@@ -96,6 +96,11 @@ namespace SonicVisualSplit
             nativeFrameAnalyzerLock.AcquireReaderLock(Timeout.Infinite);
             try
             {
+                if (!CanRunOnUiThreadAsync())
+                {
+                    // LiveSplit is still loading.
+                    return;
+                }
                 savedFrameTimes = GetSavedFrameTimes();
                 if (!savedFrameTimes.Any())
                 {

@@ -36,6 +36,9 @@
     <ClCompile Include="TimeRecognizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AnalysisSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WindowCapture.h">
@@ -63,6 +66,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AnalysisResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AnalysisSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrivialTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

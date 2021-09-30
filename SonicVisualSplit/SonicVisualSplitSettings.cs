@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
 using SonicVisualSplitWrapper;
+using static SonicVisualSplit.SonicVisualSplitComponent;
 
 namespace SonicVisualSplit
 {
@@ -14,6 +15,7 @@ namespace SonicVisualSplit
         public bool RGB { get; private set; }
         public bool Stretched { get; private set; }
         public string Game { get; private set; }
+        public bool AutoResetEnabled { get; private set; }
         public bool IsPracticeMode { get; private set; }
 
         public event EventHandler SettingsChanged;
@@ -28,10 +30,11 @@ namespace SonicVisualSplit
             InitializeComponent();
             Disposed += OnDisposed;
 
-            // default values of the settings
+            // Default values of the settings.
             RGB = false;
             Stretched = false;
             Game = "Sonic 1";
+            AutoResetEnabled = true;
 
             gamesComboBox.Items.AddRange(new string[] {
                 "Sonic 1",
@@ -56,7 +59,8 @@ namespace SonicVisualSplit
                 SettingsHelper.CreateSetting(document, parent, "VideoSource", VideoSource) ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
-                SettingsHelper.CreateSetting(document, parent, "Game", Game);
+                SettingsHelper.CreateSetting(document, parent, "Game", Game) ^
+                SettingsHelper.CreateSetting(document, parent, "AutoResetEnabled", AutoResetEnabled);
         }
 
         public void SetSettings(XmlNode settings)
@@ -76,31 +80,25 @@ namespace SonicVisualSplit
             int gameIndex = gamesComboBox.FindStringExact(Game);
             if (gameIndex == -1)
             {
-                // No such game found, the settings are from previous version?
+                // No such game found, the settings are from a previous version?
                 gameIndex = 0;
                 Game = "Sonic 1";
             }
             gamesComboBox.SelectedIndex = gameIndex;
+
+            AutoResetEnabled = SettingsHelper.ParseBool(settings["AutoResetEnabled"], true);
+            autoResetCheckbox.Checked = AutoResetEnabled;
 
             OnSettingsChanged();
         }
 
         public void OnVideoSourcesListUpdated()
         {
-            if (!IsHandleCreated)
+            RunOnUiThreadAsync(() =>
             {
-                return;
-            }
-            try
-            {
-                // Calling BeginInvoke to update the everything from the UI thread.
-                BeginInvoke((MethodInvoker)delegate
-                {
-                    videoSourceComboBox.Items.Clear();
-                    videoSourceComboBox.Items.AddRange(VideoSourcesManager.VideoSources.ToArray());
-                });
-            }
-            catch (InvalidOperationException) { }
+                videoSourceComboBox.Items.Clear();
+                videoSourceComboBox.Items.AddRange(VideoSourcesManager.VideoSources.ToArray());
+            });
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -130,6 +128,12 @@ namespace SonicVisualSplit
         private void OnGameChanged(object sender, EventArgs e)
         {
             Game = (string) gamesComboBox.SelectedItem;
+            OnSettingsChanged();
+        }
+
+        private void OnAutoResetEnabledChanged(object sender, EventArgs e)
+        {
+            AutoResetEnabled = autoResetCheckbox.Checked;
             OnSettingsChanged();
         }
 
@@ -164,77 +168,65 @@ namespace SonicVisualSplit
             FrameAnalyzer.RemoveResultConsumer(this);
         }
 
-        public bool OnFrameAnalyzed(AnalysisResult result)
+        public void OnFrameAnalyzed(AnalysisResult result)
         {
-            if (Parent == null || !Parent.Visible)
+            RunOnUiThreadAsync(() =>
             {
-                return false;
-            }
-
-            try
-            {
-                // Calling BeginInvoke to update the everything from the UI thread.
-                BeginInvoke((MethodInvoker)delegate
+                if (IsPracticeMode)
                 {
-                    gameCapturePreview.Image = result.VisualizedFrame;
-                    string resultText = null;
-                    LinkArea linkArea;
-                    Color textColor;
+                    return;
+                }
+                gameCapturePreview.Image = result.VisualizedFrame;
+                string resultText = null;
+                LinkArea linkArea;
+                Color textColor;
 
-                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                {
+                    resultText = "Video disconnected. Read more at this link.";
+                }
+                else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                {
+                    resultText = "Can't recognize the time.";
+                }
+                else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
+                {
+                    if (result.IsBlackScreen)
                     {
-                        resultText = "Video disconnected. Read more at this link.";
+                        resultText = "Black transition screen.";
                     }
-                    else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                    else if (result.IsWhiteScreen)
                     {
-                        resultText = "Can't recognize the time.";
-                    }
-                    else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
-                    {
-                        if (result.IsBlackScreen)
-                        {
-                            resultText = "Black transition screen.";
-                        }
-                        else if (result.IsWhiteScreen)
-                        {
-                            resultText = "White transition screen.";
-                        }
-                        else
-                        {
-                            resultText = $"Recognized time digits: {result.TimeString}.";
-                        }
-                    }
-
-                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                    {
-                        linkArea = new LinkArea(33, 9);
+                        resultText = "White transition screen.";
                     }
                     else
                     {
-                        linkArea = new LinkArea(0, 0);
+                        resultText = $"Recognized time digits: {result.TimeString}.";
                     }
+                }
 
-                    if (result.IsSuccessful())
-                        textColor = Color.Green;
-                    else
-                        textColor = Color.Black;
+                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                {
+                    linkArea = new LinkArea(33, 9);
+                }
+                else
+                {
+                    linkArea = new LinkArea(0, 0);
+                }
 
-                    if (recognitionResultsLabel.Text != resultText)
-                    {
-                        // Frequent updates break the LinkLabel. So we check if we actually have to update.
-                        recognitionResultsLabel.Text = resultText;
-                        recognitionResultsLabel.LinkArea = linkArea;
-                        recognitionResultsLabel.ForeColor = textColor;
-                    }
-                });
-            }
-            catch (InvalidOperationException)
-            {
-                /* We have a race condition (checking for parent visibility and THEN calling BeginInvoke).
-                 * Thus we may sometimes call BeginInvoke after the control was destroyed. */
-                return false;
-            }
-            return true;
+                if (result.IsSuccessful())
+                    textColor = Color.Green;
+                else
+                    textColor = Color.Black;
+
+                if (recognitionResultsLabel.Text != resultText)
+                {
+                    // Frequent updates break the LinkLabel. So we check if we actually have to update.
+                    recognitionResultsLabel.Text = resultText;
+                    recognitionResultsLabel.LinkArea = linkArea;
+                    recognitionResultsLabel.ForeColor = textColor;
+                }
+            });
         }
 
         private void OnSettingsChanged()

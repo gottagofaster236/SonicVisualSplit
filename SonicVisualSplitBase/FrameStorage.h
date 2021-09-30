@@ -1,7 +1,7 @@
 #pragma once
 #include <opencv2/core.hpp>
 #include <vector>
-#include "FrameAnalyzer.h"
+#include <functional>
 
 
 namespace SonicVisualSplitBase {
@@ -35,11 +35,25 @@ std::vector<long long> getSavedFramesTimes();
  * (2) the frame storage doesn't contain this frame. */
 cv::UMat getSavedFrame(long long frameTime);
 
+/* Same as getSavedFrame().
+ * Used to avoid the race condition when you first get 
+ * the last frame time and **then** call getSavedFrame(frameTime). */
+cv::UMat getLastSavedFrame();
+
 // Delete the frames whose save time is in the interval [beginFrameTime, endFrameTime)
 void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 
 // Gets a time in milliseconds since a certain time point.
 long long getCurrentTimeInMilliseconds();
+
+class OnSourceChangedListener {
+public:
+    virtual void onSourceChanged() const = 0;
+};
+
+void addOnSourceChangedListener(const OnSourceChangedListener& listener);
+
+void removeOnSourceChangedListener(const OnSourceChangedListener& listener);
 
 /* The maximum amount of frames that can be saved in the storage.
  * When this limit is reached, no new frames are saved until deleteSavedFramesInRange is called. */

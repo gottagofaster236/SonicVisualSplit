@@ -1,5 +1,7 @@
 #pragma once
+#include "AnalysisSettings.h"
 #include "AnalysisResult.h"
+#include "FrameStorage.h"
 #include <opencv2/core.hpp>
 #include <vector>
 #include <map>
@@ -9,13 +11,16 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
+#include "TrivialTypes.h"
 
 
 namespace SonicVisualSplitBase {
 
 class TimeRecognizer {
 public:
-    static TimeRecognizer& getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
+    TimeRecognizer(const AnalysisSettings& settings);
+
+    ~TimeRecognizer();
 
     struct Match {
         cv::Rect2f location;
@@ -31,26 +36,35 @@ public:
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
-    static void resetDigitsPlacement();
+    void resetDigitsLocation();
 
-    // Same as resetDigitsPlacement, but non-blocking.
-    static void resetDigitsPlacementAsync();
+    struct DigitsLocation {
+        /* Scale of the image which matches the templates (i.e.digits) the best.
+         * -1, if not calculated yet. */
+        double bestScale = -1;
 
-    // Returns the scale of the image which matches the templates (i.e. digits) the best, or -1, if not calculated yet..
-    double getBestScale() const;
+        /* The rectangle where the time digits are located
+         * after the frame has been scaled down to bestScale. */
+        RectTrivial digitsRect;
 
-    /* Returns the rectangle where the time digits were located last time,
-     * with coordinates from 0 to 1 (i.e. relative to the size of the frame).
-     * Unlike digitsRect, it's never reset, so that it's possible to estimate
-     * the position of time digits ROI almost all the time. */
-    cv::Rect2f getRelativeDigitsRect();
+        /* The bounding rectangle of the "TIME" label
+         * after the frame has been scaled down to bestScale. */
+        RectTrivial timeRect;
 
-    /* There is never more than instance of TimeRecognizer.
-     * This function gets the current instance, or returns nullptr if there's no current instance. */
-    static const std::unique_ptr<TimeRecognizer>& getCurrentInstance();
+        // The size of the frame for which the above properties hold true.
+        SizeTrivial frameSize;
 
-    TimeRecognizer(TimeRecognizer& other) = delete;
-    void operator=(const TimeRecognizer&) = delete;
+        bool isValid() const;
+    };
+
+    // This method is thread-safe.
+    DigitsLocation getLastSuccessfulDigitsLocation();
+
+    std::chrono::steady_clock::duration getTimeSinceDigitsLocationLastUpdated();
+
+    /* Reports the current LiveSplit split index.
+     * Should be up-to-date upon calling recognizeTime(). */
+    void reportCurrentSplitIndex(int currentSplitIndex);
 
     static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 
@@ -59,8 +73,6 @@ public:
     static const char TIME = 'T';
 
 private:
-    TimeRecognizer(const std::string& gameName, const std::filesystem::path& templatesDirectory, bool isComposite);
-
     std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame);
 
     bool checkRecognizedDigits(std::vector<Match>& digitMatches);
@@ -84,6 +96,8 @@ private:
     void removeOverlappingMatches(std::vector<Match>& matches);
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
+
+    void resetDigitsLocationSync();
 
     // Returns the global minimum acceptable similarity of a symbol.
     double getGlobalMinSimilarity(char symbol) const;
@@ -111,41 +125,40 @@ private:
 
     bool timeIncludesMilliseconds() const;
 
-    /* Loads a template image from file, separates its alpha channel.
-     * Returns a tuple of {image, binary alpha mask, count of opaque pixels}. */
-    std::tuple<cv::UMat, cv::UMat, int> loadImageAndMaskFromFile(char symbol);
-    
-    // Settings.
-    std::string gameName;
-    std::filesystem::path templatesDirectory;
-    bool isComposite;
+    void loadAllTemplates();
 
-    // Scale of the image which matches the templates (i.e. digits) the best. -1, if not calculated yet.
-    double bestScale = -1;
+    // Returns a tuple of {gray image, binary alpha mask, count of opaque pixels}.
+    std::tuple<cv::UMat, cv::UMat, int> loadSymbolTemplate(char symbol);
+
+    cv::UMat getAlphaMask(cv::UMat image);
+    
+    const AnalysisSettings settings;
+
+    DigitsLocation curDigitsLocation;
 
     bool recalculatedBestScaleLastTime;
 
-    /* The rectangle where the time digits are located (i.e. we don't search the whole frame).
-     * (This rectangle is valid after the frame has been scaled down to bestScale). */
-    cv::Rect digitsRect;
+    std::atomic<DigitsLocation> lastSuccessfulDigitsLocation;
 
-    // Needed in case if score screen check fails.
-    cv::Rect prevDigitsRect;
-
-    // See getRelativeDigitsRect().
-    cv::Rect2f relativeDigitsRect;
-
-    std::chrono::system_clock::time_point relativeDigitsRectUpdatedTime;
-
-    cv::Size lastFrameSize;
+    std::chrono::steady_clock::time_point lastRecognitionSuccessTime;
 
     // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
     std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
-    // Flag for resetDigitsPlacementAsync().
-    inline static std::atomic<bool> shouldResetDigitsPlacement;
+    // Flag for resetDigitsLocationAsync().
+    std::atomic<bool> shouldResetDigitsLocation{false};
 
-    inline static std::unique_ptr<TimeRecognizer> instance;
+    // The split index that LiveSplit is currently at.
+    int currentSplitIndex = -1;
+
+    class OnSourceChangedListenerImpl : public FrameStorage::OnSourceChangedListener {
+    public:
+        OnSourceChangedListenerImpl(TimeRecognizer& timeRecognizer);
+
+        void onSourceChanged() const override;
+    private:
+        TimeRecognizer& timeRecognizer;
+    } onSourceChangedListener;
 };
 
 }  // namespace SonicVisualSplitBase

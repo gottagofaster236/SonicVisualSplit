@@ -11,105 +11,190 @@
 
 namespace SonicVisualSplitBase {
 
-static std::recursive_mutex frameAnalysisMutex;
+static const cv::Size genesisResolution = {320, 224};
 
-static const double scaleFactorTo4By3 = (4 / 3.) / (16 / 9.);
-
-
-FrameAnalyzer& FrameAnalyzer::getInstance(const std::string& gameName, const std::filesystem::path& templatesDirectory, 
-        bool isStretchedTo16By9, bool isComposite) {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
-
-    if (!instance || instance->gameName != gameName || instance->templatesDirectory != templatesDirectory
-            || instance->isStretchedTo16By9 != isStretchedTo16By9 || instance->isComposite != isComposite) {
-        instance = std::unique_ptr<FrameAnalyzer>(
-            new FrameAnalyzer(gameName, templatesDirectory, isStretchedTo16By9, isComposite));
-    }
-    return *instance;
+FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
+        settings(settings), timeRecognizer(settings) {
+    resetTemplate = settings.loadTemplateImageFromFile('R');
+    // Remove the alpha channel.
+    cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
 }
 
 
-FrameAnalyzer::FrameAnalyzer(const std::string& gameName, const std::filesystem::path& templatesDirectory,
-        bool isStretchedTo16By9, bool isComposite)
-    : gameName(gameName), templatesDirectory(templatesDirectory), isStretchedTo16By9(isStretchedTo16By9), isComposite(isComposite) {}
-
-
 AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
-    std::lock_guard<std::recursive_mutex> guard(frameAnalysisMutex);
-
     result = AnalysisResult();
     result.frameTime = frameTime;
     result.recognizedTime = false;
 
-    cv::UMat frame = getSavedFrame(frameTime);
-    if (frame.cols == 0 || frame.rows == 0) {
+    cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
+    originalFrame = reduceFrameSize(originalFrame);
+    if (originalFrame.empty()) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
+    cv::UMat frame = fixAspectRatio(originalFrame);
     
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
-        TimeRecognizer& timeRecognizer = TimeRecognizer::getInstance(gameName, templatesDirectory, isComposite);
         allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
     }
 
     if (visualize)
-        visualizeResult(allMatches);
+        visualizeResult(allMatches, originalFrame);
     return result;
 }
 
 
+void FrameAnalyzer::resetDigitsLocation() {
+    timeRecognizer.resetDigitsLocation();
+}
+
+
 void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
-    FrameAnalyzer::currentSplitIndex = currentSplitIndex;
+    timeRecognizer.reportCurrentSplitIndex(currentSplitIndex);
 }
 
 
-int FrameAnalyzer::getCurrentSplitIndex() {
-    return currentSplitIndex;
-}
+bool FrameAnalyzer::checkForResetScreen() {
+    auto digitsLocation = timeRecognizer.getLastSuccessfulDigitsLocation();
+    if (!digitsLocation.isValid())
+        return false;
 
+    cv::UMat frame = FrameStorage::getLastSavedFrame();
+    frame = reduceFrameSize(frame);
+    if (frame.empty())
+        return false;
+    frame = fixAspectRatio(frame);
+    if (frame.size() != digitsLocation.frameSize)
+        return false;
 
-void FrameAnalyzer::lockFrameAnalysisMutex() {
-    frameAnalysisMutex.lock();
-}
+    cv::resize(frame, frame, {}, digitsLocation.bestScale, digitsLocation.bestScale, cv::INTER_AREA);
+    const cv::Rect& timeRect = digitsLocation.timeRect;
 
+    cv::Rect gameScreenRect = {
+        (int) (timeRect.x - timeRect.height / 11. * 17.),
+        (int) (timeRect.y - timeRect.height / 11. * 25.),
+        (int) (timeRect.height / 11. * 320.),
+        (int) (timeRect.height / 11. * 224.)
+    };
+    gameScreenRect &= cv::Rect({}, frame.size());
+    if (gameScreenRect.empty())
+        return false;
 
-void FrameAnalyzer::unlockFrameAnalysisMutex() {
-    frameAnalysisMutex.unlock();
-}
+    cv::UMat gameScreen = frame(gameScreenRect);
+    cv::resize(gameScreen, gameScreen, genesisResolution, 0, 0, cv::INTER_AREA);
 
-
-
-cv::UMat FrameAnalyzer::getSavedFrame(long long frameTime) {
-    originalFrame = FrameStorage::getSavedFrame(frameTime);
-
-    // Make sure the frame isn't too large (that'll slow down the calculations).
-    if (originalFrame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / originalFrame.rows;
-        cv::resize(originalFrame, originalFrame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
+    for (const cv::Rect& resetTemplateMatchArea : getResetTemplateMatchAreas()) {
+        auto gameScreenCropped = gameScreen(getResetTemplateSearchArea(resetTemplateMatchArea));
+        auto resetTemplateCropped = resetTemplate(resetTemplateMatchArea);
+        cv::UMat result = matchTemplateWithColor(gameScreenCropped, resetTemplateCropped);
+        double squareDifference;
+        cv::minMaxLoc(result, &squareDifference);
+        // Three channels, so dividing by 3.
+        double avgSquareDifference = squareDifference / resetTemplateCropped.total() / 3;
+        const double maxAvgDifference = 40;  // Out of 255.
+        if (avgSquareDifference > maxAvgDifference * maxAvgDifference) {
+            // This area didn't match.
+            return false;
+        }
     }
+    return true;
+}
 
-    cv::UMat frame = originalFrame;
-    if (isStretchedTo16By9 && !frame.empty())
-        cv::resize(frame, frame, {}, scaleFactorTo4By3, 1, cv::INTER_AREA);
+
+cv::UMat FrameAnalyzer::reduceFrameSize(cv::UMat frame) {
+    // Make sure the frame isn't too large (that'll slow down the calculations).
+    if (frame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
+        double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
+        cv::resize(frame, frame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
+    }
     return frame;
+}
+
+
+cv::UMat FrameAnalyzer::fixAspectRatio(cv::UMat frame) {
+    if (settings.isStretchedTo16By9 && !frame.empty())
+        cv::resize(frame, frame, {}, getAspectRatioScaleFactor(), 1, cv::INTER_AREA);
+    return frame;
+}
+
+
+double FrameAnalyzer::getAspectRatioScaleFactor() {
+    const double scaleFactor16by9To4By3 = (4 / 3.) / (16 / 9.);
+    // Genesis' resolution is not actually 4 by 3, so it has to be fixed too.
+    const double scaleFactor4By3ToGenesis = (320 / 224.) / (4 / 3.);
+
+    if (settings.isStretchedTo16By9)
+        return scaleFactor16by9To4By3 * scaleFactor4By3ToGenesis;
+    else
+        return scaleFactor4By3ToGenesis;
+}
+
+
+std::vector<cv::Rect> FrameAnalyzer::getResetTemplateMatchAreas() {
+    if (settings.gameName == "Sonic 1") {
+        // Use almost the whole screen (while leaving some wiggle room).
+        return {{32, 22, 256, 180}};
+    }
+    else if (settings.gameName == "Sonic 2") {
+        return {
+            {264, 80, 24, 45},  // Match "1" in "Zone 1"
+            {232, 42, 54, 28}  // Match "HILL" in "Emerald Hill"
+        };
+    }
+    else {  // Sonic CD
+        // Match the Eggman-shaped mountain.
+        return {{6, 102, 67, 47}};
+    }
+}
+
+
+cv::Rect FrameAnalyzer::getResetTemplateSearchArea(cv::Rect resetTemplateMatchArea) {
+    // Compensate for any error
+    int widthBorder = genesisResolution.width / 10;
+    int heightBorder = genesisResolution.height / 10;
+    resetTemplateMatchArea.x -= widthBorder;
+    resetTemplateMatchArea.y -= heightBorder;
+    resetTemplateMatchArea.width += widthBorder * 2;
+    resetTemplateMatchArea.height += heightBorder * 2;
+    resetTemplateMatchArea &= cv::Rect({0, 0}, genesisResolution);
+    return resetTemplateMatchArea;
+}
+
+
+cv::UMat FrameAnalyzer::matchTemplateWithColor(cv::UMat image, cv::UMat templ) {
+    std::vector<cv::UMat> imageChannels(3);
+    cv::split(image, imageChannels);
+    std::vector<cv::UMat> templateChannels(3);
+    cv::split(templ, templateChannels);
+    cv::UMat singleChannelResult;
+    cv::UMat result;
+    for (int i = 0; i < 3; i++) {
+        cv::matchTemplate(imageChannels[i], templateChannels[i], singleChannelResult, cv::TM_SQDIFF);
+        if (i == 0)
+            result = singleChannelResult;
+        else
+            cv::add(result, singleChannelResult, result);
+    }
+    return singleChannelResult;
 }
 
 
 bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
     // Checking a rectangle near the digits rectangle.
-    const std::unique_ptr<TimeRecognizer>& instance = TimeRecognizer::getCurrentInstance();
-    if (!instance)
+    if (timeRecognizer.getTimeSinceDigitsLocationLastUpdated() > std::chrono::seconds(10)) {
+        // The rectangle is outdated now.
         return false;
-    cv::Rect2f relativeDigitsRect = instance->getRelativeDigitsRect();
-    cv::Rect digitsRect = {(int) (relativeDigitsRect.x * frame.cols), (int) (relativeDigitsRect.y * frame.rows),
-        (int) (relativeDigitsRect.width * frame.cols), (int) (relativeDigitsRect.height * frame.rows)};
-
-    cv::Rect checkRect = digitsRect;
+    }
+    auto digitsLocation = timeRecognizer.getLastSuccessfulDigitsLocation();
+    if (!digitsLocation.isValid() || digitsLocation.frameSize != frame.size())
+        return false;
+    const auto& bestScale = digitsLocation.bestScale;
+    const auto& timeRect = digitsLocation.timeRect;
+    cv::Rect checkRect = {(int) (timeRect.x / bestScale), (int) (timeRect.y / bestScale),
+        (int) (timeRect.width / bestScale), (int) (timeRect.height / bestScale)};
     // Extending the checked area.
-    int leftShift = (int) (digitsRect.height * 3.5);
-    checkRect.x -= leftShift;
-    checkRect.width += leftShift;
+    checkRect.width += checkRect.height * 3;
     checkRect.height *= 2;
     checkRect &= cv::Rect({0, 0}, frame.size());  // Make sure checkRect is not out of bounds.
     if (checkRect.empty())
@@ -127,7 +212,7 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
         result.isWhiteScreen = true;
         return true;
     }
-    else if (gameName == "Sonic 2") {
+    else if (settings.gameName == "Sonic 2") {
         /* Sonic 2 has a transition where it shows the act name in front of a red/blue background.
          * We just check that there's no white on the screen. */
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
@@ -149,18 +234,20 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, do
     img.convertTo(img, CV_32SC3);
     cv::subtract(img, color, img);
     double squareDifference = cv::norm(img, cv::NORM_L2SQR);
-    double avgSquareDifference = squareDifference / img.total();
-    return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
+    double avgSquareDifference = squareDifference / img.total() / 3;  // Three channels, so dividing by 3.
+    return avgSquareDifference < maxAvgDifference * maxAvgDifference;
 }
 
 
-void FrameAnalyzer::visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches) {
+void FrameAnalyzer::visualizeResult(
+        const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame) {
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
+    double aspectRatioScaleFactor = getAspectRatioScaleFactor();
     for (auto match : allMatches) {
-        if (isStretchedTo16By9) {
-            match.location.x /= scaleFactorTo4By3;
-            match.location.width /= scaleFactorTo4By3;
+        if (settings.isStretchedTo16By9) {
+            match.location.x /= (float) aspectRatioScaleFactor;
+            match.location.width /= (float) aspectRatioScaleFactor;
         }
         cv::rectangle(result.visualizedFrame, match.location, cv::Scalar(0, 0, 255), lineThickness);
     }

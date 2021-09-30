@@ -62,7 +62,8 @@ namespace SonicVisualSplit
 
         private List<long> savedFrameTimes;
 
-        private long lastResetTime = long.MinValue;
+        private long lastManualResetTime = long.MinValue;
+        private bool isPerformingAutomaticReset = false;
 
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellableLoopTask frameAnalysisTask;
@@ -188,7 +189,11 @@ namespace SonicVisualSplit
             {
                 if (nativeFrameAnalyzer.CheckForResetScreen())
                 {
-                    RunOnUiThreadAsync(() => model.Reset(updateSplits: true));
+                    RunOnUiThreadAsync(() => {
+                        isPerformingAutomaticReset = true;
+                        model.Reset(updateSplits: true);
+                        isPerformingAutomaticReset = false;
+                    });
                 }
             }
             finally
@@ -567,7 +572,7 @@ namespace SonicVisualSplit
         private bool ShouldWaitAfterReset(long currentTimeInMilliseconds)
         {
             // Make sure the frames are coming from the next run.
-            return currentTimeInMilliseconds < Interlocked.Read(ref lastResetTime) + 3000;
+            return currentTimeInMilliseconds < Interlocked.Read(ref lastManualResetTime) + 3000;
         }
 
         private void StartAnalyzingFrames()
@@ -682,7 +687,10 @@ namespace SonicVisualSplit
 
         private void OnReset(object sender = null, TimerPhase value = 0)
         {
-            Interlocked.Exchange(ref lastResetTime, FrameStorage.GetCurrentTimeInMilliseconds());
+            if (!isPerformingAutomaticReset)
+            {
+                Interlocked.Exchange(ref lastManualResetTime, FrameStorage.GetCurrentTimeInMilliseconds());
+            }
 
             Task.Run(() =>
             {

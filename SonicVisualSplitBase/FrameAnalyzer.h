@@ -35,9 +35,13 @@ private:
 
     double getAspectRatioScaleFactor();
 
-    cv::Rect getResetTemplateCropRect();
+    /* Returns several areas of the template which have to be matched
+     * to detect a reset screen.
+     * We don't simply compare the whole template, for example
+     * because then Sonic 2's EH2 would match the current template. */
+    std::vector<cv::Rect> getResetTemplateMatchAreas();
 
-    cv::Rect getResetTemplateSearchArea();
+    cv::Rect getResetTemplateSearchArea(cv::Rect resetTemplateArea);
 
     static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ);
 

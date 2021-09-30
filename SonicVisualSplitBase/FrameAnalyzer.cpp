@@ -16,7 +16,6 @@ static const cv::Size genesisResolution = {320, 224};
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
         settings(settings), timeRecognizer(settings) {
     resetTemplate = settings.loadTemplateImageFromFile('R');
-    resetTemplate = resetTemplate(getResetTemplateCropRect());
     // Remove the alpha channel.
     cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
 }
@@ -84,14 +83,22 @@ bool FrameAnalyzer::checkForResetScreen() {
 
     cv::UMat gameScreen = frame(gameScreenRect);
     cv::resize(gameScreen, gameScreen, genesisResolution, 0, 0, cv::INTER_AREA);
-    gameScreen = gameScreen(getResetTemplateSearchArea());
 
-    cv::UMat result = matchTemplateWithColor(gameScreen, resetTemplate);
-    double squareDifference;
-    cv::minMaxLoc(result, &squareDifference);
-    double avgSquareDifference = squareDifference / resetTemplate.total();
-    const double maxAvgDifference = 40;  // Out of 255.
-    return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
+    for (const cv::Rect& resetTemplateMatchArea : getResetTemplateMatchAreas()) {
+        auto gameScreenCropped = gameScreen(getResetTemplateSearchArea(resetTemplateMatchArea));
+        auto resetTemplateCropped = resetTemplate(resetTemplateMatchArea);
+        cv::UMat result = matchTemplateWithColor(gameScreenCropped, resetTemplateCropped);
+        double squareDifference;
+        cv::minMaxLoc(result, &squareDifference);
+        // Three channels, so dividing by 3.
+        double avgSquareDifference = squareDifference / resetTemplateCropped.total() / 3;
+        const double maxAvgDifference = 40;  // Out of 255.
+        if (avgSquareDifference > maxAvgDifference * maxAvgDifference) {
+            // This area didn't match.
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -124,33 +131,34 @@ double FrameAnalyzer::getAspectRatioScaleFactor() {
 }
 
 
-cv::Rect FrameAnalyzer::getResetTemplateCropRect() {
+std::vector<cv::Rect> FrameAnalyzer::getResetTemplateMatchAreas() {
     if (settings.gameName == "Sonic 1") {
         // Use almost the whole screen (while leaving some wiggle room).
-        return {32, 22, 256, 180};
+        return {{32, 22, 256, 180}};
     }
     else if (settings.gameName == "Sonic 2") {
-        // Match the last "L" of "Emerald Hill" and the digit "1" of "Zone 1".
-        return {264, 56, 22, 51};
+        return {
+            {264, 80, 24, 45},  // Match "1" in "Zone 1"
+            {232, 42, 54, 28}  // Match "HILL" in "Emerald Hill"
+        };
     }
     else {  // Sonic CD
         // Match the Eggman-shaped mountain.
-        return {6, 102, 67, 47};
+        return {{6, 102, 67, 47}};
     }
 }
 
 
-cv::Rect FrameAnalyzer::getResetTemplateSearchArea() {
+cv::Rect FrameAnalyzer::getResetTemplateSearchArea(cv::Rect resetTemplateMatchArea) {
     // Compensate for any error
     int widthBorder = genesisResolution.width / 10;
     int heightBorder = genesisResolution.height / 10;
-    cv::Rect templateCropRect = getResetTemplateCropRect();
-    templateCropRect.x -= widthBorder;
-    templateCropRect.y -= heightBorder;
-    templateCropRect.width += widthBorder * 2;
-    templateCropRect.height += heightBorder * 2;
-    templateCropRect &= cv::Rect({0, 0}, genesisResolution);
-    return templateCropRect;
+    resetTemplateMatchArea.x -= widthBorder;
+    resetTemplateMatchArea.y -= heightBorder;
+    resetTemplateMatchArea.width += widthBorder * 2;
+    resetTemplateMatchArea.height += heightBorder * 2;
+    resetTemplateMatchArea &= cv::Rect({0, 0}, genesisResolution);
+    return resetTemplateMatchArea;
 }
 
 
@@ -226,8 +234,8 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, do
     img.convertTo(img, CV_32SC3);
     cv::subtract(img, color, img);
     double squareDifference = cv::norm(img, cv::NORM_L2SQR);
-    double avgSquareDifference = squareDifference / img.total();
-    return avgSquareDifference < maxAvgDifference * maxAvgDifference * 3;  // Three channels, so multiplying by 3.
+    double avgSquareDifference = squareDifference / img.total() / 3;  // Three channels, so dividing by 3.
+    return avgSquareDifference < maxAvgDifference * maxAvgDifference;
 }
 
 

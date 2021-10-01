@@ -613,6 +613,7 @@ namespace SonicVisualSplit
             else if (nativeFrameAnalyzer != null)
             {
                 StopAnalyzingFrames();
+                resetCheckTask.Stop();
                 nativeFrameAnalyzer.Dispose();
                 nativeFrameAnalyzer = null;
             }

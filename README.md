@@ -24,7 +24,7 @@ and find SonicVisualSplit under the "Control" category.
 ## Setting up video capture
 *Settings page screenshot:*
 
-![Settings page](https://user-images.githubusercontent.com/55288842/112758053-06df7780-8ff5-11eb-8591-b3b429a1fab2.png)
+![Settings page](https://user-images.githubusercontent.com/55288842/135631892-c7b4b861-8318-428a-8927-f723d6daeddd.png)
 
 - To open SonicVisualSplit settings, right-click LiveSplit, click "Edit layout...", click "Layout Settings" at the bottom. Select "SonicVisualSplit" in the top navigation bar.
 

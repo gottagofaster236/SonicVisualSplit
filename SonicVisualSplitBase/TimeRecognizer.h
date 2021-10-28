@@ -99,12 +99,8 @@ private:
 
     void resetDigitsLocationSync();
 
-    // Returns the global minimum acceptable similarity of a symbol.
-    double getGlobalMinSimilarity(char symbol) const;
-
-    /* Returns the minimum acceptable similarity in relation to the best found similarity.
-     * Without parameters, returns the default value. */
-    double getMinSimilarityDividedByBestSimilarity(char symbol = 0) const;
+    // Returns the minimum acceptable similarity of a symbol.
+    double getMinSimilarity(char symbol) const;
 
     /* Similarity of a symbol may be multiplied by a coefficient
      * in order to make it a less or more preferable option when choosing between symbols. */

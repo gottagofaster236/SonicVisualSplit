@@ -356,7 +356,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
         minScale = maxScale = 1;
     }
 
-    double globalMinSimilarity = getGlobalMinSimilarity(symbol);
+    double globalMinSimilarity = getMinSimilarity(symbol);
     double bestSimilarityForScales = globalMinSimilarity;
     // bestSimilarityForScales is used only if recalculateBestScale is true.
 
@@ -425,18 +425,8 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
 
 
 void TimeRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches) {
-    if (matches.size() < 2)
-        return;
-    // Finding the second largest similarity (not the first for precision).
-    std::ranges::nth_element(matches, matches.begin() + 1, std::greater<>(), &Match::similarity);
-    double bestSimilarity = matches[1].similarity;
-    
     std::erase_if(matches, [&](const Match& match) {
-        double similarityCoefficient = getMinSimilarityDividedByBestSimilarity(match.symbol);
-        double minSimilarity = bestSimilarity * similarityCoefficient;
-        double globalMinSimilarity = getGlobalMinSimilarity(match.symbol);
-        minSimilarity = std::max(minSimilarity, globalMinSimilarity);
-        minSimilarity = std::min(minSimilarity, -1500.);  // Make sure our constraint is possible to meet.
+        double minSimilarity = getMinSimilarity(match.symbol);
         double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         return match.similarity / similarityMultiplier < minSimilarity;
     });
@@ -488,7 +478,7 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
 }
 
 
-double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
+double TimeRecognizer::getMinSimilarity(char symbol) const {
     if (std::isdigit(symbol)) {
         double baselineMinSimilarity = (settings.isComposite ? -8000 : -7000);
         /* If a multiplier is present, that means that the symbol tends to get false matches.
@@ -503,34 +493,6 @@ double TimeRecognizer::getGlobalMinSimilarity(char symbol) const {
             return -3500;
         else
             return -7000;
-    }
-}
-
-
-double TimeRecognizer::getMinSimilarityDividedByBestSimilarity(char symbol) const {
-    switch (symbol) {
-    default:
-        return 3.25;
-    case SCORE:
-        return 2;
-    // We use "TIME" to detect the score screen, so we want to be sure.
-    case TIME:
-        if (settings.isComposite)
-            return 1.75;
-        else
-            return 2;
-    /* One is really small, so it can be misdetected, therefore the coefficient is lowered.
-     * This leads to four recognizing instead of one - so coefficient for four is lowered too. */
-    case '1':
-        if (settings.isComposite)
-            return 2;
-        else
-            return 3;
-    case '4':
-        if (settings.isComposite)
-            return 2;
-        else
-            return 2.5;
     }
 }
 

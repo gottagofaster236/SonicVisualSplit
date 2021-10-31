@@ -155,9 +155,9 @@ BOOL CALLBACK ObsWindowCapture::checkIfWindowIsOBS(HWND hwnd, LPARAM pidAndObsHw
     GetWindowThreadProcessId(hwnd, &windowProcessId);
     if (windowProcessId == processId) {
         // Checking the window title. The main window's title starts with "OBS".
-        TCHAR* titleBuffer = new TCHAR[textLength + 1];
-        GetWindowText(hwnd, titleBuffer, textLength + 1);
-        if (wcsncmp(titleBuffer, TEXT("OBS"), 3) == 0) {
+        std::vector<TCHAR> titleBuffer(textLength + 1);
+        GetWindowText(hwnd, titleBuffer.data(), textLength + 1);
+        if (wcsncmp(titleBuffer.data(), TEXT("OBS"), 3) == 0) {
             obsHwnd = hwnd;
             return FALSE;
         }

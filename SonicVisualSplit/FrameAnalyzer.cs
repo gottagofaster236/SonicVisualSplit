@@ -766,12 +766,17 @@ namespace SonicVisualSplit
 
         private void SendResultToConsumers(AnalysisResult result)
         {
+            /* Copy the result consumers, so that they can
+             * remove themselves from the list during iteration. */
+            List<IResultConsumer> resultConsumersCopy;
             lock (resultConsumers)
             {
-                foreach (var resultConsumer in resultConsumers)
-                {
-                    resultConsumer.OnFrameAnalyzed(result);
-                }
+                resultConsumersCopy = new List<IResultConsumer>(resultConsumers);
+            }
+
+            foreach (var resultConsumer in resultConsumersCopy)
+            {
+                resultConsumer.OnFrameAnalyzed(result);
             }
         }
 
@@ -779,6 +784,10 @@ namespace SonicVisualSplit
         {
             lock (resultConsumers)
             {
+                if (resultConsumers.Contains(resultConsumer))
+                {
+                    return;
+                }
                 resultConsumers.Add(resultConsumer);
             }
             SendFirstEmptyResultToConsumer(resultConsumer);

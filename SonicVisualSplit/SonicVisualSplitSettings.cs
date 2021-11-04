@@ -29,6 +29,7 @@ namespace SonicVisualSplit
         {
             InitializeComponent();
             Disposed += OnDisposed;
+            VisibleChanged += OnVisibleChanged;
 
             // Default values of the settings.
             RGB = false;
@@ -137,41 +138,15 @@ namespace SonicVisualSplit
             OnSettingsChanged();
         }
 
-        // Code that shows the preview of digits recognition results.
-
-        protected override void OnParentChanged(EventArgs e)
-        {
-            if (Parent != null)
-            {
-                Parent.VisibleChanged += OnVisibilityChanged;
-                if (Parent.Visible)
-                {
-                    OnVisibilityChanged();
-                }
-            }
-        }
-
-        private void OnVisibilityChanged(object sender = null, EventArgs e = null)
-        {
-            if (Parent.Visible)
-            {
-                FrameAnalyzer.AddResultConsumer(this);
-            }
-            else
-            {
-                FrameAnalyzer.RemoveResultConsumer(this);
-            }
-        }
-
-        private void OnDisposed(object sender, EventArgs e)
-        {
-            FrameAnalyzer.RemoveResultConsumer(this);
-        }
-
+        // Shows the preview of digits recognition results.
         public void OnFrameAnalyzed(AnalysisResult result)
         {
             RunOnUiThreadAsync(() =>
             {
+                if (!UpdateFrameAnalyzerSubscription())
+                {
+                    return;
+                }
                 if (IsPracticeMode)
                 {
                     return;
@@ -227,6 +202,30 @@ namespace SonicVisualSplit
                     recognitionResultsLabel.ForeColor = textColor;
                 }
             });
+        }
+
+        private void OnDisposed(object sender, EventArgs e)
+        {
+            FrameAnalyzer.RemoveResultConsumer(this);
+        }
+
+        private void OnVisibleChanged(object sender, EventArgs e)
+        {
+            UpdateFrameAnalyzerSubscription();
+        }
+
+        private bool UpdateFrameAnalyzerSubscription()
+        {
+            if (Visible)
+            {
+                FrameAnalyzer.AddResultConsumer(this);
+                return true;
+            }
+            else
+            {
+                FrameAnalyzer.RemoveResultConsumer(this);
+                return false;
+            }
         }
 
         private void OnSettingsChanged()

@@ -14,7 +14,7 @@ You have to have the latest version of [LiveSplit](http://livesplit.org/download
 If you want to record (or stream) your game footage, you have to have [OBS Studio](https://obsproject.com/) (or other streaming software) installed.
 
 ## Installation
-1. Install the latest 64-bit version of [Visual C++ Redistributable](https://support.microsoft.com/en-us/topic/the-latest-supported-visual-c-downloads-2647da03-1eea-4433-9aff-95f26a218cc0).
+1. Install the latest version of Visual C++ Redistributable from [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 2. Unpack the contents of [SVS.zip](https://github.com/gottagofaster236/SonicVisualSplit/releases/latest/download/SVS.zip)
 into the Components directory of your LiveSplit installation.
 4. Add the component: right-click LiveSplit, select "Edit layout...", press the big "+" button,
@@ -42,7 +42,7 @@ You'll have to use one of the two methods to set everything up.
      (and thus isn't recommended for use with Sonic CD).
      
    - Another method is to install the *VirtualCam plugin*.
-     For OBS, download and install it [from here](https://obsproject.com/forum/resources/obs-virtualcam.949/).
+     For OBS, download and install it from [here](https://github.com/Fenrirthviti/obs-virtual-cam/releases).
      For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      You have to start the virtual camera before using SonicVisualSplit, and select it in the video sources dropdown list.
    

@@ -25,11 +25,13 @@ namespace SonicVisualSplit
 
         public bool Disposed { get; private set; } = false;
 
+        private static Form mainForm;
         private static Thread mainThread;
-        
+
         public SonicVisualSplitComponent(LiveSplitState state)
         {
             this.state = state;
+            mainForm = state.Form;
             mainThread = Thread.CurrentThread;
             internalComponent = new InfoTextComponent("Time on screen (SVS)", "Wait..");
 
@@ -159,24 +161,23 @@ namespace SonicVisualSplit
             }
             else
             {
-                var mainWindow = GetMainWindow();
-                mainWindow?.BeginInvoke(action);
+                if (CanRunOnUiThreadAsync())
+                {
+                    try
+                    {
+                        mainForm.BeginInvoke(action);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // The form handle is already destroyed.
+                    }
+                }
             }
         }
 
         public static bool CanRunOnUiThreadAsync()
         {
-            return GetMainWindow() != null;
-        }
-
-        private static Control GetMainWindow()
-        {
-            var forms = Application.OpenForms;
-            if (forms.Count == 0)
-            {
-                return null;
-            }
-            return forms[0];
+            return mainForm.IsHandleCreated;
         }
     }
 }

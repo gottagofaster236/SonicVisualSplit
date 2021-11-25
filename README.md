@@ -65,8 +65,8 @@ So, click "yes" when LiveSplit will ask you whether you want to save the layout 
 The component currently cannot tell whether you just want to practice or start an actual run.
 For that in SVS there's *practice mode*. It temporarily disables the component, so that you can practice the game without the timer running.
 
-To toggle the practice mode, right-click LiveSplit, select "Control", and click "Toggle practice mode" at the bottom.
-Alternatively, you can go to component settings (as described in the previous section), and click the "Toggle practice mode" button there.
+To toggle the practice mode, press <kbd>Ctrl</kbd> + <kbd>P</kbd> (make sure LiveSplit is the focused window first).
+Alternatively, you can right-click LiveSplit, select "Control", and click "Toggle practice mode" in the bottom.
 
 ## Known limitations
 - If you die on *Scrap Brain 3* in Sonic 1, you'll hхave to undo the split manually (the game time will be correct anyways).

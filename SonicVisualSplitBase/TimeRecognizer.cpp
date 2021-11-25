@@ -9,6 +9,7 @@
 #include <utility>
 #include <cctype>
 #include <cmath>
+#include <format>
 
 
 namespace SonicVisualSplitBase {
@@ -230,12 +231,15 @@ void TimeRecognizer::getTimeFromRecognizedDigits(const std::vector<Match>& digit
         result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
         return;
     }
-    result.timeString = minutes + "'" + seconds;
+
     result.timeInMilliseconds = std::stoi(minutes) * 60 * 1000 + std::stoi(seconds) * 1000;
     if (timeIncludesMilliseconds()) {
         std::string milliseconds = timeDigitsStr.substr(3, 2);
-        result.timeString += '"' + milliseconds;
         result.timeInMilliseconds += std::stoi(milliseconds) * 10;
+        result.timeString += std::format("{}'{}\"{}", minutes, seconds, milliseconds);
+    }
+    else {
+        result.timeString = std::format("{}:{}", minutes, seconds);
     }
 
     result.recognizedTime = true;

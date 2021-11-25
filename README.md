@@ -39,11 +39,11 @@ You'll have to use one of the two methods to set everything up.
    - If you use OBS Studio, you can simply choose "OBS Window Capture" from the video sources dropdown list.
      SonicVisualSplit will get the video by capturing screenshots of the opened OBS Studio window.
      This method needs no setup, but may be less stable then the following one
-     (and thus isn't recommended for use with Sonic CD).
+     (and isn't recommended for Sonic CD).
      
    - Another method is to install the *VirtualCam plugin*.
      For OBS, download and install it from [here](https://github.com/Fenrirthviti/obs-virtual-cam/releases). Then enable it in Tools → VirtualCam.
-     For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
+     For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).<br>
      You have to start the virtual camera before using SonicVisualSplit, and select it in the video sources dropdown list.
    
      Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
@@ -53,7 +53,7 @@ You'll have to use one of the two methods to set everything up.
 - Make sure your capture card outputs an acceptable picture.
    - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software.
      Try increasing gamma/brightness.
-   - Check that the aspect ratio is correct. If it's stretched, fix it with your streaming software.
+   - Check that the aspect ratio is correct (either 4:3 or 16:9). If it's stretched, fix it with your streaming software.
 - After you've setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
 choose the video connector that you use to connect your console to the capture card,
@@ -65,22 +65,22 @@ So, click "yes" when LiveSplit will ask you whether you want to save the layout 
 The component currently cannot tell whether you just want to practice or start an actual run.
 For that in SVS there's *practice mode*. It temporarily disables the component, so that you can practice the game without the timer running.
 
-To toggle the practice mode, press <kbd>Ctrl</kbd> + <kbd>P</kbd> (make sure LiveSplit is the focused window first).
+To toggle the practice mode, press <kbd>Ctrl</kbd> + <kbd>P</kbd> (make sure LiveSplit is the focused window first).<br>
 Alternatively, you can right-click LiveSplit, select "Control", and click "Toggle practice mode" in the bottom.
 
 ## Known limitations
-- If you die on *Scrap Brain 3* in Sonic 1, you'll hхave to undo the split manually (the game time will be correct anyways).
+- If you die on *Scrap Brain 3* in Sonic 1, you'll have to undo the split manually (the game time will be correct anyway).
 - Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
 - In Sonic 2, when you hit the boss, the timer is flashing and SVS fails to recognize that.
 This is fine, it'll recover soon after.
 - You must have one split per each act, and the splits should start from the first act. In particular, SVS is (probably) not usable for multi-game runs.
 
 ## Troubleshooting
-- If the component fails to recognize the digits too often (when it writes a dash instead of a recognized time),
+- If the component fails to read the digits too often (when it shows a dash instead of a time),
 check your settings.
 Make sure you've selected the correct video mode and the correct game.
-Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
-- Note that occasional incorrectly recognized frames are fine, thanks to error detection.
+Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.<br>
+Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.
 - If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).

@@ -494,7 +494,7 @@ double TimeRecognizer::getMinSimilarity(char symbol) const {
     else {
         // TIME and SCORE labelMatches.
         if (settings.isComposite)
-            return -3500;
+            return -4500;
         else
             return -7000;
     }

@@ -557,7 +557,7 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
     uint8_t maxBrightness = pixels[(int) (pixels.size() * brightPosition)];
     uint8_t whiteColor = pixels[(int) (pixels.size() * veryBrightPosition)];
 
-    if (whiteColor < 175 || maxBrightness < 100) {
+    if (whiteColor < 175) {
         // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
         return {};
     }

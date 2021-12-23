@@ -204,4 +204,14 @@
 			<change>Minor bugfixes.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.2.3">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fix the timer failing to split in some cases.</change>
+		</changelog>
+	</update>
 </updates>

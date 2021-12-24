@@ -71,8 +71,5 @@
     <ClInclude Include="AnalysisSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TrivialTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

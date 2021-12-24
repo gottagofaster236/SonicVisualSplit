@@ -11,7 +11,6 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
-#include "TrivialTypes.h"
 
 
 namespace SonicVisualSplitBase {
@@ -45,14 +44,14 @@ public:
 
         /* The rectangle where the time digits are located
          * after the frame has been scaled down to bestScale. */
-        RectTrivial digitsRect;
+        cv::Rect digitsRect;
 
         /* The bounding rectangle of the "TIME" label
          * after the frame has been scaled down to bestScale. */
-        RectTrivial timeRect;
+        cv::Rect timeRect;
 
         // The size of the frame for which the above properties hold true.
-        SizeTrivial frameSize;
+        cv::Size frameSize;
 
         bool isValid() const;
     };

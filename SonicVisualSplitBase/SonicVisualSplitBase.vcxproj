@@ -137,7 +137,6 @@
     <ClInclude Include="ObsWindowCapture.h" />
     <ClInclude Include="AnalysisSettings.h" />
     <ClInclude Include="TimeRecognizer.h" />
-    <ClInclude Include="TrivialTypes.h" />
     <ClInclude Include="VirtualCamCapture.h" />
     <ClInclude Include="WindowCapture.h" />
   </ItemGroup>

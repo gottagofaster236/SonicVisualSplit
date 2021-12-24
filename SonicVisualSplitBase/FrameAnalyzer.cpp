@@ -87,12 +87,11 @@ bool FrameAnalyzer::checkForResetScreen() {
     for (const cv::Rect& resetTemplateMatchArea : getResetTemplateMatchAreas()) {
         auto gameScreenCropped = gameScreen(getResetTemplateSearchArea(resetTemplateMatchArea));
         auto resetTemplateCropped = resetTemplate(resetTemplateMatchArea);
-        cv::UMat result = matchTemplateWithColor(gameScreenCropped, resetTemplateCropped);
+        cv::UMat result = matchResetTemplates(gameScreenCropped, resetTemplateCropped);
         double squareDifference;
         cv::minMaxLoc(result, &squareDifference);
-        // Three channels, so dividing by 3.
-        double avgSquareDifference = squareDifference / resetTemplateCropped.total() / 3;
-        const double maxAvgDifference = 40;  // Out of 255.
+        double avgSquareDifference = squareDifference / resetTemplateCropped.total();
+        const double maxAvgDifference = 49;  // Out of 255.
         if (avgSquareDifference > maxAvgDifference * maxAvgDifference) {
             // This area didn't match.
             return false;
@@ -162,21 +161,16 @@ cv::Rect FrameAnalyzer::getResetTemplateSearchArea(cv::Rect resetTemplateMatchAr
 }
 
 
-cv::UMat FrameAnalyzer::matchTemplateWithColor(cv::UMat image, cv::UMat templ) {
+cv::UMat FrameAnalyzer::matchResetTemplates(cv::UMat image, cv::UMat templ) {
     std::vector<cv::UMat> imageChannels(3);
     cv::split(image, imageChannels);
     std::vector<cv::UMat> templateChannels(3);
     cv::split(templ, templateChannels);
-    cv::UMat singleChannelResult;
+    /* Comparing only the red channels (BGR).
+     * This was initially done because of a bug, but proved to work well. */
     cv::UMat result;
-    for (int i = 0; i < 3; i++) {
-        cv::matchTemplate(imageChannels[i], templateChannels[i], singleChannelResult, cv::TM_SQDIFF);
-        if (i == 0)
-            result = singleChannelResult;
-        else
-            cv::add(result, singleChannelResult, result);
-    }
-    return singleChannelResult;
+    cv::matchTemplate(imageChannels[2], templateChannels[2], result, cv::TM_SQDIFF);
+    return result;
 }
 
 

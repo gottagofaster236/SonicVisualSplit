@@ -43,7 +43,7 @@ private:
 
     cv::Rect getResetTemplateSearchArea(cv::Rect resetTemplateArea);
 
-    static cv::UMat matchTemplateWithColor(cv::UMat image, cv::UMat templ);
+    static cv::UMat matchResetTemplates(cv::UMat image, cv::UMat templ);
 
     bool checkIfFrameIsSingleColor(cv::UMat frame);
 

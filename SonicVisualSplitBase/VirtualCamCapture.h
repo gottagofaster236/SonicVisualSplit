@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <atlbase.h>
 
 
 namespace SonicVisualSplitBase {
@@ -30,7 +31,7 @@ private:
 
     cv::VideoCapture videoCapture;
 
-    inline static std::vector<IMoniker*> deviceMonikers;
+    inline static std::vector<CComPtr<IMoniker>> deviceMonikers;
 
     static void enumerateDeviceMonikers();
     static HRESULT createDeviceEnumMoniker(REFGUID category, IEnumMoniker** ppEnum);

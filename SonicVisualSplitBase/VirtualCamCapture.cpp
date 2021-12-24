@@ -49,41 +49,38 @@ std::chrono::milliseconds VirtualCamCapture::getDelayAfterLastFrame() {
 
 
 void VirtualCamCapture::enumerateDeviceMonikers() {
-    // Clear the old list of device monikers.
-    for (IMoniker* moniker : deviceMonikers)
-        moniker->Release();
     deviceMonikers.clear();
 
     if (!initializeCom())
         return;
 
-    IEnumMoniker* enumMoniker;
+    CComPtr<IEnumMoniker> enumMoniker;
     HRESULT hr = createDeviceEnumMoniker(CLSID_VideoInputDeviceCategory, &enumMoniker);
     if (FAILED(hr))
         return;
 
-    IMoniker* moniker;
-    while (enumMoniker->Next(1, &moniker, nullptr) == S_OK) {
+    while (true) {
+        CComPtr<IMoniker> moniker;
+        if (enumMoniker->Next(1, &moniker, nullptr) != S_OK)
+            break;
         deviceMonikers.push_back(moniker);
     }
-    enumMoniker->Release();
 }
 
 
 // Code for device enumeration taken from here: https://docs.microsoft.com/en-us/windows/win32/directshow/selecting-a-capture-device
 HRESULT VirtualCamCapture::createDeviceEnumMoniker(REFGUID category, IEnumMoniker** ppEnum) {
     // Create the System Device Enumerator.
-    ICreateDevEnum* devEnum;
+    CComPtr<ICreateDevEnum> devEnum;
     HRESULT hr = CoCreateInstance(CLSID_SystemDeviceEnum, nullptr,
         CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&devEnum));
+    if (FAILED(hr))
+        return hr;
 
-    if (SUCCEEDED(hr)) {
-        // Create an enumerator for the category.
-        hr = devEnum->CreateClassEnumerator(category, ppEnum, 0);
-        if (hr == S_FALSE) {
-            hr = VFW_E_NOT_FOUND;  // The category is empty. Treat as an error.
-        }
-        devEnum->Release();
+    // Create an enumerator for the category.
+    hr = devEnum->CreateClassEnumerator(category, ppEnum, 0);
+    if (hr == S_FALSE) {
+        hr = VFW_E_NOT_FOUND;  // The category is empty. Treat as an error.
     }
     return hr;
 }
@@ -92,20 +89,17 @@ HRESULT VirtualCamCapture::createDeviceEnumMoniker(REFGUID category, IEnumMonike
 std::wstring VirtualCamCapture::getName(IMoniker* moniker) {
     auto failString = L"Unknown";
 
-    IPropertyBag* propBag;
+    CComPtr<IPropertyBag> propBag;
     HRESULT hr = moniker->BindToStorage(nullptr, nullptr, IID_PPV_ARGS(&propBag));
     if (FAILED(hr))
         return failString;
 
     // Get the friendly name.
-    VARIANT var;
-    VariantInit(&var);
+    CComVariant var;
     hr = propBag->Read(L"FriendlyName", &var, 0);
-    propBag->Release();
 
     if (SUCCEEDED(hr)) {
         std::wstring name(var.bstrVal);
-        VariantClear(&var);
         return name;
     }
     else {
@@ -169,47 +163,44 @@ std::vector<cv::Size> VirtualCamCapture::getSupportedResolutions(IMoniker* monik
     HRESULT hr;
 
     // Binding the moniker to a base filter.
-    IBaseFilter* filter;
+    CComPtr<IBaseFilter> filter;
     hr = moniker->BindToObject(nullptr, nullptr, IID_IBaseFilter, (void**) &filter);
     if (FAILED(hr))
         return {};
     
     // Enumerating over the pins of the base filter.
-    IEnumPins* enumPins;
+    CComPtr<IEnumPins> enumPins;
     hr = filter->EnumPins(&enumPins);
+    if (FAILED(hr))
+        return {};
 
-    if (SUCCEEDED(hr)) {
-        IPin* pin;
-        while (enumPins->Next(1, &pin, nullptr) == S_OK) {
-            // Enumurating over the media types of the pin.
-            IEnumMediaTypes* enumMediaTypes;
-            hr = pin->EnumMediaTypes(&enumMediaTypes);
-            if (FAILED(hr)) {
-                pin->Release();
-                continue;
-            }
-            
-            AM_MEDIA_TYPE* mediaType;
-            while (enumMediaTypes->Next(1, &mediaType, nullptr) == S_OK) {
-                if (mediaType->formattype == FORMAT_VideoInfo &&
-                        mediaType->cbFormat >= sizeof(VIDEOINFOHEADER) &&
-                        mediaType->pbFormat) {
-                    VIDEOINFOHEADER* videoInfoHeader = reinterpret_cast<VIDEOINFOHEADER*>(mediaType->pbFormat);
-                    int width = videoInfoHeader->bmiHeader.biWidth;
-                    int height = videoInfoHeader->bmiHeader.biHeight;
-                    cv::Size resolution(width, height);
-                    resolutions.push_back(resolution);
-                }
-                _DeleteMediaType(mediaType);
-            }
-
-            enumMediaTypes->Release();
-            pin->Release();
+    while (true) {
+        CComPtr<IPin> pin;
+        if (enumPins->Next(1, &pin, nullptr) != S_OK) {
+            break;
         }
 
-        enumPins->Release();
+        // Enumurating over the media types of the pin.
+        CComPtr<IEnumMediaTypes> enumMediaTypes;
+        hr = pin->EnumMediaTypes(&enumMediaTypes);
+        if (FAILED(hr))
+            continue;
+
+        AM_MEDIA_TYPE* mediaType;
+        while (enumMediaTypes->Next(1, &mediaType, nullptr) == S_OK) {
+            if (mediaType->formattype == FORMAT_VideoInfo &&
+                mediaType->cbFormat >= sizeof(VIDEOINFOHEADER) &&
+                mediaType->pbFormat) {
+                VIDEOINFOHEADER* videoInfoHeader = reinterpret_cast<VIDEOINFOHEADER*>(mediaType->pbFormat);
+                int width = videoInfoHeader->bmiHeader.biWidth;
+                int height = videoInfoHeader->bmiHeader.biHeight;
+                cv::Size resolution(width, height);
+                resolutions.push_back(resolution);
+            }
+            _DeleteMediaType(mediaType);
+        }
     }
-    filter->Release();
+
     return resolutions;
 }
 

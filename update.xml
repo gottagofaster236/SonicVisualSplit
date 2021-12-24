@@ -214,4 +214,25 @@
 			<change>Fix the timer failing to split in some cases.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.2.4">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+			<file path="Components/jpeg62.dll" status="changed"/>
+			<file path="Components/libpng16.dll" status="changed"/>
+			<file path="Components/lzma.dll" status="changed"/>
+			<file path="Components/opencv_core.dll" status="changed"/>
+			<file path="Components/opencv_imgcodecs.dll" status="changed"/>
+			<file path="Components/opencv_imgproc.dll" status="changed"/>
+			<file path="Components/opencv_videoio.dll" status="changed"/>
+			<file path="Components/tiff.dll" status="changed"/>
+			<file path="Components/webp.dll" status="changed"/>
+			<file path="Components/zlib1.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fixed a memory leak.</change>
+			<change>Updated libraries.</change>
+		</changelog>
+	</update>
 </updates>

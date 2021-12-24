@@ -30,9 +30,10 @@ private:
 
     cv::VideoCapture videoCapture;
 
-    inline static std::vector<cv::Size> captureResolutions;
+    inline static std::vector<IMoniker*> deviceMonikers;
 
-    static HRESULT EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum);
+    static void enumerateDeviceMonikers();
+    static HRESULT createDeviceEnumMoniker(REFGUID category, IEnumMoniker** ppEnum);
     static std::wstring getName(IMoniker* moniker);
     static cv::Size getResolution(IMoniker* moniker);
     static std::vector<cv::Size> getSupportedResolutions(IMoniker* moniker);

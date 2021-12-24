@@ -8,7 +8,7 @@ namespace SonicVisualSplitBase {
 
 VirtualCamCapture::VirtualCamCapture(int deviceIndex) {
     videoCapture = cv::VideoCapture(deviceIndex, cv::CAP_DSHOW);
-    cv::Size resolution = captureResolutions[deviceIndex];
+    cv::Size resolution = getResolution(deviceMonikers[deviceIndex]);
     videoCapture.set(cv::CAP_PROP_FRAME_WIDTH, resolution.width);
     videoCapture.set(cv::CAP_PROP_FRAME_HEIGHT, resolution.height);
     videoCapture.set(cv::CAP_PROP_FPS, 60);
@@ -30,26 +30,9 @@ VirtualCamCapture::~VirtualCamCapture() {
 
 
 std::vector<std::wstring> VirtualCamCapture::getVideoDevicesList() {
-    std::vector<std::wstring> devices;
-    captureResolutions.clear();
-
-    if (!initializeCom())
-        return {};
-
-    IEnumMoniker* enumMoniker;
-    HRESULT hr = EnumerateDevices(CLSID_VideoInputDeviceCategory, &enumMoniker);
-    if (SUCCEEDED(hr)) {
-        IMoniker* moniker;
-
-        while (enumMoniker->Next(1, &moniker, nullptr) == S_OK) {
-            devices.push_back(getName(moniker));
-            captureResolutions.push_back(getResolution(moniker));
-            moniker->Release();
-        }
-
-        enumMoniker->Release();
-    }
-    return devices;
+    enumerateDeviceMonikers();
+    auto devices = std::views::transform(deviceMonikers, getName);
+    return std::vector<std::wstring>(devices.begin(), devices.end());
 }
 
 
@@ -65,8 +48,30 @@ std::chrono::milliseconds VirtualCamCapture::getDelayAfterLastFrame() {
 }
 
 
+void VirtualCamCapture::enumerateDeviceMonikers() {
+    // Clear the old list of device monikers.
+    for (IMoniker* moniker : deviceMonikers)
+        moniker->Release();
+    deviceMonikers.clear();
+
+    if (!initializeCom())
+        return;
+
+    IEnumMoniker* enumMoniker;
+    HRESULT hr = createDeviceEnumMoniker(CLSID_VideoInputDeviceCategory, &enumMoniker);
+    if (FAILED(hr))
+        return;
+
+    IMoniker* moniker;
+    while (enumMoniker->Next(1, &moniker, nullptr) == S_OK) {
+        deviceMonikers.push_back(moniker);
+    }
+    enumMoniker->Release();
+}
+
+
 // Code for device enumeration taken from here: https://docs.microsoft.com/en-us/windows/win32/directshow/selecting-a-capture-device
-HRESULT VirtualCamCapture::EnumerateDevices(REFGUID category, IEnumMoniker** ppEnum) {
+HRESULT VirtualCamCapture::createDeviceEnumMoniker(REFGUID category, IEnumMoniker** ppEnum) {
     // Create the System Device Enumerator.
     ICreateDevEnum* devEnum;
     HRESULT hr = CoCreateInstance(CLSID_SystemDeviceEnum, nullptr,

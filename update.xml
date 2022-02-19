@@ -235,4 +235,14 @@
 			<change>Updated libraries.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.2.5">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Minor optimizations.</change>
+		</changelog>
+	</update>
 </updates>

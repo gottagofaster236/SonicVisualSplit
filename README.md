@@ -43,8 +43,7 @@ You'll have to use one of the two methods to set everything up.
      
    - Another method is to install the *VirtualCam plugin*.
      For OBS, download and install it from [here](https://github.com/Fenrirthviti/obs-virtual-cam/releases).
-     Then navigate to your game capture source in OBS, right-click it → Filters → Effect Filters →
-     Add new → VirtualCam.
+     Then enable it in Tools → VirtualCam.
      	
      For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      
@@ -56,8 +55,8 @@ You'll have to use one of the two methods to set everything up.
 - Make sure your capture card outputs an acceptable picture.
    - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software.
      Try increasing gamma/brightness.
-   - Check that the aspect ratio is correct (either 4:3 or 16:9). If it's stretched, fix it with your streaming software.
-- After you've setup the video capture correctly, it should appear in the preview.
+   - Check that the aspect ratio of the game is either 4:3 or 16:9. If it's stretched, fix it with your streaming software.
+- After you setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
 choose the video connector that you use to connect your console to the capture card,
 and change the aspect ratio if for some reason your capture card stretches the image.
@@ -72,27 +71,27 @@ To toggle the practice mode, press <kbd>Ctrl</kbd> + <kbd>P</kbd> (make sure Liv
 Alternatively, you can right-click LiveSplit, select "Control", and click "Toggle practice mode" in the bottom.
 
 ## Known limitations
-- If you die on *Scrap Brain 3* in Sonic 1, you'll have to undo the split manually (the game time will be correct anyway).
-- Same for Sonic 2's *Sky Chase* and *Wing Fortress*. If you die on one of those levels, you'll have to manually undo the split.
+- If you die on *Scrap Brain 3* in Sonic 1, or Sonic 2's *Sky Chase* and *Wing Fortress*, you'll have to _undo the split_ manually. The actual time will be correct regardless.
 - In Sonic 2, when you hit the boss, the timer is flashing and SVS fails to recognize that.
 This is fine, it'll recover soon after.
 - You must have one split per each act, and the splits should start from the first act. In particular, SVS is (probably) not usable for multi-game runs.
 
 ## Troubleshooting
+- If the component doesn't reset automatically, it's most likely due to colors on your capture being slightly off. Open up an emulator and see if you can adjust the brightness to the same level.
 - If the component fails to read the digits too often (when it shows a dash instead of a time),
 check your settings.
-Make sure you've selected the correct video mode and the correct game.
+Make sure you selected the correct video mode and the correct game.
 Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.<br>
 Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.
 - If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).
-- If you've found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
+- If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
 If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
 at the point where SVS fails would be appreciated.
 
 ## Questions / Suggestions
-If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions).
+If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions). You can also message me [on Discord](https://discordapp.com/users/gottagofaster#3355).
 
 ## For developers
 Contributions are welcome! You should probably read [BUILDING.md](BUILDING.md) on how to build the project.

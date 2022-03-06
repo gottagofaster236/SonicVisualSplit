@@ -78,6 +78,9 @@ This is fine, it'll recover soon after.
 
 ## Troubleshooting
 - If the component doesn't reset automatically, it's most likely due to colors on your capture being slightly off. Open up an emulator and see if you can adjust the brightness to the same level.
+
+  Another reason may be that your aspect ratio is incorrect, make sure it's either 4:3 or 16:9.
+
 - If the component fails to read the digits too often (when it shows a dash instead of a time),
 check your settings.
 Make sure you selected the correct video mode and the correct game.

@@ -2,12 +2,10 @@
 1. Install [Visual Studio 2022](https://visualstudio.microsoft.com/vs/).
 2. Install [vcpkg](https://github.com/microsoft/vcpkg), integrate it with Visual Studio (see the link).
 3. Install OpenCV: open the folder where you installed vcpkg in the command line, and execute `vcpkg install opencv:x64-windows` (takes time to build).
-in order to commit spaces instead of tabs.
 4. Download [LiveSplit](https://livesplit.org/downloads/). Extract it to `C:/Program Files/LiveSplit` (this exact path is needed for the build script).
 5. Open Visual Studio **as administrator**. Clone the [LiveSplit repository](https://github.com/LiveSplit/LiveSplit) with Visual Studio **(not with git command line)**.
-6. If you want, you can build the LiveSplit repository, but you'll have to overcome a few obstacles. Alternatively, here's what you can do.  
-   Copy these three files: `LiveSplit.Core.dll`, `LiveSplit.View.dll` and `UpdateManager.dll` from your LiveSplit installation to these two folders:
-   `%USERPROFILE%/source/repos/LiveSplit/LiveSplit/bin/Debug` and `%USERPROFILE%/source/repos/LiveSplit/LiveSplit/bin/Release`.
+6. If you want, you can build the LiveSplit repository, but it is [not trivial](https://github.com/LiveSplit/LiveSplit#common-compiling-issues). Alternatively, you can simply run
+[copy\_livesplit\_dlls.bat](copy_livesplit_dlls.bat).
 7. Then, clone [this](https://github.com/gottagofaster236/SonicVisualSplit) repository (also with Visual Studio).
 8. In order for LiveSplit to be launched when you click the "Start" button in Visual Studio, you have to do the following.
 In Visual Studio, open Solution Explorer (with Ctrl+Alt+L), right-click SonicVisualSplit project, select Properties. On the left pane, click "Debug". Select "All configurations" instead of "Active configuration" in the "Configuration:" dropdown list. Select "Start external program" action, and click "Browse".

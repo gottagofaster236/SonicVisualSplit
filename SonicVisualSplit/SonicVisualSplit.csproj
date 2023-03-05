@@ -119,16 +119,16 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\LiveSplit\LiveSplit\LiveSplit\LiveSplit.Core\LiveSplit.Core.csproj">
+    <ProjectReference Include="..\..\LiveSplit\LiveSplit\LiveSplit.Core\LiveSplit.Core.csproj">
       <Project>{6de847db-20a3-4848-aeee-1b4364aecdfb}</Project>
       <Name>LiveSplit.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\LiveSplit\LiveSplit\LiveSplit\LiveSplit.View\LiveSplit.View.csproj">
+    <ProjectReference Include="..\..\LiveSplit\LiveSplit\LiveSplit.View\LiveSplit.View.csproj">
       <Project>{f8cf1482-0687-44f3-aba1-967e10c3bb96}</Project>
       <Name>LiveSplit.View</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\LiveSplit\LiveSplit\LiveSplit\UpdateManager\UpdateManager.csproj">
-      <Project>{56DEA3A0-2EB7-493B-B50F-A5E3AA8AE52A}</Project>
+    <ProjectReference Include="..\..\LiveSplit\LiveSplit\UpdateManager\UpdateManager.csproj">
+      <Project>{56dea3a0-2eb7-493b-b50f-a5e3aa8ae52a}</Project>
       <Name>UpdateManager</Name>
     </ProjectReference>
     <ProjectReference Include="..\SonicVisualSplitWrapper\SonicVisualSplitWrapper.vcxproj">
@@ -138,10 +138,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>REM You can select "C:\Program Files\LiveSplit\LiveSplit.exe"
-REM in the "Start external program" action at "Debug" tab.
+    <PostBuildEvent>REM !!! If you get an error, relaunch Visual Studio as administrator !!!
 
-set LivesplitLocation=C:\Program Files\LiveSplit\Components\
+set LiveSplitComponentsFolder=C:\Program Files\LiveSplit\Components\
 
 REM Copying the missing DLL's and resources.
 xcopy /y "$(SolutionDir)$(PlatformName)\$(Configuration)\*.dll" "$(TargetDir)"
@@ -153,6 +152,6 @@ del "$(TargetDir)LiveSplit.Core.*"
 del "$(TargetDir)UpdateManager.*"
 
 REM Copying the build results to LiveSplit.
-xcopy /y "$(TargetDir)" "%25LivesplitLocation%25"</PostBuildEvent>
+xcopy /y "$(TargetDir)" "%25LiveSplitComponentsFolder%25"</PostBuildEvent>
   </PropertyGroup>
 </Project>

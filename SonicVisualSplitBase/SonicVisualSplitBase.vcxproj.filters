@@ -71,5 +71,14 @@
     <ClInclude Include="AnalysisSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="capture.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="direct3d11.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="composition.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

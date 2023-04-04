@@ -18,8 +18,10 @@ public:
 
     std::chrono::milliseconds getDelayAfterLastFrame() override;
 
+    static bool isSupported();
+
 private:
-    // Returns a full screenshot of the OBS window.
+    // Returns a screenshot of the OBS window client area.
     cv::Mat captureRawFrameImpl() override;
 
     bool updateOBSHwnd();
@@ -31,9 +33,9 @@ private:
     std::unique_ptr<WindowCapture> obsCapture;
     std::mutex obsCaptureMutex;
     HWND obsHwnd = nullptr;
-    int lastGameFrameWidth, lastGameFrameHeight;
+    int lastScreenshotHeight = 0, lastGameFrameHeight = 0;
     
-    int obsVerticalMargin;  // Difference between the client rect and window rect.
+    int obsVerticalMargin = 0;  // Difference between the client rect and window rect.
 };
 
 }  // namespace SonicVisualSplitBase

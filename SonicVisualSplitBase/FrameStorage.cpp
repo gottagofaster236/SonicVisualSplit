@@ -184,7 +184,7 @@ void setVideoCapture(int sourceIndex) {
 
     if (sourceIndex >= 0)
         gameVideoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
-    else if (sourceIndex == OBS_WINDOW_CAPTURE)
+    else if (sourceIndex == OBS_WINDOW_CAPTURE && ObsWindowCapture::isSupported())
         gameVideoCapture = std::make_unique<ObsWindowCapture>();
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = std::make_unique<NullCapture>();

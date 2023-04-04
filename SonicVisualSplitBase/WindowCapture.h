@@ -2,10 +2,25 @@
 #define NOMINMAX  // fighting defines from Windows.h
 #include <Windows.h>
 #include <opencv2/core.hpp>
+#include <Unknwn.h>
+#include <winrt/Windows.Graphics.DirectX.h>
+#include <winrt/Windows.Graphics.Capture.h>
+#include <d3d11_4.h>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <map>
+#include <atomic>
+#include <functional>
+#include <chrono>
 
+namespace winrt {
+    using namespace Windows::Foundation;
+    using namespace Windows::Graphics;
+    using namespace Windows::Graphics::Capture;
+    using namespace Windows::Graphics::DirectX;
+    using namespace Windows::System;
+}
 
 namespace SonicVisualSplitBase {
 
@@ -18,29 +33,44 @@ public:
 
     ~WindowCapture();
 
-    // Capture the window and write the result to the image field.
-    void getScreenshot();
+    cv::Mat getFrame(std::chrono::milliseconds timeout);
+
+    /* Sets the minimum acceptable width of the window that's being captured.
+     * The window will get resized if its height is lower than that value. */
+    void setMinimumWindowWidth(int minimumWindowWidth);
 
     /* Sets the minimum acceptable height of the window that's being captured.
      * The window will get resized if its height is lower than that value. */
     void setMinimumWindowHeight(int minimumWindowHeight);
 
-    cv::Mat image;
-    int width, height;
+    static bool isSupported();
 
 private:
+    void onFrameArrived(winrt::Direct3D11CaptureFramePool const& sender, winrt::IInspectable const&);
+
     bool ensureWindowReadyForCapture();
 
     bool isWindowMaximized();
 
     bool isWindowBeingMoved();
 
+    void initWinRT();
+
+    cv::Mat lastFrame;
+    std::mutex lastFrameMutex;
+    std::condition_variable lastFrameArrived;
+
     HWND hwnd;
-    int minimumWindowHeight = 0;
-    DWORD processId;
-    HDC hwindowDC, hwindowCompatibleDC;
-    HBITMAP hbwindow;
-    BITMAPINFOHEADER bmpInfo;
+    int minimumWindowWidth = 0, minimumWindowHeight = 0;
+
+    winrt::Windows::System::DispatcherQueueController dispatcherQueueController{nullptr};
+    winrt::Windows::Graphics::SizeInt32 lastSize{};
+    winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool framePool{nullptr};
+    winrt::Windows::Graphics::Capture::GraphicsCaptureSession session{nullptr};
+    winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice direct3DDevice{nullptr};
+    winrt::com_ptr<ID3D11DeviceContext> d3dContext{nullptr};
+    winrt::com_ptr<ID3D11Device> d3dDevice{nullptr};
+    winrt::Direct3D11CaptureFramePool::FrameArrived_revoker frameArrivedRevoker;
 };
 
 

@@ -11,36 +11,51 @@
 namespace SonicVisualSplitBase {
 
 static const int MINIMUM_STREAM_PREVIEW_HEIGHT = 535;
+static const int MINIMUM_STREAM_PREVIEW_WIDTH = MINIMUM_STREAM_PREVIEW_HEIGHT * 18 / 9;
+static const int OBS_MINIMUM_HEIGHT_DEFAULT = 720;
 
 
 cv::Mat ObsWindowCapture::captureRawFrameImpl() {
-    cv::Mat screenshot;
     if (!updateOBSHwnd())
         return {};
+    cv::Mat frame;
     {
         std::lock_guard<std::mutex> guard(obsCaptureMutex);
-        obsCapture->getScreenshot();
-        if (obsCapture->image.empty())
-            return screenshot;
-        cv::cvtColor(obsCapture->image, screenshot, cv::COLOR_BGRA2BGR);
+        auto timeout = std::chrono::milliseconds(100);
+        frame = obsCapture->getFrame(timeout);
     }
-    return screenshot;
+    if (frame.empty())
+        return {};
+    cv::Mat converted;
+    cv::cvtColor(frame, converted, cv::COLOR_BGRA2BGR);
+    return converted;
 }
 
 
 cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
-    /* In OBS, the stream preview has a light-gray border around it.
-     * It is adjacent to the sides of the screen. We start from the right side. */
     cv::UMat streamPreview;
     if (screenshot.empty())
         return {};
-    // Find the border rectangle.
+
+    /* In OBS, the stream preview has a light-gray border around it.
+     * It is adjacent to the sides of the screen. */
+    int verticalCheckPosition = screenshot.rows / 5;
     int borderRight = screenshot.cols - 1;
-    cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(screenshot.rows / 2, borderRight);
-    int borderTop = screenshot.rows / 2;
+    cv::Vec3b borderColor = screenshot.at<cv::Vec3b>(verticalCheckPosition, borderRight);
+    cv::Vec3b blackMenuColor = screenshot.at<cv::Vec3b>(0, 0);
+    if (borderColor == blackMenuColor) {
+        // On newer OBS versions, the gray border of the stream preview has a black margin to the sides of the window.
+        while (borderRight > 0 && screenshot.at<cv::Vec3b>(verticalCheckPosition, borderRight) == borderColor)
+            borderRight--;
+        if (borderRight == 0)
+            return {};
+        borderColor = screenshot.at<cv::Vec3b>(verticalCheckPosition, borderRight);
+    }
+
+    int borderTop = verticalCheckPosition;
     while (borderTop - 1 >= 0 && screenshot.at<cv::Vec3b>(borderTop - 1, borderRight) == borderColor)
         borderTop--;
-    int borderBottom = screenshot.rows / 2;
+    int borderBottom = verticalCheckPosition;
     while (borderBottom + 1 < screenshot.rows && screenshot.at<cv::Vec3b>(borderBottom + 1, borderRight) == borderColor)
         borderBottom++;
     int borderLeft = borderRight;
@@ -68,10 +83,15 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
         return {};
     }
     screenshot(streamRectangle).copyTo(streamPreview);
-    if (lastGameFrameWidth != streamPreview.cols || lastGameFrameHeight != streamPreview.rows) {
-        lastGameFrameWidth = streamPreview.cols;
+    if (lastScreenshotHeight != screenshot.rows || lastGameFrameHeight != streamPreview.rows) {
+        lastScreenshotHeight = screenshot.rows;
         lastGameFrameHeight = streamPreview.rows;
-        int minimumObsHeight = screenshot.rows + obsVerticalMargin + (MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight);
+        int minimumObsHeight;
+        int streamPreviewHeightDelta = MINIMUM_STREAM_PREVIEW_HEIGHT - lastGameFrameHeight;
+        if (streamPreviewHeightDelta > 0)
+            minimumObsHeight = lastScreenshotHeight + obsVerticalMargin + streamPreviewHeightDelta;
+        else
+            minimumObsHeight = OBS_MINIMUM_HEIGHT_DEFAULT;
         {
             std::lock_guard<std::mutex> guard(obsCaptureMutex);
             if (obsCapture)
@@ -87,25 +107,30 @@ std::chrono::milliseconds ObsWindowCapture::getDelayAfterLastFrame() {
 }
 
 
+bool ObsWindowCapture::isSupported() {
+    return WindowCapture::isSupported();
+}
+
+
 bool ObsWindowCapture::updateOBSHwnd() {
-    if (IsWindow(obsHwnd) && !IsIconic(obsHwnd)) {
-        // Checking that the size of the window hasn't changed.
-        RECT windowSize;
-        GetClientRect(obsHwnd, &windowSize);
+    if (IsWindow(obsHwnd)) {
+        if (!IsIconic(obsHwnd)) {
+            // Checking that the size of the window hasn't changed.
+            RECT windowSize;
+            GetClientRect(obsHwnd, &windowSize);
 
-        int width = windowSize.right;
-        int height = windowSize.bottom;
-        
-        RECT windowRect;
-        GetWindowRect(obsHwnd, &windowRect);
-        int windowHeight = windowRect.bottom - windowRect.top;
-        obsVerticalMargin = windowHeight - height;
+            int width = windowSize.right;
+            int height = windowSize.bottom;
 
-        {
-            std::lock_guard<std::mutex> guard(obsCaptureMutex);
-            if (obsCapture && width == obsCapture->width && height == obsCapture->height)
-                return true;
+            RECT windowRect;
+            GetWindowRect(obsHwnd, &windowRect);
+            int windowHeight = windowRect.bottom - windowRect.top;
+            obsVerticalMargin = windowHeight - height;
         }
+
+        std::lock_guard<std::mutex> guard(obsCaptureMutex);
+        if (obsCapture)
+            return true;
     }
 
     obsHwnd = nullptr;
@@ -119,7 +144,8 @@ bool ObsWindowCapture::updateOBSHwnd() {
     {
         std::lock_guard<std::mutex> guard(obsCaptureMutex);
         obsCapture = std::make_unique<WindowCapture>(obsHwnd);
-        obsCapture->setMinimumWindowHeight(720);  // Default value.
+        obsCapture->setMinimumWindowWidth(MINIMUM_STREAM_PREVIEW_WIDTH);
+        obsCapture->setMinimumWindowHeight(OBS_MINIMUM_HEIGHT_DEFAULT);
     }
     return true;
 }

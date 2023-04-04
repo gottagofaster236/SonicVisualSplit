@@ -1,69 +1,188 @@
 #include "WindowCapture.h"
+#include "capture.interop.h"
+#include "direct3d11.interop.h"
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.System.h>
+#include <dwmapi.h>
+#include <DispatcherQueue.h>
 #include <cassert>
-
 
 namespace SonicVisualSplitBase {
 
-// WindowCapture is based on https://github.com/sturkmen72/opencv_samples/blob/master/Screen-Capturing.cpp
+// Based on https://github.com/obsproject/obs-studio/blob/master/libobs-winrt/winrt-capture.cpp
+// and https://github.com/obsproject/obs-studio/blame/master/libobs-winrt/winrt-dispatch.cpp
+// OBS Project is licensed under GPLv2 or later version.
+
+static const winrt::Windows::Graphics::DirectX::DirectXPixelFormat PIXEL_FORMAT = winrt::DirectXPixelFormat::B8G8R8A8UIntNormalized;
+
 
 WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
-    /* DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
-     * This function call raises the system requirements to Windows 10 Anniversary Update (2016), unfortunately. */
-    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    DispatcherQueueOptions options{sizeof(DispatcherQueueOptions), DQTYPE_THREAD_DEDICATED, DQTAT_COM_STA};
+    CreateDispatcherQueueController(options, reinterpret_cast<
+        ABI::Windows::System::IDispatcherQueueController**>(
+            winrt::put_abi(dispatcherQueueController)));
+    dispatcherQueueController.CreateOnDedicatedThread();
 
-    hwindowDC = GetDC(hwnd);
-    hwindowCompatibleDC = CreateCompatibleDC(hwindowDC);
-    SetStretchBltMode(hwindowCompatibleDC, COLORONCOLOR);
+    bool enqueueResult = dispatcherQueueController.DispatcherQueue().TryEnqueue([=, this]() {
+        /* DPI scaling causes GetWindowSize, GetClientRect and other functions return scaled results (i.e. incorrect ones).
+        * This function call requires Windows 10 Anniversary Update (2016). */
+        SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-    ensureWindowReadyForCapture();
-    RECT windowSize;
-    GetClientRect(hwnd, &windowSize);
-    width = windowSize.right;
-    height = windowSize.bottom;
+        initWinRT();
+        d3dDevice = CreateD3DDevice();
+        d3dDevice->GetImmediateContext(d3dContext.put());
+        winrt::com_ptr<IDXGIDevice> dxgiDevice = d3dDevice.as<IDXGIDevice>();
+        direct3DDevice = CreateDirect3DDevice(dxgiDevice.get());
 
-    // Create a bitmap.
-    hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
-    bmpInfo.biSize = sizeof(BITMAPINFOHEADER);  // http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
-    bmpInfo.biWidth = width;
-    bmpInfo.biHeight = -height;  // This is the line that makes it draw upside down or not.
-    bmpInfo.biPlanes = 1;
-    bmpInfo.biBitCount = 32;
-    bmpInfo.biCompression = BI_RGB;
-    bmpInfo.biSizeImage = 0;
-    bmpInfo.biXPelsPerMeter = 0;
-    bmpInfo.biYPelsPerMeter = 0;
-    bmpInfo.biClrUsed = 0;
-    bmpInfo.biClrImportant = 0;
-
-    // Use the previously created device context with the bitmap.
-    SelectObject(hwindowCompatibleDC, hbwindow);
+        winrt::GraphicsCaptureItem item = CreateCaptureItemForWindow(hwnd);
+        lastSize = item.Size();
+        framePool = winrt::Direct3D11CaptureFramePool::Create(direct3DDevice, PIXEL_FORMAT, 2, lastSize);
+        session = framePool.CreateCaptureSession(item);
+        session.IsBorderRequired(false);
+        session.IsCursorCaptureEnabled(false);
+        frameArrivedRevoker = framePool.FrameArrived(winrt::auto_revoke, {this, &WindowCapture::onFrameArrived});
+        session.StartCapture();
+    });
+    assert(enqueueResult);
 };
 
 
 WindowCapture::~WindowCapture() {
-    DeleteObject(hbwindow);
-    DeleteDC(hwindowCompatibleDC);
-    ReleaseDC(hwnd, hwindowDC);
-};
+    bool enqueueResult = dispatcherQueueController.DispatcherQueue().TryEnqueue(winrt::DispatcherQueuePriority::High, [=, this]() {
+        frameArrivedRevoker.revoke();
+        framePool.Close();
+        session.Close();
+    });
+    assert(enqueueResult);
+    std::thread([=, this]() {
+        /* Call get() to wait until the completion.
+         * Since there's an assert in WinRT that disallows calling get() on the main thread,
+         * we are forced to do it on another background thread.
+         */
+        dispatcherQueueController.ShutdownQueueAsync().get();
+    }).join();
+}
 
 
-void WindowCapture::getScreenshot() {
-    if (!ensureWindowReadyForCapture()) {
-        image = cv::Mat();  // Set the result to an empty image in case of error.
-        return;
-    }
+cv::Mat WindowCapture::getFrame(std::chrono::milliseconds timeout) {
+    std::unique_lock<std::mutex> lock(lastFrameMutex);
+    lastFrameArrived.wait_for(lock, timeout, [=, this]() {
+        return !lastFrame.empty();
+    });
+    cv::Mat result = lastFrame;
+    lastFrame = {};
+    return result;
+}
 
-    // Ensure the correct size is set.
-    image.create(height, width, CV_8UC4);
-    // Copy from the window device context to the bitmap device context.
-    BitBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, SRCCOPY);
-    // Copy from hwindowCompatibleDC to hbwindow.
-    GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, image.data, (BITMAPINFO*) &bmpInfo, DIB_RGB_COLORS);
+
+void WindowCapture::setMinimumWindowWidth(int value) {
+    minimumWindowWidth = value;
 }
 
 
 void WindowCapture::setMinimumWindowHeight(int value) {
     minimumWindowHeight = value;
+}
+
+
+bool WindowCapture::isSupported() {
+    return winrt::GraphicsCaptureSession::IsSupported();
+}
+
+
+static bool getClientBox(HWND window, uint32_t width, uint32_t height, D3D11_BOX* clientBox) {
+    RECT clientRect{}, windowRect{};
+    POINT upperLeft{};
+
+    /* check iconic (minimized) twice, ABA is very unlikely */
+    bool clientBoxAvailable =
+        !IsIconic(window) && GetClientRect(window, &clientRect) &&
+        !IsIconic(window) && (clientRect.right > 0) &&
+        (clientRect.bottom > 0) &&
+        (DwmGetWindowAttribute(window, DWMWA_EXTENDED_FRAME_BOUNDS,
+            &windowRect,
+            sizeof(windowRect)) == S_OK) &&
+        ClientToScreen(window, &upperLeft);
+    if (clientBoxAvailable) {
+        const uint32_t left =
+            (upperLeft.x > windowRect.left)
+            ? (upperLeft.x - windowRect.left)
+            : 0;
+        clientBox->left = left;
+
+        const uint32_t top = (upperLeft.y > windowRect.top)
+            ? (upperLeft.y - windowRect.top)
+            : 0;
+        clientBox->top = top;
+
+        uint32_t textureWidth = 1;
+        if (width > left) {
+            textureWidth =
+                std::min(width - left, (uint32_t)clientRect.right);
+        }
+
+        uint32_t textureHeight = 1;
+        if (height > top) {
+            textureHeight =
+                std::min(height - top, (uint32_t)clientRect.bottom);
+        }
+
+        clientBox->right = left + textureWidth;
+        clientBox->bottom = top + textureHeight;
+
+        clientBox->front = 0;
+        clientBox->back = 1;
+
+        clientBoxAvailable = (clientBox->right <= width) &&
+            (clientBox->bottom <= height);
+    }
+
+    return clientBoxAvailable;
+}
+
+
+void WindowCapture::onFrameArrived(winrt::Direct3D11CaptureFramePool const& sender, winrt::IInspectable const&) {
+    // Based on https://github.com/obsproject/obs-studio/blob/master/libobs-winrt/winrt-capture.cpp
+    // and https://stackoverflow.com/a/72568741/6120487
+    bool newSize = false;
+    winrt::Direct3D11CaptureFrame frame = sender.TryGetNextFrame();
+    winrt::SizeInt32 frameContentSize = frame.ContentSize();
+    winrt::com_ptr<ID3D11Texture2D> frameSurface = GetDXGIInterfaceFromObject<ID3D11Texture2D>(frame.Surface());
+    
+    /* need GetDesc because ContentSize is not reliable */
+    D3D11_TEXTURE2D_DESC desc;
+    frameSurface->GetDesc(&desc);
+
+    D3D11_BOX clientBox;
+    if (ensureWindowReadyForCapture() && getClientBox(hwnd, desc.Width, desc.Height, &clientBox)) {
+        desc.MipLevels = 1;
+        desc.ArraySize = 1;
+        desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        desc.SampleDesc = {1, 0};
+        desc.Usage = D3D11_USAGE_STAGING;
+        desc.BindFlags = 0;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        desc.MiscFlags = 0;
+        desc.Width = clientBox.right - clientBox.left;
+        desc.Height = clientBox.bottom - clientBox.top;
+        winrt::com_ptr<ID3D11Texture2D> stagingTexture;
+        d3dDevice.get()->CreateTexture2D(&desc, nullptr, stagingTexture.put());
+        d3dContext->CopySubresourceRegion(stagingTexture.get(),
+            0, 0, 0, 0, frameSurface.get(), 0, &clientBox);
+        D3D11_MAPPED_SUBRESOURCE mappedTex;
+        d3dContext->Map(stagingTexture.get(), 0, D3D11_MAP_READ, 0, &mappedTex);
+        {
+            std::lock_guard<std::mutex> guard(lastFrameMutex);
+            lastFrame = cv::Mat(desc.Height, desc.Width, CV_8UC4, mappedTex.pData, mappedTex.RowPitch).clone();
+        }
+        lastFrameArrived.notify_one();
+        d3dContext->Unmap(stagingTexture.get(), 0);
+    }
+
+    if (frameContentSize.Width != lastSize.Width || frameContentSize.Height != lastSize.Height) {
+        framePool.Recreate(direct3DDevice, PIXEL_FORMAT, 2, frameContentSize);
+        lastSize = frameContentSize;
+    }
 }
 
 
@@ -91,8 +210,9 @@ bool WindowCapture::ensureWindowReadyForCapture() {
     GetMonitorInfo(hMonitor, &mi);
     RECT rc = mi.rcMonitor;
     // Check the size of the window (stream preview shouldn't bee too small).
-    if (height < minimumWindowHeight)
-        height = minimumWindowHeight;
+    width = std::max(width, minimumWindowWidth);
+    height = std::max(height, minimumWindowHeight);
+    width = std::min<int>(width, rc.right - rc.left);
     height = std::min<int>(height, rc.bottom - rc.top);
 
     windowPos.left = std::max(rc.left, std::min(rc.right - width, windowPos.left));
@@ -108,6 +228,7 @@ bool WindowCapture::ensureWindowReadyForCapture() {
         }
         SetWindowPos(hwnd, nullptr, windowPos.left, windowPos.top, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
         redrawWindow = true;
+        return false;
     }
 
     if (redrawWindow) {
@@ -132,6 +253,23 @@ bool WindowCapture::isWindowBeingMoved() {
     gui.cbSize = sizeof(gui);
     GetGUIThreadInfo(threadId, &gui);
     return gui.flags & GUI_INMOVESIZE;
+}
+
+
+class WinRtInitializer {
+public:
+    WinRtInitializer() {
+        winrt::init_apartment(winrt::apartment_type::single_threaded);
+    }
+
+    ~WinRtInitializer() {
+        winrt::uninit_apartment();
+    }
+};
+
+
+void WindowCapture::initWinRT() {
+    thread_local WinRtInitializer initializer;
 }
 
 

@@ -108,7 +108,8 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
 
 
 std::chrono::milliseconds ObsWindowCapture::getDelayAfterLastFrame() {
-    return std::chrono::milliseconds(1000) / 60;  // 60 FPS
+    // Get frames at a rate WindowCapture provides them.
+    return std::chrono::milliseconds(0);
 }
 
 

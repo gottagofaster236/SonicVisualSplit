@@ -90,6 +90,7 @@
       <DependentUpon>SonicVisualSplitSettings.cs</DependentUpon>
     </Compile>
     <Compile Include="FrameAnalyzer.cs" />
+    <Compile Include="StyledInfoTextComponent.cs" />
     <Compile Include="VideoSourcesManager.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

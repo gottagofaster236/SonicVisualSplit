@@ -13,7 +13,7 @@ namespace SonicVisualSplit
 {
     class SonicVisualSplitComponent : IComponent, FrameAnalyzer.IResultConsumer
     {
-        private InfoTextComponent internalComponent;
+        private StyledInfoTextComponent internalComponent;
         private LiveSplitState state;
         private SonicVisualSplitSettings settings;
         private FrameAnalyzer frameAnalyzer;
@@ -33,7 +33,7 @@ namespace SonicVisualSplit
             this.state = state;
             mainForm = state.Form;
             mainThread = Thread.CurrentThread;
-            internalComponent = new InfoTextComponent("Time on screen (SVS)", "Wait..");
+            internalComponent = new StyledInfoTextComponent("Time on screen (SVS)", "Wait..");
 
             settings = new SonicVisualSplitSettings();
             frameAnalyzer = new FrameAnalyzer(state, settings);
@@ -74,10 +74,12 @@ namespace SonicVisualSplit
                 }
                 if (result.RecognizedTime)
                 {
+                    internalComponent.IsTime = true;
                     internalComponent.InformationValue = result.TimeString;
                 }
                 else
                 {
+                    internalComponent.IsTime = false;
                     if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                     {
                         internalComponent.InformationValue = "Video Disconnected";
@@ -92,6 +94,7 @@ namespace SonicVisualSplit
 
         private void OnSettingsChanged(object sender, EventArgs e)
         {
+            internalComponent.IsTime = false;
             if (settings.IsPracticeMode)
             {
                 internalComponent.InformationValue = "Practice mode";
@@ -149,22 +152,12 @@ namespace SonicVisualSplit
 
         void IComponent.DrawHorizontal(Graphics g, LiveSplitState state, float height, Region clipRegion)
         {
-            PrepareDraw(state, LayoutMode.Horizontal);
             internalComponent.DrawHorizontal(g, state, height, clipRegion);
         }
 
         void IComponent.DrawVertical(Graphics g, LiveSplitState state, float width, Region clipRegion)
         {
-            internalComponent.PrepareDraw(state, LayoutMode.Vertical);
-            PrepareDraw(state, LayoutMode.Vertical);
             internalComponent.DrawVertical(g, state, width, clipRegion);
-        }
-
-        void PrepareDraw(LiveSplitState state, LayoutMode mode)
-        {
-            internalComponent.NameLabel.ForeColor = state.LayoutSettings.TextColor;
-            internalComponent.ValueLabel.ForeColor = state.LayoutSettings.TextColor;
-            internalComponent.PrepareDraw(state, mode);
         }
 
         float IComponent.HorizontalWidth => internalComponent.HorizontalWidth;

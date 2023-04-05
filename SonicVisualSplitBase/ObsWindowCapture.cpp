@@ -15,8 +15,13 @@ static const int MINIMUM_STREAM_PREVIEW_WIDTH = MINIMUM_STREAM_PREVIEW_HEIGHT * 
 static const int OBS_MINIMUM_HEIGHT_DEFAULT = 720;
 
 
+ObsWindowCapture::ObsWindowCapture() : isSupported(WindowCapture::isSupported()) {}
+
+
 cv::Mat ObsWindowCapture::captureRawFrameImpl() {
-    if (!updateOBSHwnd())
+    if (!isSupported)
+        return {};
+    if (!updateObsHwnd())
         return {};
     cv::Mat frame;
     {
@@ -33,8 +38,7 @@ cv::Mat ObsWindowCapture::captureRawFrameImpl() {
 
 
 cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
-    cv::UMat streamPreview;
-    if (screenshot.empty())
+    if (!isSupported || screenshot.empty())
         return {};
 
     /* In OBS, the stream preview has a light-gray border around it.
@@ -82,6 +86,7 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
     if (streamRectangle.empty()) {
         return {};
     }
+    cv::UMat streamPreview;
     screenshot(streamRectangle).copyTo(streamPreview);
     if (lastScreenshotHeight != screenshot.rows || lastGameFrameHeight != streamPreview.rows) {
         lastScreenshotHeight = screenshot.rows;
@@ -107,12 +112,25 @@ std::chrono::milliseconds ObsWindowCapture::getDelayAfterLastFrame() {
 }
 
 
-bool ObsWindowCapture::isSupported() {
-    return WindowCapture::isSupported();
+std::string ObsWindowCapture::getVideoDisconnectedReason() {
+    if (!isSupported)
+        return "\nUpdate to a newer Windows version to use OBS Window Capture.";
+
+    bool obsCapturePresent;
+    {
+        std::lock_guard<std::mutex> guard(obsCaptureMutex);
+        obsCapturePresent = obsCapture != nullptr;
+    }
+
+    if (obsCapturePresent)
+        return "1) Remove selection from any OBS sources (it obstructs the preview);\n"
+            "2) resize the OBS window to a bigger size.";
+    else
+        return "OBS window not found.";
 }
 
 
-bool ObsWindowCapture::updateOBSHwnd() {
+bool ObsWindowCapture::updateObsHwnd() {
     if (IsWindow(obsHwnd)) {
         if (!IsIconic(obsHwnd)) {
             // Checking that the size of the window hasn't changed.
@@ -134,24 +152,24 @@ bool ObsWindowCapture::updateOBSHwnd() {
     }
 
     obsHwnd = nullptr;
-    DWORD processId = getOBSProcessId();
+    DWORD processId = getObsProcessId();
     if (processId == 0)
         return false;
     std::tuple<DWORD&, HWND&> pidAndObsHwnd = std::tie(processId, obsHwnd);
-    EnumWindows(checkIfWindowIsOBS, reinterpret_cast<LPARAM>(&pidAndObsHwnd));
-    if (!obsHwnd)
+    EnumWindows(checkIfWindowIsObs, reinterpret_cast<LPARAM>(&pidAndObsHwnd));
+    std::lock_guard<std::mutex> guard(obsCaptureMutex);
+    if (!obsHwnd) {
+        obsCapture = nullptr;
         return false;
-    {
-        std::lock_guard<std::mutex> guard(obsCaptureMutex);
-        obsCapture = std::make_unique<WindowCapture>(obsHwnd);
-        obsCapture->setMinimumWindowWidth(MINIMUM_STREAM_PREVIEW_WIDTH);
-        obsCapture->setMinimumWindowHeight(OBS_MINIMUM_HEIGHT_DEFAULT);
     }
+    obsCapture = std::make_unique<WindowCapture>(obsHwnd);
+    obsCapture->setMinimumWindowWidth(MINIMUM_STREAM_PREVIEW_WIDTH);
+    obsCapture->setMinimumWindowHeight(OBS_MINIMUM_HEIGHT_DEFAULT);
     return true;
 }
 
 
-DWORD ObsWindowCapture::getOBSProcessId() {
+DWORD ObsWindowCapture::getObsProcessId() {
     PROCESSENTRY32 entry;
     entry.dwSize = sizeof(PROCESSENTRY32);
 
@@ -168,25 +186,23 @@ DWORD ObsWindowCapture::getOBSProcessId() {
     return 0;
 }
 
-
-BOOL CALLBACK ObsWindowCapture::checkIfWindowIsOBS(HWND hwnd, LPARAM pidAndObsHwndPtr) {
-    auto& [processId, obsHwnd] = *reinterpret_cast<std::tuple<DWORD&, HWND&>*>(pidAndObsHwndPtr);
-
-    int textLength = GetWindowTextLength(hwnd);
-    if (textLength == 0) {
-        return TRUE;
-    }
+BOOL CALLBACK ObsWindowCapture::checkIfWindowIsObs(HWND hwnd, LPARAM pidAndObsHwndPtr) {
+    auto& [obsProcessId, obsHwnd] =
+        *reinterpret_cast<std::tuple<DWORD&, HWND&>*>(pidAndObsHwndPtr);
 
     DWORD windowProcessId;
     GetWindowThreadProcessId(hwnd, &windowProcessId);
-    if (windowProcessId == processId) {
-        // Checking the window title. The main window's title starts with "OBS".
-        std::vector<TCHAR> titleBuffer(textLength + 1);
-        GetWindowText(hwnd, titleBuffer.data(), textLength + 1);
-        if (wcsncmp(titleBuffer.data(), TEXT("OBS"), 3) == 0) {
-            obsHwnd = hwnd;
-            return FALSE;
-        }
+    if (windowProcessId != obsProcessId) {
+        return TRUE;
+    }
+
+    // Checking the window title. The main window's title starts with "OBS".
+    const int BUFFER_SIZE = 4;
+    std::vector<TCHAR> titleBuffer(BUFFER_SIZE);
+    GetWindowText(hwnd, titleBuffer.data(), BUFFER_SIZE);
+    if (wcsncmp(titleBuffer.data(), TEXT("OBS"), 3) == 0) {
+        obsHwnd = hwnd;
+        return FALSE;
     }
     return TRUE;
 }

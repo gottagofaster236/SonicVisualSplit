@@ -21,6 +21,11 @@ cv::UMat SonicVisualSplitBase::GameVideoCapture::processFrame(cv::Mat rawFrame) 
 }
 
 
+std::string GameVideoCapture::getVideoDisconnectedReason() {
+    return std::string();
+}
+
+
 int GameVideoCapture::getUnsuccessfulFramesStreak() {
     return unsuccessfulFramesStreak;
 }

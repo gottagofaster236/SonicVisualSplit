@@ -46,6 +46,9 @@ void deleteSavedFramesInRange(long long beginFrameTime, long long endFrameTime);
 // Gets a time in milliseconds since a certain time point.
 long long getCurrentTimeInMilliseconds();
 
+// Returns the reason why the video is currently disconnected, or an empty string if not available.
+std::string getVideoDisconnectedReason();
+
 class OnSourceChangedListener {
 public:
     virtual void onSourceChanged() const = 0;

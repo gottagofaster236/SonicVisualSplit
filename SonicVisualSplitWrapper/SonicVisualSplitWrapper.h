@@ -96,6 +96,8 @@ public:
 
     static Int64 GetCurrentTimeInMilliseconds();
 
+    static String^ GetVideoDisconnectedReason();
+
     literal int NO_VIDEO_CAPTURE = -1, OBS_WINDOW_CAPTURE = -2;
 };
 

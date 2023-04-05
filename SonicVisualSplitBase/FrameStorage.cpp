@@ -63,7 +63,8 @@ void startSavingFrames() {
 
 
 void saveOneFrame() {
-    std::lock_guard<yamc::fair::recursive_mutex> guard(savedRawFramesMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard1(gameVideoCaptureMutex);
+    std::lock_guard<yamc::fair::recursive_mutex> guard2(savedRawFramesMutex);
 
     if (savedRawFrames.size() == MAX_CAPACITY)
         return;
@@ -117,7 +118,7 @@ cv::UMat getSavedFrame(long long frameTime) {
 
 
 cv::UMat getLastSavedFrame() {
-    // Locking beforehand to avoid the race condition.
+    // Locking beforehand to avoid a deadlock.
     std::lock_guard<yamc::fair::recursive_mutex> guard1(gameVideoCaptureMutex);
     std::lock_guard<yamc::fair::recursive_mutex> guard2(savedRawFramesMutex);
 
@@ -140,6 +141,12 @@ long long getCurrentTimeInMilliseconds() {
     long long currentTimeMs = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
     currentTimeMs += (long long) 1e9;  // Make that sure that the epoch of this clock is far in the past.
     return currentTimeMs;
+}
+
+
+std::string getVideoDisconnectedReason() {
+    std::lock_guard<yamc::fair::recursive_mutex> guard(gameVideoCaptureMutex);
+    return gameVideoCapture->getVideoDisconnectedReason();
 }
 
 
@@ -184,7 +191,7 @@ void setVideoCapture(int sourceIndex) {
 
     if (sourceIndex >= 0)
         gameVideoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
-    else if (sourceIndex == OBS_WINDOW_CAPTURE && ObsWindowCapture::isSupported())
+    else if (sourceIndex == OBS_WINDOW_CAPTURE)
         gameVideoCapture = std::make_unique<ObsWindowCapture>();
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = std::make_unique<NullCapture>();

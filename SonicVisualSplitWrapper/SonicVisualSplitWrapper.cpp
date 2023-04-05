@@ -197,6 +197,11 @@ Int64 FrameStorage::GetCurrentTimeInMilliseconds() {
 }
 
 
+String^ FrameStorage::GetVideoDisconnectedReason() {
+    return gcnew String(SonicVisualSplitBase::FrameStorage::getVideoDisconnectedReason().c_str());
+}
+
+
 List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
     std::vector<std::wstring> devices = SonicVisualSplitBase::VirtualCamCapture::getVideoDevicesList();
     List<String^>^ converted = gcnew List<String^>((int) devices.size());

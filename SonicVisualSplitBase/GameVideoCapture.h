@@ -19,6 +19,10 @@ public:
     // Gets the duration of time to wait before capturing the next frame.
     virtual std::chrono::milliseconds getDelayAfterLastFrame() = 0;
 
+    /* Returns the reason why the video is currently disconnected,
+     * or an empty string if not available. */
+    virtual std::string getVideoDisconnectedReason();
+
     int getUnsuccessfulFramesStreak();
 
     virtual ~GameVideoCapture() {}

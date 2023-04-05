@@ -153,12 +153,22 @@ namespace SonicVisualSplit
                 }
                 gameCapturePreview.Image = result.VisualizedFrame;
                 string resultText = null;
-                LinkArea linkArea;
-                Color textColor;
+                LinkArea linkArea = new LinkArea(0, 0);
 
                 if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
-                    resultText = "Video disconnected. Read more at this link.";
+                    resultText = "Video disconnected. ";
+                    var videoDisconnectedReason = FrameStorage.GetVideoDisconnectedReason();
+                    if (string.IsNullOrEmpty(videoDisconnectedReason))
+                    {
+                        resultText += "Read more at this link.";
+                        linkArea.Start = resultText.Length - 10;
+                        linkArea.Length = 9;
+                    }
+                    else
+                    {
+                        resultText += videoDisconnectedReason;
+                    }
                 }
                 else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
                 {
@@ -180,19 +190,14 @@ namespace SonicVisualSplit
                     }
                 }
 
-                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
-                {
-                    linkArea = new LinkArea(33, 9);
-                }
-                else
-                {
-                    linkArea = new LinkArea(0, 0);
-                }
-
+                Color textColor;
                 if (result.IsSuccessful())
                     textColor = Color.Green;
                 else
                     textColor = Color.Black;
+
+                float fontSize = resultText.Contains("\n") ? 8.25F : 11.25F;
+                Font font = new Font("Segoe UI", fontSize, FontStyle.Regular, GraphicsUnit.Point, 0);
 
                 if (recognitionResultsLabel.Text != resultText)
                 {
@@ -200,6 +205,7 @@ namespace SonicVisualSplit
                     recognitionResultsLabel.Text = resultText;
                     recognitionResultsLabel.LinkArea = linkArea;
                     recognitionResultsLabel.ForeColor = textColor;
+                    recognitionResultsLabel.Font = font;
                 }
             });
         }
@@ -252,7 +258,17 @@ namespace SonicVisualSplit
 
         private void ShowHelp(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            var startInfo = new ProcessStartInfo("https://github.com/gottagofaster236/SonicVisualSplit#setting-up-video-capture");
+            OpenWebsite("https://github.com/gottagofaster236/SonicVisualSplit#setting-up-video-capture");
+        }
+
+        private void OpenGithub(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenWebsite("https://github.com/gottagofaster236/SonicVisualSplit");
+        }
+
+        private void OpenWebsite(string url)
+        {
+            var startInfo = new ProcessStartInfo(url);
             Process.Start(startInfo);
         }
     }

@@ -18,7 +18,7 @@ namespace cvFixed {
 
     // This is a fixed version of OpenCV's VideoCapture
     // that was made to work with the OBS's VirtualCamera.
-    // https://github.com/opencv/opencv/issues/19746
+    // This is needed until https://github.com/opencv/opencv/pull/23460 is merged.
     class VideoCapture_DShow {
     public:
         VideoCapture_DShow(int index);

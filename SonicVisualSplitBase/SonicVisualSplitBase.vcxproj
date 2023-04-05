@@ -118,6 +118,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AnalysisSettings.cpp" />
+    <ClCompile Include="CapDShowFixed.cpp" />
     <ClCompile Include="FrameStorage.cpp" />
     <ClCompile Include="FrameAnalyzer.cpp" />
     <ClCompile Include="GameVideoCapture.cpp" />
@@ -128,6 +129,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalysisResult.h" />
+    <ClInclude Include="CapDShowFixed.h" />
     <ClInclude Include="capture.interop.h" />
     <ClInclude Include="composition.interop.h" />
     <ClInclude Include="direct3d11.interop.h" />

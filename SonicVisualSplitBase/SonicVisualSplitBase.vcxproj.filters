@@ -39,6 +39,9 @@
     <ClCompile Include="AnalysisSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CapDShowFixed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WindowCapture.h">
@@ -78,6 +81,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="composition.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CapDShowFixed.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

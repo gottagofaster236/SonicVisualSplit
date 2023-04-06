@@ -7,7 +7,7 @@ Splits Sonic 1, 2, and CD using IGT *(in-game time)*.
 ![Component in action](https://user-images.githubusercontent.com/55288842/112757626-355c5300-8ff3-11eb-9f74-655326b7385b.png)
 
 ## System requirements
-Required OS version is **Windows 10 64-bit** (2016's Anniversary Update or newer).
+Required OS version is **Windows 10/11 64-bit** (May 2019 update or newer).
 
 You have to have the latest version of [LiveSplit](http://livesplit.org/downloads/) installed.
 
@@ -36,26 +36,19 @@ and find SonicVisualSplit under the "Control" category.
 This is due to Windows not allowing two applications to use a webcam simultaneously.
 You'll have to use one of the two methods to set everything up.
 
-   - If you use OBS Studio, you can simply choose "OBS Window Capture" from the video sources dropdown list.
-     SonicVisualSplit will get the video by capturing screenshots of the opened OBS Studio window.
-     This method needs no setup, but may be less stable then the following one
-     (and isn't recommended for Sonic CD).
-     
-   - Another method is to install the *VirtualCam plugin*.
-     For OBS, download and install it from [here](https://github.com/Fenrirthviti/obs-virtual-cam/releases).
-     Then enable it in Tools → VirtualCam.
-     	
+   - If you're using OBS, click "Start Virtual Camera" in the bottom right before using SonicVisualSplit. Then select it in the video sources dropdown list in SonicVisualSplit settings.
      For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      
-     You have to start the virtual camera before using SonicVisualSplit, and select it in the video sources dropdown list.
      Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
+   - *(Not recommended)* If you're an OBS user, you can also use "OBS Window Capture" from the video sources dropdown list.
+     SonicVisualSplit will get the video by capturing screenshots of the opened OBS Studio window.
  
     In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
     that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
 - Make sure your capture card outputs an acceptable picture.
    - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software.
      Try increasing gamma/brightness.
-   - Check that the aspect ratio of the game is either 4:3 or 16:9. If it's stretched, fix it with your streaming software.
+   - Check that the aspect ratio of the game is **either 4:3 or 16:9**. If it's stretched, fix it with your streaming software. Note that if the aspect ratio is slightly off, SVS will still work, but with degraded accuracy
 - After you setup the video capture correctly, it should appear in the preview.
 - Then you have to select the game,
 choose the video connector that you use to connect your console to the capture card,
@@ -79,7 +72,7 @@ This is fine, it'll recover soon after.
 ## Troubleshooting
 - If the component doesn't reset automatically, it's most likely due to colors on your capture being slightly off. Open up an emulator and see if you can adjust the brightness to the same level.
 
-  Another reason may be that your aspect ratio is incorrect, make sure it's either 4:3 or 16:9.
+  Another reason may be that your aspect ratio is incorrect, make sure it's either 4:3 or 16:9 (not something in between!).
 
 - If the component fails to read the digits too often (when it shows a dash instead of a time),
 check your settings.

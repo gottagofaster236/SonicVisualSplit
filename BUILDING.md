@@ -15,11 +15,11 @@ Press `Ctrl+S` to save the changes.
 
    ![Start external program illustration](https://user-images.githubusercontent.com/55288842/111886772-65976680-89e1-11eb-9a7c-e9af55dd3b94.png)
 9. Now you're good to go. When you'll click the "Start" button, the build script will copy the build results to `C:/Program Files/LiveSplit/Components`, and LiveSplit will start automatically. If you haven't already, you'll have to follow the steps from [README.md](README.md).
-10. To build a new release of SonicVisualSplit, for now you can just copy the needed files from `%USERPROFILE%/source/repos/gottagofaster236/SonicVisualSplit/SonicVisualSplit/bin/x64/Release`
+10. To build a new release of SonicVisualSplit, for now you can just copy the needed files from `%USERPROFILE%/source/repos/SonicVisualSplit/SonicVisualSplit/bin/x64/Release`
 and wrap them in a zip archive.
 
 # Testing
 As of now, testing has been done manually. You can download the test videos from [here](https://drive.google.com/drive/folders/111SibOuORifU7C0-G2OWzS94zCTtKkaV?usp=sharing)
 and create an OBS scene for every one of them. Then you can run the videos sequentually through LiveSplit and verify that the timer is indeed timing them correctly.
 
-I (gottagofaster) had wanted to automate the tests, but have since stopped working on the project.
+I (gottagofaster) had wanted to automate the tests, but have since stopped actively working on the project.

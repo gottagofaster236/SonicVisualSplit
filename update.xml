@@ -245,4 +245,34 @@
 			<change>Minor optimizations.</change>
 		</changelog>
 	</update>
+    
+    <update version="1.2.6">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+			<file path="Components/System.Drawing.Common.dll" status="removed"/>
+			<file path="Components/jpeg62.dll" status="changed"/>
+			<file path="Components/liblzma.dll" status="added"/>
+			<file path="Components/libpng16.dll" status="changed"/>
+			<file path="Components/libsharpyuv.dll" status="added"/>
+			<file path="Components/libwebp.dll" status="added"/>
+			<file path="Components/libwebpdecoder.dll" status="added"/>
+			<file path="Components/lzma.dll" status="removed"/>
+			<file path="Components/opencv_core.dll" status="removed"/>
+			<file path="Components/opencv_core4.dll" status="added"/>
+			<file path="Components/opencv_imgcodecs.dll" status="removed"/>
+			<file path="Components/opencv_imgcodecs4.dll" status="added"/>
+			<file path="Components/opencv_imgproc.dll" status="removed"/>
+			<file path="Components/opencv_imgproc4.dll" status="added"/>
+			<file path="Components/opencv_videoio.dll" status="removed"/>
+			<file path="Components/tiff.dll" status="changed"/>
+			<file path="Components/webp.dll" status="removed"/>
+			<file path="Components/zlib1.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fix the built-in OBS Virtual Camera. No plugin is needed now.</change>
+			<change>Fix OBS Window Capture for new OBS versions.</change>
+			<change>Proper time font in the "Time on screen (SVS)" display.</change>
+		</changelog>
+	</update>
 </updates>

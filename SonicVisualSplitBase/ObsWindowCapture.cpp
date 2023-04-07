@@ -86,8 +86,7 @@ cv::UMat ObsWindowCapture::processFrame(cv::Mat screenshot) {
     if (streamRectangle.empty()) {
         return {};
     }
-    cv::UMat streamPreview;
-    screenshot(streamRectangle).copyTo(streamPreview);
+    cv::UMat streamPreview = screenshot(streamRectangle).getUMat(cv::ACCESS_READ);
     if (lastScreenshotHeight != screenshot.rows || lastGameFrameHeight != streamPreview.rows) {
         lastScreenshotHeight = screenshot.rows;
         lastGameFrameHeight = streamPreview.rows;

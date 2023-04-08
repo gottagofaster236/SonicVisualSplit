@@ -871,9 +871,7 @@ void videoDevice::setSize(int w, int h) {
         }
         else if (pAmMediaType->subtype == MEDIASUBTYPE_NV12)
         {
-            int stride = (w * 12 + 7) / 8;  // Each pixel takes 12 bits.
-            stride = (stride + 3) & ~3;  // Round up to a multiple of 4 bytes.
-            videoSize = stride * h;
+            videoSize = w * h * 3 / 2;
         }
         else
         {

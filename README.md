@@ -17,7 +17,7 @@ If you want to record (or stream) your game footage, you have to have [OBS Studi
 1. Install the latest version of Visual C++ Redistributable from [here](https://aka.ms/vs/17/release/vc_redist.x64.exe).
 2. Unpack the contents of [SVS.zip](https://github.com/gottagofaster236/SonicVisualSplit/releases/latest/download/SVS.zip)
 into the Components directory of your LiveSplit installation.
-4. Add the component: right-click LiveSplit, select "Edit layout...", press the big "+" button,
+4. Add the component: open LiveSplit, then right-click LiveSplit, select "Edit layout...", press the big "+" button,
 and find SonicVisualSplit under the "Control" category.
 4. Then you'll have to setup your video capture to work with SonicVisualSplit.
 
@@ -37,10 +37,11 @@ This is due to Windows not allowing two applications to use a webcam simultaneou
 You'll have to use one of the two methods to set everything up.
 
    - If you're using OBS, click "Start Virtual Camera" in the bottom right before using SonicVisualSplit. Then select it in the video sources dropdown list in SonicVisualSplit settings.
+     
      For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      
      Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
-   - *(Not recommended)* If you're an OBS user, you can also use "OBS Window Capture" from the video sources dropdown list.
+   - If you're an OBS user, you have another option that is less intensive on the CPU. You can simply choose "OBS Window Capture" from the video sources dropdown list.
      SonicVisualSplit will get the video by capturing screenshots of the opened OBS Studio window.
  
     In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
@@ -72,12 +73,12 @@ This is fine, it'll recover soon after.
 ## Troubleshooting
 - If the component doesn't reset automatically, it's most likely due to colors on your capture being slightly off. Open up an emulator and see if you can adjust the brightness to the same level.
 
-  Another reason may be that your aspect ratio is incorrect, make sure it's either 4:3 or 16:9 (not something in between!).
+  Another reason may be that your game aspect ratio is incorrect, make sure the it's either exactly 4:3 or exactly 16:9 in your streaming software.
 
-- If the component fails to read the digits too often (when it shows a dash instead of a time),
+- If the component fails to read the digits too often,
 check your settings.
 Make sure you selected the correct video mode and the correct game.
-Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.<br>
+Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB. Make sure the aspect ratio of the game is either exactly 4:3 or exactly 16:9 in your streaming software.<br>
 Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
 make sure the camera stream isn't used by another program.

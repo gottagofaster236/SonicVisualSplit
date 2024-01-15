@@ -267,7 +267,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
     else if (settings.gameName == "Sonic 2")
         expectedTimeBonusShift = cv::Point2f(4.73f, 8.f);
     else if (settings.gameName == "Sonic CD")
-        expectedTimeBonusShift = cv::Point2f(4.73f, 12.36f);
+        expectedTimeBonusShift = cv::Point2f(9.82f, 13.13f);
     expectedTimeBonusShift *= topTimeLabel.location.height;
 
     float maxDifference = topTimeLabel.location.height * 3;

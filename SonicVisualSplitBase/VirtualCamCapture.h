@@ -1,7 +1,7 @@
 #pragma once
 #include "GameVideoCapture.h"
-#include "CapDShowFixed.h"
 #include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
 #define NOMINMAX
 #include <dshow.h>
 #include <vector>
@@ -17,6 +17,8 @@ public:
     // Initializes the capture with a camera index.
     VirtualCamCapture(int deviceIndex);
 
+    ~VirtualCamCapture() override;
+
     /* Returns the list of device names.
      * May contain duplicate names, if there are several devices with the same name. */
     static std::vector<std::wstring> getVideoDevicesList();
@@ -27,7 +29,7 @@ private:
     // Grabs a frame from the video capture, or returns an empty Mat in case of error.
     cv::Mat captureRawFrameImpl() override;
 
-    cvFixed::VideoCapture_DShow videoCapture;
+    cv::VideoCapture videoCapture;
 
     inline static std::vector<CComPtr<IMoniker>> deviceMonikers;
 

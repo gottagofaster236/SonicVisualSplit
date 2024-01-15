@@ -2,17 +2,16 @@
 #include "TimeRecognizer.h"
 #include <ranges>
 #include <algorithm>
-#include <opencv2/videoio.hpp>
 
 
 namespace SonicVisualSplitBase {
 
-VirtualCamCapture::VirtualCamCapture(int deviceIndex) : 
-        videoCapture(cvFixed::VideoCapture_DShow(deviceIndex)) {
+VirtualCamCapture::VirtualCamCapture(int deviceIndex) {
+    videoCapture = cv::VideoCapture(deviceIndex, cv::CAP_DSHOW);
     cv::Size resolution = getResolution(deviceMonikers[deviceIndex]);
-    videoCapture.setProperty(cv::CAP_PROP_FRAME_WIDTH, resolution.width);
-    videoCapture.setProperty(cv::CAP_PROP_FRAME_HEIGHT, resolution.height);
-    videoCapture.setProperty(cv::CAP_PROP_FPS, 60);
+    videoCapture.set(cv::CAP_PROP_FRAME_WIDTH, resolution.width);
+    videoCapture.set(cv::CAP_PROP_FRAME_HEIGHT, resolution.height);
+    videoCapture.set(cv::CAP_PROP_FPS, 60);
 }
 
 
@@ -20,8 +19,13 @@ cv::Mat VirtualCamCapture::captureRawFrameImpl() {
     cv::Mat frame;
     if (!videoCapture.isOpened())
         return {};
-    videoCapture.retrieveFrame(0, frame);
+    videoCapture >> frame;
     return frame;
+}
+
+
+VirtualCamCapture::~VirtualCamCapture() {
+    videoCapture.release();
 }
 
 

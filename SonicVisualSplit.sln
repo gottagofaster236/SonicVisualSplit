@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31612.314
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11806.211
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SonicVisualSplit", "SonicVisualSplit\SonicVisualSplit.csproj", "{59838496-8594-449C-A96A-4215EAAA562C}"
 EndProject
@@ -9,11 +9,17 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SonicVisualSplitBase", "Son
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SonicVisualSplitWrapper", "SonicVisualSplitWrapper\SonicVisualSplitWrapper.vcxproj", "{49345046-CD0D-4888-B480-56DA1DBBE910}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveSplit.Core", "..\LiveSplit\LiveSplit\LiveSplit.Core\LiveSplit.Core.csproj", "{6DE847DB-20A3-4848-AEEE-1B4364AECDFB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveSplit.Core", "..\..\LiveSplit\src\LiveSplit.Core\LiveSplit.Core.csproj", "{99E2244E-B654-5E81-6C76-41EE613FA5E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveSplit.View", "..\LiveSplit\LiveSplit\LiveSplit.View\LiveSplit.View.csproj", "{F8CF1482-0687-44F3-ABA1-967E10C3BB96}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveSplit.View", "..\..\LiveSplit\src\LiveSplit.View\LiveSplit.View.csproj", "{F7EEAE8F-0907-3728-D4AF-CF1737C306E2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateManager", "..\LiveSplit\LiveSplit\UpdateManager\UpdateManager.csproj", "{56DEA3A0-2EB7-493B-B50F-A5E3AA8AE52A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateManager", "..\..\LiveSplit\src\UpdateManager\UpdateManager.csproj", "{DE01D912-EC5D-DA26-F31E-682152886534}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomFontDialog", "..\..\LiveSplit\lib\CustomFontDialog\CustomFontDialog\CustomFontDialog.csproj", "{3AB23BDB-191D-D48A-4C52-2F194BF3D4D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormsColor", "..\..\LiveSplit\lib\WinForms Color Picker\WinFormsColor\WinFormsColor.csproj", "{6EE04308-CE6D-F74F-B927-AF4C981FEB39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeedrunComSharp", "..\..\LiveSplit\lib\SpeedrunComSharp\src\SpeedrunComSharp\SpeedrunComSharp.csproj", "{0AC25217-CD2B-8162-9F8B-3337AB8208A4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,12 +39,30 @@ Global
 		{49345046-CD0D-4888-B480-56DA1DBBE910}.Debug|x64.Build.0 = Debug|x64
 		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|x64.ActiveCfg = Release|x64
 		{49345046-CD0D-4888-B480-56DA1DBBE910}.Release|x64.Build.0 = Release|x64
-		{6DE847DB-20A3-4848-AEEE-1B4364AECDFB}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{6DE847DB-20A3-4848-AEEE-1B4364AECDFB}.Release|x64.ActiveCfg = Release|Any CPU
-		{F8CF1482-0687-44F3-ABA1-967E10C3BB96}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F8CF1482-0687-44F3-ABA1-967E10C3BB96}.Release|x64.ActiveCfg = Release|Any CPU
-		{56DEA3A0-2EB7-493B-B50F-A5E3AA8AE52A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{56DEA3A0-2EB7-493B-B50F-A5E3AA8AE52A}.Release|x64.ActiveCfg = Release|Any CPU
+		{99E2244E-B654-5E81-6C76-41EE613FA5E6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{99E2244E-B654-5E81-6C76-41EE613FA5E6}.Debug|x64.Build.0 = Debug|Any CPU
+		{99E2244E-B654-5E81-6C76-41EE613FA5E6}.Release|x64.ActiveCfg = Release|Any CPU
+		{99E2244E-B654-5E81-6C76-41EE613FA5E6}.Release|x64.Build.0 = Release|Any CPU
+		{F7EEAE8F-0907-3728-D4AF-CF1737C306E2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F7EEAE8F-0907-3728-D4AF-CF1737C306E2}.Debug|x64.Build.0 = Debug|Any CPU
+		{F7EEAE8F-0907-3728-D4AF-CF1737C306E2}.Release|x64.ActiveCfg = Release|Any CPU
+		{F7EEAE8F-0907-3728-D4AF-CF1737C306E2}.Release|x64.Build.0 = Release|Any CPU
+		{DE01D912-EC5D-DA26-F31E-682152886534}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DE01D912-EC5D-DA26-F31E-682152886534}.Debug|x64.Build.0 = Debug|Any CPU
+		{DE01D912-EC5D-DA26-F31E-682152886534}.Release|x64.ActiveCfg = Release|Any CPU
+		{DE01D912-EC5D-DA26-F31E-682152886534}.Release|x64.Build.0 = Release|Any CPU
+		{3AB23BDB-191D-D48A-4C52-2F194BF3D4D7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3AB23BDB-191D-D48A-4C52-2F194BF3D4D7}.Debug|x64.Build.0 = Debug|Any CPU
+		{3AB23BDB-191D-D48A-4C52-2F194BF3D4D7}.Release|x64.ActiveCfg = Release|Any CPU
+		{3AB23BDB-191D-D48A-4C52-2F194BF3D4D7}.Release|x64.Build.0 = Release|Any CPU
+		{6EE04308-CE6D-F74F-B927-AF4C981FEB39}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6EE04308-CE6D-F74F-B927-AF4C981FEB39}.Debug|x64.Build.0 = Debug|Any CPU
+		{6EE04308-CE6D-F74F-B927-AF4C981FEB39}.Release|x64.ActiveCfg = Release|Any CPU
+		{6EE04308-CE6D-F74F-B927-AF4C981FEB39}.Release|x64.Build.0 = Release|Any CPU
+		{0AC25217-CD2B-8162-9F8B-3337AB8208A4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0AC25217-CD2B-8162-9F8B-3337AB8208A4}.Debug|x64.Build.0 = Debug|Any CPU
+		{0AC25217-CD2B-8162-9F8B-3337AB8208A4}.Release|x64.ActiveCfg = Release|Any CPU
+		{0AC25217-CD2B-8162-9F8B-3337AB8208A4}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

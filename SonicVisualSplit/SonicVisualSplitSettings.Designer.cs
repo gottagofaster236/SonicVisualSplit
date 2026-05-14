@@ -233,7 +233,7 @@ namespace SonicVisualSplit
             this.copyrightLabel.Size = new System.Drawing.Size(266, 17);
             this.copyrightLabel.TabIndex = 19;
             this.copyrightLabel.TabStop = true;
-            this.copyrightLabel.Text = "SonicVisualSplit by gottagofaster, 2023. GitHub link.";
+            this.copyrightLabel.Text = "SonicVisualSplit by gottagofaster, 2026. GitHub link.";
             this.copyrightLabel.UseCompatibleTextRendering = true;
             this.copyrightLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.OpenGithub);
             // 

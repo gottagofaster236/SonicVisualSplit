@@ -8,12 +8,13 @@
     <OutputType>Library</OutputType>
     <RootNamespace>SonicVisualSplit</RootNamespace>
     <AssemblyName>SonicVisualSplit</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -112,16 +113,16 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\LiveSplit\LiveSplit\LiveSplit.Core\LiveSplit.Core.csproj">
-      <Project>{6de847db-20a3-4848-aeee-1b4364aecdfb}</Project>
+    <ProjectReference Include="..\..\..\LiveSplit\src\LiveSplit.Core\LiveSplit.Core.csproj">
+      <Project>{99e2244e-b654-5e81-6c76-41ee613fa5e6}</Project>
       <Name>LiveSplit.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\LiveSplit\LiveSplit\LiveSplit.View\LiveSplit.View.csproj">
-      <Project>{f8cf1482-0687-44f3-aba1-967e10c3bb96}</Project>
+    <ProjectReference Include="..\..\..\LiveSplit\src\LiveSplit.View\LiveSplit.View.csproj">
+      <Project>{f7eeae8f-0907-3728-d4af-cf1737c306e2}</Project>
       <Name>LiveSplit.View</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\LiveSplit\LiveSplit\UpdateManager\UpdateManager.csproj">
-      <Project>{56dea3a0-2eb7-493b-b50f-a5e3aa8ae52a}</Project>
+    <ProjectReference Include="..\..\..\LiveSplit\src\UpdateManager\UpdateManager.csproj">
+      <Project>{de01d912-ec5d-da26-f31e-682152886534}</Project>
       <Name>UpdateManager</Name>
     </ProjectReference>
     <ProjectReference Include="..\SonicVisualSplitWrapper\SonicVisualSplitWrapper.vcxproj">

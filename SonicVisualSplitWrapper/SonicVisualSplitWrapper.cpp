@@ -13,9 +13,9 @@ using System::Drawing::Imaging::BitmapData;
 
 namespace SonicVisualSplitWrapper {
 
-AnalysisSettings::AnalysisSettings(String^ gameName, String^ templatesDirectory,
+AnalysisSettings::AnalysisSettings(SonicVisualSplitWrapper::Game game, String^ templatesDirectory,
         Boolean isStretchedTo16By9, Boolean isComposite) {
-    GameName = gameName;
+    Game = game;
     TemplatesDirectory = templatesDirectory;
     IsStretchedTo16By9 = isStretchedTo16By9;
     IsComposite = isComposite;
@@ -25,7 +25,7 @@ AnalysisSettings::AnalysisSettings(String^ gameName, String^ templatesDirectory,
 Boolean AnalysisSettings::Equals(Object^ other) {
     AnalysisSettings^ otherSettings = dynamic_cast<AnalysisSettings^>(other);
     return otherSettings &&
-        otherSettings->GameName == GameName &&
+        otherSettings->Game == Game &&
         otherSettings->TemplatesDirectory == TemplatesDirectory &&
         otherSettings->IsStretchedTo16By9 == IsStretchedTo16By9 &&
         otherSettings->IsComposite == IsComposite;
@@ -45,10 +45,9 @@ void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance, Analy
 
 FrameAnalyzer::FrameAnalyzer(AnalysisSettings^ settings) : settings(settings) {
     msclr::interop::marshal_context context;
-    std::string gameNameConverted = context.marshal_as<std::string>(settings->GameName);
     std::wstring templatesDirectoryConverted = 
         context.marshal_as<std::wstring>(settings->TemplatesDirectory);
-    SonicVisualSplitBase::AnalysisSettings nativeSettings = {gameNameConverted,
+    SonicVisualSplitBase::AnalysisSettings nativeSettings = {static_cast<SonicVisualSplitBase::Game>(settings->Game),
         templatesDirectoryConverted, settings->IsStretchedTo16By9, settings->IsComposite};
 
     auto nativeFrameAnalyzer = new SonicVisualSplitBase::FrameAnalyzer(nativeSettings);
@@ -79,7 +78,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
     resultConverted->IsScoreScreen = result.isScoreScreen;
     resultConverted->IsBlackScreen = result.isBlackScreen;
     resultConverted->IsWhiteScreen = result.isWhiteScreen;
-    resultConverted->ErrorReason = (ErrorReasonEnum) result.errorReason;
+    resultConverted->ErrorReason = static_cast<ErrorReasonEnum>(result.errorReason);
     resultConverted->FrameTime = result.frameTime;
 
     if (resultConverted->ErrorReason != ErrorReasonEnum::VIDEO_DISCONNECTED && visualize) {

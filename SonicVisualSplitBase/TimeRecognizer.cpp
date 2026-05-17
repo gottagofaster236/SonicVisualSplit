@@ -262,12 +262,17 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
     
     // Location of TIME in "TIME BONUS" relative to the top time label.
     cv::Point2f expectedTimeBonusShift;
-    if (settings.gameName == "Sonic 1")
+    switch (settings.game) {
+    case Game::Sonic1:
         expectedTimeBonusShift = cv::Point2f(5.82f, 8.36f);
-    else if (settings.gameName == "Sonic 2")
+        break;
+    case Game::Sonic2:
         expectedTimeBonusShift = cv::Point2f(4.73f, 8.f);
-    else if (settings.gameName == "Sonic CD")
+        break;
+    case Game::SonicCD:
         expectedTimeBonusShift = cv::Point2f(4.73f, 12.36f);
+        break;
+    }
     expectedTimeBonusShift *= topTimeLabel.location.height;
 
     float maxDifference = topTimeLabel.location.height * 3;
@@ -316,7 +321,7 @@ void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
     auto& timeRect = curDigitsLocation.timeRect;
     timeRect = {(int) std::round(timeRectScaled.x * bestScale), (int) std::round(timeRectScaled.y * bestScale),
         (int) std::round(timeRectScaled.width * bestScale), (int) std::round(timeRectScaled.height * bestScale)};
-    double rightBorderCoefficient = (settings.gameName == "Sonic CD" ? 3.2 : 2.45);
+    double rightBorderCoefficient = (settings.game == Game::SonicCD ? 3.2 : 2.45);
     int digitsRectLeft = (int) (timeRect.x + timeRect.width * 1.22);
     int digitsRectRight = (int) (timeRect.x + timeRect.width * rightBorderCoefficient);
     int digitsRectTop = (int) (timeRect.y - timeRect.height * 0.1);
@@ -518,7 +523,7 @@ double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
         return 1.15;
     // Nine is confused with five.
     case '9':
-        if (settings.isComposite && settings.gameName != "Sonic 2")
+        if (settings.isComposite && settings.game != Game::Sonic2)
             return 1.15;
         else
             return 1;
@@ -563,19 +568,17 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
     }
 
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
-    bool recognizeWhiteTransition = (settings.gameName == "Sonic 2" && currentSplitIndex == 19);
+    bool recognizeWhiteTransition = (settings.game == Game::Sonic2 && currentSplitIndex == 19);
     
     if (!recognizeWhiteTransition) {
         uint8_t maxAcceptableBrightness;
-        if (settings.gameName == "Sonic 2") {
+        if (settings.game == Game::Sonic2) {
             // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
             maxAcceptableBrightness = 255;
-        }
-        else if (settings.gameName == "Sonic CD" && currentSplitIndex == 20) {
+        } else if (settings.game == Game::SonicCD && currentSplitIndex == 20) {
             // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
             maxAcceptableBrightness = 90;
-        }
-        else {
+        } else {
             maxAcceptableBrightness = 180;
         }
 
@@ -627,7 +630,7 @@ cv::UMat TimeRecognizer::convertFrameToGray(cv::UMat frame, bool filterYellowCol
 
 
 bool TimeRecognizer::timeIncludesMilliseconds() const {
-    return settings.gameName == "Sonic CD";
+    return settings.game == Game::SonicCD;
 }
 
 

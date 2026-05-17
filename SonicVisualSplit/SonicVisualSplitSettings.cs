@@ -6,6 +6,7 @@ using System.Xml;
 using LiveSplit.UI;
 using SonicVisualSplitWrapper;
 using static SonicVisualSplit.SonicVisualSplitComponent;
+using System.Linq;
 
 namespace SonicVisualSplit
 {
@@ -14,7 +15,11 @@ namespace SonicVisualSplit
         public string VideoSource { get; private set; }
         public bool RGB { get; private set; }
         public bool Stretched { get; private set; }
-        public string Game { get; private set; }
+        public Game Game { get; private set; }
+        public string GameString
+        {
+            get { return ToSettingsString(Game); }
+        }
         public bool AutoResetEnabled { get; private set; }
         public bool IsPracticeMode { get; private set; }
 
@@ -34,14 +39,10 @@ namespace SonicVisualSplit
             // Default values of the settings.
             RGB = false;
             Stretched = false;
-            Game = "Sonic 1";
+            Game = Game.Sonic1;
             AutoResetEnabled = true;
 
-            gamesComboBox.Items.AddRange(new string[] {
-                "Sonic 1",
-                "Sonic 2",
-                "Sonic CD"
-            });
+            gamesComboBox.Items.AddRange(((Game[])Enum.GetValues(typeof(Game))).Select(Game => ToSettingsString(Game)).ToArray());
             gamesComboBox.SelectedIndex = 0;
         }
 
@@ -60,8 +61,23 @@ namespace SonicVisualSplit
                 SettingsHelper.CreateSetting(document, parent, "VideoSource", VideoSource) ^
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
-                SettingsHelper.CreateSetting(document, parent, "Game", Game) ^
+                SettingsHelper.CreateSetting(document, parent, "Game", ToSettingsString(Game)) ^
                 SettingsHelper.CreateSetting(document, parent, "AutoResetEnabled", AutoResetEnabled);
+        }
+
+        private static string ToSettingsString(Game game)
+        {
+            switch (game)
+            {
+                case Game.Sonic1:
+                    return "Sonic 1";
+                case Game.Sonic2:
+                    return "Sonic 2";
+                case Game.SonicCD:
+                    return "Sonic CD";
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public void SetSettings(XmlNode settings)
@@ -77,15 +93,13 @@ namespace SonicVisualSplit
             sixteenByNineButton.Checked = Stretched;
             fourByThreeButton.Checked = !Stretched;
 
-            Game = SettingsHelper.ParseString(settings["Game"]);
-            int gameIndex = gamesComboBox.FindStringExact(Game);
-            if (gameIndex == -1)
+            string gameSettingsString = SettingsHelper.ParseString(settings["Game"]);
+            int gameIndex = gamesComboBox.FindStringExact(gameSettingsString);
+            if (gameIndex != -1)
             {
-                // No such game found, the settings are from a previous version?
-                gameIndex = 0;
-                Game = "Sonic 1";
+                gamesComboBox.SelectedIndex = gameIndex;
+                Game = (Game)gameIndex;
             }
-            gamesComboBox.SelectedIndex = gameIndex;
 
             AutoResetEnabled = SettingsHelper.ParseBool(settings["AutoResetEnabled"], true);
             autoResetCheckbox.Checked = AutoResetEnabled;
@@ -128,7 +142,7 @@ namespace SonicVisualSplit
 
         private void OnGameChanged(object sender, EventArgs e)
         {
-            Game = (string) gamesComboBox.SelectedItem;
+            Game = (Game) gamesComboBox.SelectedIndex;
             OnSettingsChanged();
         }
 

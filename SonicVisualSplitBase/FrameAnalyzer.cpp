@@ -131,17 +131,16 @@ double FrameAnalyzer::getAspectRatioScaleFactor() {
 
 
 std::vector<cv::Rect> FrameAnalyzer::getResetTemplateMatchAreas() {
-    if (settings.gameName == "Sonic 1") {
+    switch (settings.game) {
+    case Game::Sonic1:
         // Use almost the whole screen (while leaving some wiggle room).
         return {{32, 22, 256, 180}};
-    }
-    else if (settings.gameName == "Sonic 2") {
+    case Game::Sonic2:
         return {
             {264, 80, 24, 45},  // Match "1" in "Zone 1"
             {232, 42, 54, 28}  // Match "HILL" in "Emerald Hill"
         };
-    }
-    else {  // Sonic CD
+    case Game::SonicCD:
         // Match the Eggman-shaped mountain.
         return {{6, 102, 67, 47}};
     }
@@ -206,7 +205,7 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
         result.isWhiteScreen = true;
         return true;
     }
-    else if (settings.gameName == "Sonic 2") {
+    else if (settings.game == Game::Sonic2) {
         /* Sonic 2 has a transition where it shows the act name in front of a red/blue background.
          * We just check that there's no white on the screen. */
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);

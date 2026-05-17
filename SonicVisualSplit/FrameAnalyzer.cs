@@ -267,7 +267,7 @@ namespace SonicVisualSplit
             {
                 /* This was a transition to a special stage, or time travel in SCD.
                  * Checking that time too. */
-                if (settings.Game == "Sonic CD")
+                if (settings.Game == Game.SonicCD)
                 {
                     // In Sonic CD, the timer decreases by ~0.3 seconds after time travel.
                     const int marginOfError = 330;
@@ -341,7 +341,7 @@ namespace SonicVisualSplit
             bool isLastSplit = currentSplitIndex == state.Run.Count - 1;
 
             // In Sonic CD the timer stops before the ending transition, no need to update the time.
-            if (result.IsBlackScreen || (result.IsWhiteScreen && isLastSplit && settings.Game != "Sonic CD"))
+            if (result.IsBlackScreen || (result.IsWhiteScreen && isLastSplit && settings.Game != Game.SonicCD))
             {
                 /* This is the first frame of a transition.
                  * We find the last frame before the transition to find out the time. */
@@ -352,7 +352,7 @@ namespace SonicVisualSplit
             else
                 frameBeforeTransition = previousResult;
 
-            if (isLastSplit && (result.IsWhiteScreen || settings.Game == "Sonic 1"))
+            if (isLastSplit && (result.IsWhiteScreen || settings.Game == Game.Sonic1))
             {
                 /* If we were on the last split, that means the run has finished.
                  * (Or it was a death on Sonic 1's Final Zone. In this case we'll undo the split automatically.) */
@@ -360,13 +360,13 @@ namespace SonicVisualSplit
             }
             else if (result.IsBlackScreen)
             {
-                if (settings.Game == "Sonic 1" && currentSplitIndex == 17)
+                if (settings.Game == Game.Sonic1 && currentSplitIndex == 17)
                 {
                     /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
                      * If it's actually a death, you have to manually undo the split. */
                     Split();
                 }
-                else if (settings.Game == "Sonic 2" && (currentSplitIndex == 17 || currentSplitIndex == 18))
+                else if (settings.Game == Game.Sonic2 && (currentSplitIndex == 17 || currentSplitIndex == 18))
                 {
                     // Same for Sonic 2's Sky Chase and Wing Fortress.
                     Split();
@@ -528,7 +528,7 @@ namespace SonicVisualSplit
                  * We want to recover from errors, so we also introduce a margin of error. */
                 long timeElapsed = result.FrameTime - previousResult.FrameTime + 50;
                 // Adding a margin to the elapsed time, as frames are not captured at precise moments.
-                long timerAccuracy = (settings.Game == "Sonic CD" ? 10 : 1000);
+                long timerAccuracy = (settings.Game == Game.SonicCD ? 10 : 1000);
                 long marginOfError = (long)(timeElapsed * 0.35);
 
                 if (result.TimeInMilliseconds < previousResult.TimeInMilliseconds - marginOfError
@@ -635,7 +635,7 @@ namespace SonicVisualSplit
             {
                 // Find the path with the template images for the game.
                 string livesplitComponents = GetLivesplitComponentsDirectory();
-                string directoryName = settings.Game + "@" + (settings.RGB ? "RGB" : "Composite");
+                string directoryName = settings.GameString + "@" + (settings.RGB ? "RGB" : "Composite");
                 string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
 
                 var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,

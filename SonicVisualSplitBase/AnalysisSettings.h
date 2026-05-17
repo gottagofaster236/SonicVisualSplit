@@ -6,8 +6,14 @@
 
 namespace SonicVisualSplitBase {
 
+enum class Game {
+    Sonic1,
+    Sonic2,
+    SonicCD,
+};
+
 struct AnalysisSettings {
-    std::string gameName;
+    Game game;
     std::filesystem::path templatesDirectory;
     bool isStretchedTo16By9;
     bool isComposite;

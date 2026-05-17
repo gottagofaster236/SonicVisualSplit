@@ -14,14 +14,20 @@ using System::Collections::Generic::List;
 using System::Drawing::Rectangle;
 using System::Drawing::Bitmap;
 
+public enum class Game {
+    Sonic1,
+    Sonic2,
+    SonicCD,
+};
+
 public ref class AnalysisSettings {
 public:
-    AnalysisSettings(String^ gameName, String^ templatesDirectory,
+    AnalysisSettings(Game game, String^ templatesDirectory,
         Boolean isStretchedTo16By9, Boolean isComposite);
 
     Boolean Equals(Object^ other) override;
 
-    property String^ GameName;
+    property Game Game;
     property String^ TemplatesDirectory;
     property Boolean IsStretchedTo16By9;
     property Boolean IsComposite;

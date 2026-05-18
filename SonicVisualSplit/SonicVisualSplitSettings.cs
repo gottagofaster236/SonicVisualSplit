@@ -10,6 +10,13 @@ using System.Linq;
 
 namespace SonicVisualSplit
 {
+    public enum TimingMethod : int
+    {
+        RTA_TB,
+        IGT,
+        COMBINED,
+    }
+
     public partial class SonicVisualSplitSettings : UserControl, FrameAnalyzer.IResultConsumer
     {
         public string VideoSource { get; private set; }
@@ -20,6 +27,7 @@ namespace SonicVisualSplit
         {
             get { return ToSettingsString(Game); }
         }
+        public TimingMethod TimingMethod { get; private set; }
         public bool AutoResetEnabled { get; private set; }
         public bool IsPracticeMode { get; private set; }
 
@@ -41,9 +49,17 @@ namespace SonicVisualSplit
             Stretched = false;
             Game = Game.Sonic1;
             AutoResetEnabled = true;
+            TimingMethod = TimingMethod.RTA_TB;
 
-            gamesComboBox.Items.AddRange(((Game[])Enum.GetValues(typeof(Game))).Select(Game => ToSettingsString(Game)).ToArray());
+            gamesComboBox.Items.AddRange(
+                ((Game[])Enum.GetValues(typeof(Game)))
+                .Select(Game => ToSettingsString(Game)).ToArray());
             gamesComboBox.SelectedIndex = 0;
+
+            timingMethodComboBox.Items.AddRange(
+                ((TimingMethod[])Enum.GetValues(typeof(TimingMethod)))
+                .Select(TimingMethod => ToSettingsString(TimingMethod)).ToArray());
+            timingMethodComboBox.SelectedIndex = 0;
         }
 
         public LayoutMode Mode { get; internal set; }
@@ -62,7 +78,8 @@ namespace SonicVisualSplit
                 SettingsHelper.CreateSetting(document, parent, "RGB", RGB) ^
                 SettingsHelper.CreateSetting(document, parent, "Stretched", Stretched) ^
                 SettingsHelper.CreateSetting(document, parent, "Game", ToSettingsString(Game)) ^
-                SettingsHelper.CreateSetting(document, parent, "AutoResetEnabled", AutoResetEnabled);
+                SettingsHelper.CreateSetting(document, parent, "AutoResetEnabled", AutoResetEnabled) ^
+                SettingsHelper.CreateSetting(document, parent, "TimingMethod", ToSettingsString(TimingMethod));
         }
 
         private static string ToSettingsString(Game game)
@@ -75,6 +92,21 @@ namespace SonicVisualSplit
                     return "Sonic 2";
                 case Game.SonicCD:
                     return "Sonic CD";
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private static string ToSettingsString(TimingMethod timingMethod)
+        {
+            switch (timingMethod)
+            {
+                case TimingMethod.IGT:
+                    return "IGT";
+                case TimingMethod.RTA_TB:
+                    return "RTA-TB";
+                case TimingMethod.COMBINED:
+                    return "RTA-TB & IGT";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -93,13 +125,25 @@ namespace SonicVisualSplit
             sixteenByNineButton.Checked = Stretched;
             fourByThreeButton.Checked = !Stretched;
 
-            string gameSettingsString = SettingsHelper.ParseString(settings["Game"]);
-            int gameIndex = gamesComboBox.FindStringExact(gameSettingsString);
+            string gameString = SettingsHelper.ParseString(settings["Game"]);
+            int gameIndex = gamesComboBox.FindStringExact(gameString);
             if (gameIndex != -1)
             {
                 gamesComboBox.SelectedIndex = gameIndex;
                 Game = (Game)gameIndex;
             }
+
+            string timingMethodString = SettingsHelper.ParseString(settings["TimingMethod"]);
+            int timingMethodIndex = timingMethodComboBox.FindStringExact(timingMethodString);
+            if (timingMethodIndex != -1)
+            {
+                TimingMethod = (TimingMethod)timingMethodIndex;
+            }
+            else
+            {
+                TimingMethod = TimingMethod.IGT;  // Keep the same value from before a timing method setting was added
+            }
+            timingMethodComboBox.SelectedIndex = (int) TimingMethod;
 
             AutoResetEnabled = SettingsHelper.ParseBool(settings["AutoResetEnabled"], true);
             autoResetCheckbox.Checked = AutoResetEnabled;
@@ -142,7 +186,13 @@ namespace SonicVisualSplit
 
         private void OnGameChanged(object sender, EventArgs e)
         {
-            Game = (Game) gamesComboBox.SelectedIndex;
+            Game = (Game)gamesComboBox.SelectedIndex;
+            OnSettingsChanged();
+        }
+
+        private void OnTimingMethodChanged(object sender, EventArgs e)
+        {
+            TimingMethod = (TimingMethod)timingMethodComboBox.SelectedIndex;
             OnSettingsChanged();
         }
 

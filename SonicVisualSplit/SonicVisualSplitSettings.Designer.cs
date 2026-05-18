@@ -45,6 +45,8 @@ namespace SonicVisualSplit
             this.videoSourceComboBox = new System.Windows.Forms.ComboBox();
             this.autoResetCheckbox = new System.Windows.Forms.CheckBox();
             this.copyrightLabel = new System.Windows.Forms.LinkLabel();
+            this.timingMethodLabel = new System.Windows.Forms.Label();
+            this.timingMethodComboBox = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).BeginInit();
             this.videoConnectorGroup.SuspendLayout();
             this.aspectRatioBox.SuspendLayout();
@@ -54,7 +56,7 @@ namespace SonicVisualSplit
             // 
             this.gameCapturePreview.BackColor = System.Drawing.Color.Black;
             this.gameCapturePreview.Location = new System.Drawing.Point(0, 80);
-            this.gameCapturePreview.Margin = new System.Windows.Forms.Padding(2);
+            this.gameCapturePreview.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.gameCapturePreview.Name = "gameCapturePreview";
             this.gameCapturePreview.Size = new System.Drawing.Size(474, 289);
             this.gameCapturePreview.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -76,7 +78,7 @@ namespace SonicVisualSplit
             this.gamesComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.gamesComboBox.FormattingEnabled = true;
             this.gamesComboBox.Location = new System.Drawing.Point(85, 420);
-            this.gamesComboBox.Margin = new System.Windows.Forms.Padding(2);
+            this.gamesComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.gamesComboBox.Name = "gamesComboBox";
             this.gamesComboBox.Size = new System.Drawing.Size(102, 21);
             this.gamesComboBox.TabIndex = 9;
@@ -97,7 +99,7 @@ namespace SonicVisualSplit
             this.compositeButton.AutoSize = true;
             this.compositeButton.Checked = true;
             this.compositeButton.Location = new System.Drawing.Point(4, 17);
-            this.compositeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.compositeButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.compositeButton.Name = "compositeButton";
             this.compositeButton.Size = new System.Drawing.Size(93, 17);
             this.compositeButton.TabIndex = 0;
@@ -110,7 +112,7 @@ namespace SonicVisualSplit
             // 
             this.rgbButton.AutoSize = true;
             this.rgbButton.Location = new System.Drawing.Point(4, 38);
-            this.rgbButton.Margin = new System.Windows.Forms.Padding(2);
+            this.rgbButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.rgbButton.Name = "rgbButton";
             this.rgbButton.Size = new System.Drawing.Size(48, 17);
             this.rgbButton.TabIndex = 1;
@@ -123,7 +125,7 @@ namespace SonicVisualSplit
             this.fourByThreeButton.AutoSize = true;
             this.fourByThreeButton.Checked = true;
             this.fourByThreeButton.Location = new System.Drawing.Point(5, 17);
-            this.fourByThreeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.fourByThreeButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.fourByThreeButton.Name = "fourByThreeButton";
             this.fourByThreeButton.Size = new System.Drawing.Size(80, 17);
             this.fourByThreeButton.TabIndex = 0;
@@ -136,7 +138,7 @@ namespace SonicVisualSplit
             // 
             this.sixteenByNineButton.AutoSize = true;
             this.sixteenByNineButton.Location = new System.Drawing.Point(5, 38);
-            this.sixteenByNineButton.Margin = new System.Windows.Forms.Padding(2);
+            this.sixteenByNineButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.sixteenByNineButton.Name = "sixteenByNineButton";
             this.sixteenByNineButton.Size = new System.Drawing.Size(99, 17);
             this.sixteenByNineButton.TabIndex = 1;
@@ -149,9 +151,9 @@ namespace SonicVisualSplit
             this.videoConnectorGroup.Controls.Add(this.compositeButton);
             this.videoConnectorGroup.Controls.Add(this.rgbButton);
             this.videoConnectorGroup.Location = new System.Drawing.Point(118, 457);
-            this.videoConnectorGroup.Margin = new System.Windows.Forms.Padding(2);
+            this.videoConnectorGroup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.videoConnectorGroup.Name = "videoConnectorGroup";
-            this.videoConnectorGroup.Padding = new System.Windows.Forms.Padding(2);
+            this.videoConnectorGroup.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.videoConnectorGroup.Size = new System.Drawing.Size(123, 61);
             this.videoConnectorGroup.TabIndex = 11;
             this.videoConnectorGroup.TabStop = false;
@@ -205,7 +207,7 @@ namespace SonicVisualSplit
             // 
             this.videoSourceComboBox.FormattingEnabled = true;
             this.videoSourceComboBox.Location = new System.Drawing.Point(120, 46);
-            this.videoSourceComboBox.Margin = new System.Windows.Forms.Padding(2);
+            this.videoSourceComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.videoSourceComboBox.Name = "videoSourceComboBox";
             this.videoSourceComboBox.Size = new System.Drawing.Size(134, 21);
             this.videoSourceComboBox.TabIndex = 16;
@@ -237,10 +239,33 @@ namespace SonicVisualSplit
             this.copyrightLabel.UseCompatibleTextRendering = true;
             this.copyrightLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.OpenGithub);
             // 
+            // timingMethodLabel
+            // 
+            this.timingMethodLabel.AutoSize = true;
+            this.timingMethodLabel.Location = new System.Drawing.Point(199, 423);
+            this.timingMethodLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.timingMethodLabel.Name = "timingMethodLabel";
+            this.timingMethodLabel.Size = new System.Drawing.Size(79, 13);
+            this.timingMethodLabel.TabIndex = 21;
+            this.timingMethodLabel.Text = "Timing method:";
+            // 
+            // timingMethodComboBox
+            // 
+            this.timingMethodComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.timingMethodComboBox.FormattingEnabled = true;
+            this.timingMethodComboBox.Location = new System.Drawing.Point(282, 420);
+            this.timingMethodComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.timingMethodComboBox.Name = "timingMethodComboBox";
+            this.timingMethodComboBox.Size = new System.Drawing.Size(102, 21);
+            this.timingMethodComboBox.TabIndex = 20;
+            this.timingMethodComboBox.SelectedIndexChanged += new System.EventHandler(this.OnTimingMethodChanged);
+            // 
             // SonicVisualSplitSettings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.timingMethodLabel);
+            this.Controls.Add(this.timingMethodComboBox);
             this.Controls.Add(this.copyrightLabel);
             this.Controls.Add(this.autoResetCheckbox);
             this.Controls.Add(this.videoSourceLabel);
@@ -253,7 +278,7 @@ namespace SonicVisualSplit
             this.Controls.Add(this.gamesComboBox);
             this.Controls.Add(this.settingsLabel);
             this.Controls.Add(this.gameCapturePreview);
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "SonicVisualSplitSettings";
             this.Size = new System.Drawing.Size(474, 559);
             ((System.ComponentModel.ISupportInitialize)(this.gameCapturePreview)).EndInit();
@@ -283,5 +308,7 @@ namespace SonicVisualSplit
         private System.Windows.Forms.ComboBox videoSourceComboBox;
         private System.Windows.Forms.CheckBox autoResetCheckbox;
         private System.Windows.Forms.LinkLabel copyrightLabel;
+        private System.Windows.Forms.Label timingMethodLabel;
+        private System.Windows.Forms.ComboBox timingMethodComboBox;
     }
 }

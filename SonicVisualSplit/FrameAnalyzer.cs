@@ -577,7 +577,9 @@ namespace SonicVisualSplit
 
         private void StartAnalyzingFrames()
         {
-            state.CurrentTimingMethod = TimingMethod.GameTime;
+            state.CurrentTimingMethod = settings.TimingMethod == TimingMethod.IGT ?
+                LiveSplit.Model.TimingMethod.GameTime :
+                LiveSplit.Model.TimingMethod.RealTime;
             state.IsGameTimePaused = true;  // stop the timer from automatically counting up
             state.OnReset += OnReset;
 

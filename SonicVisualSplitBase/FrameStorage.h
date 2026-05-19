@@ -18,8 +18,6 @@ namespace FrameStorage {
 void setVideoCapture(int sourceIndex);
 
 const int NO_VIDEO_CAPTURE = -1;  // No video capture is needed
-const int OBS_WINDOW_CAPTURE = -2;  // Capture the stream preview from currently opened OBS window.
-
 
 // Creates a thread which saves a frame from the game video capture every 16 milliseconds.
 void startSavingFrames();

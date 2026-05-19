@@ -87,7 +87,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Lib>
-      <AdditionalDependencies>Dwmapi.lib;D3D11.lib;CoreMessaging.lib;RuntimeObject.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -115,7 +116,8 @@
       </IgnoreSpecificDefaultLibraries>
     </Link>
     <Lib>
-      <AdditionalDependencies>Dwmapi.lib;D3D11.lib;CoreMessaging.lib;RuntimeObject.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -126,25 +128,18 @@
     <ClCompile Include="FrameStorage.cpp" />
     <ClCompile Include="FrameAnalyzer.cpp" />
     <ClCompile Include="GameVideoCapture.cpp" />
-    <ClCompile Include="ObsWindowCapture.cpp" />
     <ClCompile Include="TimeRecognizer.cpp" />
     <ClCompile Include="VirtualCamCapture.cpp" />
-    <ClCompile Include="WindowCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalysisResult.h" />
-    <ClInclude Include="capture.interop.h" />
-    <ClInclude Include="composition.interop.h" />
-    <ClInclude Include="direct3d11.interop.h" />
     <ClInclude Include="FairMutex.h" />
     <ClInclude Include="FrameStorage.h" />
     <ClInclude Include="FrameAnalyzer.h" />
     <ClInclude Include="GameVideoCapture.h" />
-    <ClInclude Include="ObsWindowCapture.h" />
     <ClInclude Include="AnalysisSettings.h" />
     <ClInclude Include="TimeRecognizer.h" />
     <ClInclude Include="VirtualCamCapture.h" />
-    <ClInclude Include="WindowCapture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

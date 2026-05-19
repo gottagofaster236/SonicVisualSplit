@@ -17,14 +17,12 @@ namespace SonicVisualSplit
         private SonicVisualSplitSettings settings;
         private CancellableLoopTask sourcesScanTask;
         private static readonly TimeSpan SOURCES_SCAN_PERIOD = TimeSpan.FromSeconds(1);
-        private const string OBS_CAPTURE_STRING = "OBS Window Capture";
 
         public VideoSourcesManager(SonicVisualSplitSettings settings)
         {
             this.settings = settings;
             settings.VideoSourcesManager = this;
             VideoSources = new List<string>();
-            VideoSources.Add(OBS_CAPTURE_STRING);
             sourcesScanTask = new CancellableLoopTask(ScanSources, SOURCES_SCAN_PERIOD);
         }
 
@@ -45,26 +43,18 @@ namespace SonicVisualSplit
             string videoSource = settings.VideoSource;
 
             // Update the video capture in SonicVisualSplitBase.
-            if (videoSource == OBS_CAPTURE_STRING)
+            int index = scannedVideoSources.IndexOf(videoSource);
+            if (index != -1)
             {
-                FrameStorage.SetVideoCapture(FrameStorage.OBS_WINDOW_CAPTURE);
+                FrameStorage.SetVideoCapture(index);
             }
             else
             {
-                int index = scannedVideoSources.IndexOf(videoSource);
-                if (index != -1)
-                {
-                    FrameStorage.SetVideoCapture(index);
-                }
-                else
-                {
-                    FrameStorage.SetVideoCapture(FrameStorage.NO_VIDEO_CAPTURE);
-                }
+                FrameStorage.SetVideoCapture(FrameStorage.NO_VIDEO_CAPTURE);
             }
 
             // Update the video source selection list in Settings.
             // The possible video capture methods also include OBS Capture.
-            scannedVideoSources.Insert(0, OBS_CAPTURE_STRING);
             scannedVideoSources = RemoveDuplicates(scannedVideoSources);
 
             if (!VideoSources.SequenceEqual(scannedVideoSources))

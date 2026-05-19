@@ -1,6 +1,5 @@
 #include "FrameStorage.h"
 #include "GameVideoCapture.h"
-#include "ObsWindowCapture.h"
 #include "VirtualCamCapture.h"
 #include "FairMutex.h"
 #include <chrono>
@@ -191,8 +190,6 @@ void setVideoCapture(int sourceIndex) {
 
     if (sourceIndex >= 0)
         gameVideoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
-    else if (sourceIndex == OBS_WINDOW_CAPTURE)
-        gameVideoCapture = std::make_unique<ObsWindowCapture>();
     else  // NO_VIDEO_CAPTURE
         gameVideoCapture = std::make_unique<NullCapture>();
 }

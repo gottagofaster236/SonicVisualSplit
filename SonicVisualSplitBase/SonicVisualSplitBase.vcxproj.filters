@@ -15,16 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WindowCapture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FrameAnalyzer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FrameStorage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ObsWindowCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VirtualCamCapture.cpp">
@@ -41,9 +35,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="WindowCapture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FrameAnalyzer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,9 +42,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GameVideoCapture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ObsWindowCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VirtualCamCapture.h">
@@ -69,15 +57,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AnalysisSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="capture.interop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="direct3d11.interop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="composition.interop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

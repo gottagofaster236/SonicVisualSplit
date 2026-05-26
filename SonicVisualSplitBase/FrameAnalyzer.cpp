@@ -10,11 +10,12 @@
 
 
 namespace SonicVisualSplitBase {
+namespace IGT {
 
 static const cv::Size genesisResolution = {320, 224};
 
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
-        settings(settings), timeRecognizer(settings) {
+    settings(settings), timeRecognizer(settings) {
     resetTemplate = settings.loadTemplateImageFromFile('R');
     // Remove the alpha channel.
     cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
@@ -26,14 +27,13 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     result.frameTime = frameTime;
     result.recognizedTime = false;
 
-    cv::UMat originalFrame = FrameStorage::getSavedFrame(frameTime);
-    originalFrame = reduceFrameSize(originalFrame);
+    cv::UMat originalFrame = frameStorage.getSavedFrame(frameTime);
     if (originalFrame.empty()) {
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
     cv::UMat frame = fixAspectRatio(originalFrame);
-    
+
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
         allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
@@ -60,8 +60,7 @@ bool FrameAnalyzer::checkForResetScreen() {
     if (!digitsLocation.isValid())
         return false;
 
-    cv::UMat frame = FrameStorage::getLastSavedFrame();
-    frame = reduceFrameSize(frame);
+    cv::UMat frame = frameStorage.getLastSavedFrame();
     if (frame.empty())
         return false;
     frame = fixAspectRatio(frame);
@@ -98,16 +97,6 @@ bool FrameAnalyzer::checkForResetScreen() {
         }
     }
     return true;
-}
-
-
-cv::UMat FrameAnalyzer::reduceFrameSize(cv::UMat frame) {
-    // Make sure the frame isn't too large (that'll slow down the calculations).
-    if (frame.rows > TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double) TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
-        cv::resize(frame, frame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
-    }
-    return frame;
 }
 
 
@@ -233,7 +222,7 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, do
 
 
 void FrameAnalyzer::visualizeResult(
-        const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame) {
+    const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame) {
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
     double aspectRatioScaleFactor = getAspectRatioScaleFactor();
@@ -246,4 +235,5 @@ void FrameAnalyzer::visualizeResult(
     }
 }
 
+}  // namespace IGT
 }  // namespace SonicVisualSplitBase

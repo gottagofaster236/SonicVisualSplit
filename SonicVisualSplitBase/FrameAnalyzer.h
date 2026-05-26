@@ -2,6 +2,7 @@
 #include "TimeRecognizer.h"
 #include "AnalysisSettings.h"
 #include "AnalysisResult.h"
+#include "FrameStorage.h"
 #include <opencv2/core.hpp>
 #include <filesystem>
 #include <vector>
@@ -11,6 +12,7 @@
 
 
 namespace SonicVisualSplitBase {
+namespace IGT {
 
 // This class finds the digits on the game frame (and gets a few other parameters, see AnalysisResult).
 class FrameAnalyzer {
@@ -28,9 +30,9 @@ public:
 
     bool checkForResetScreen();
 
-private:
-    cv::UMat reduceFrameSize(cv::UMat frame);
+    FrameStorage frameStorage;
 
+private:
     cv::UMat fixAspectRatio(cv::UMat frame);
 
     double getAspectRatioScaleFactor();
@@ -61,4 +63,5 @@ private:
     AnalysisResult result;
 };
 
+}  // namespace IGT
 }  // namespace SonicVisualSplitBase

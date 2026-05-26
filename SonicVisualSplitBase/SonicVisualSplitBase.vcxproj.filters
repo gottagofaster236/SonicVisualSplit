@@ -24,7 +24,7 @@
     <ClCompile Include="VirtualCamCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameVideoCapture.cpp">
+    <ClCompile Include="VideoCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TimeRecognizer.cpp">
@@ -33,15 +33,12 @@
     <ClCompile Include="AnalysisSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VideoCaptureManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FrameAnalyzer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameStorage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GameVideoCapture.h">
+    <ClInclude Include="VideoCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VirtualCamCapture.h">
@@ -50,13 +47,22 @@
     <ClInclude Include="FairMutex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TimeRecognizer.h">
+    <ClInclude Include="AnalysisSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoCaptureManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AnalysisResult.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AnalysisSettings.h">
+    <ClInclude Include="FrameAnalyzer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameStorage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeRecognizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

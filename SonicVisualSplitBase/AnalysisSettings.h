@@ -19,6 +19,8 @@ struct AnalysisSettings {
     bool isComposite;
 
     cv::UMat loadTemplateImageFromFile(char symbol) const;
+
+    cv::UMat loadTemplateImageFromFile(std::string filename) const;
 };
 
 }

@@ -5,6 +5,7 @@
 
 
 namespace SonicVisualSplitBase {
+namespace IGT {
 
 enum class ErrorReasonEnum {
     VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_ERROR
@@ -22,4 +23,5 @@ struct AnalysisResult {
     ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
 };
 
-}
+}  // namespace IGT
+}  // namespace SonicVisualSplitBase

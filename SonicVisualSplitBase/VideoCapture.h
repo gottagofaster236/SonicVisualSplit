@@ -6,15 +6,11 @@
 namespace SonicVisualSplitBase {
 
 // An abstract class for video capture.
-class GameVideoCapture {
+class VideoCapture {
 public:
-    /* Captures a game frame, which may need additional processing.
+    /* Captures a game frame.
      * Increments unsuccessfulFramesStreak in case of error. */
-    cv::Mat captureRawFrame();
-
-    /* Process the frame if needed. Returns an empty UMat in case of an error.
-     * The default implementation just converts cv::Mat to cv::UMat. */
-    virtual cv::UMat processFrame(cv::Mat rawFrame);
+    cv::UMat captureFrame();
 
     // Gets the duration of time to wait before capturing the next frame.
     virtual std::chrono::milliseconds getDelayAfterLastFrame() = 0;
@@ -25,22 +21,24 @@ public:
 
     int getUnsuccessfulFramesStreak();
 
-    virtual ~GameVideoCapture() {}
+    virtual ~VideoCapture() {}
+
+    static constexpr int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 
 private:
-    virtual cv::Mat captureRawFrameImpl() = 0;
+    virtual cv::UMat captureFrameImpl() = 0;
 
     int unsuccessfulFramesStreak = 0;
 };
 
 
 // Using null-object pattern to handle the situation where there's no capture specified.
-class NullCapture : public GameVideoCapture {
+class NullCapture : public VideoCapture {
 public:
     std::chrono::milliseconds getDelayAfterLastFrame() override;
 
 private:
-    cv::Mat captureRawFrameImpl() override;
+    cv::UMat captureFrameImpl() override;
 };
 
 } // namespace SonicVisualSplitBase

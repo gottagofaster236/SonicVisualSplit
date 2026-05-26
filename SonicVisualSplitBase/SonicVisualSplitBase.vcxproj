@@ -127,8 +127,9 @@
     <ClCompile Include="AnalysisSettings.cpp" />
     <ClCompile Include="FrameStorage.cpp" />
     <ClCompile Include="FrameAnalyzer.cpp" />
-    <ClCompile Include="GameVideoCapture.cpp" />
+    <ClCompile Include="VideoCapture.cpp" />
     <ClCompile Include="TimeRecognizer.cpp" />
+    <ClCompile Include="VideoCaptureManager.cpp" />
     <ClCompile Include="VirtualCamCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -136,7 +137,8 @@
     <ClInclude Include="FairMutex.h" />
     <ClInclude Include="FrameStorage.h" />
     <ClInclude Include="FrameAnalyzer.h" />
-    <ClInclude Include="GameVideoCapture.h" />
+    <ClInclude Include="VideoCaptureManager.h" />
+    <ClInclude Include="VideoCapture.h" />
     <ClInclude Include="AnalysisSettings.h" />
     <ClInclude Include="TimeRecognizer.h" />
     <ClInclude Include="VirtualCamCapture.h" />

@@ -1,5 +1,5 @@
 #pragma once
-#include "GameVideoCapture.h"
+#include "VideoCapture.h"
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #define NOMINMAX
@@ -12,7 +12,7 @@
 
 namespace SonicVisualSplitBase {
 
-class VirtualCamCapture : public GameVideoCapture {
+class VirtualCamCapture : public VideoCapture {
 public:
     // Initializes the capture with a camera index.
     VirtualCamCapture(int deviceIndex);
@@ -27,7 +27,7 @@ public:
 
 private:
     // Grabs a frame from the video capture, or returns an empty Mat in case of error.
-    cv::Mat captureRawFrameImpl() override;
+    cv::UMat captureFrameImpl() override;
 
     cv::VideoCapture videoCapture;
 

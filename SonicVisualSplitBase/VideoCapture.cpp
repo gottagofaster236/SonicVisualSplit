@@ -1,30 +1,24 @@
-#include "GameVideoCapture.h"
+#include "VideoCapture.h"
 #include <opencv2/core.hpp>
-
+#include <opencv2/imgproc.hpp>
 
 namespace SonicVisualSplitBase {
 
-cv::Mat GameVideoCapture::captureRawFrame() {
-    cv::Mat frame = captureRawFrameImpl();
+cv::UMat VideoCapture::captureFrame() {
+    cv::UMat frame = captureFrameImpl();
     if (frame.empty())
         unsuccessfulFramesStreak++;
     else
         unsuccessfulFramesStreak = 0;
+    if (frame.rows > MAX_ACCEPTABLE_FRAME_HEIGHT) {
+        double scaleFactor = ((double)MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
+        cv::resize(frame, frame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
+    }
     return frame;
 }
 
 
-cv::UMat SonicVisualSplitBase::GameVideoCapture::processFrame(cv::Mat rawFrame) {
-    return rawFrame.getUMat(cv::ACCESS_READ);
-}
-
-
-std::string GameVideoCapture::getVideoDisconnectedReason() {
-    return std::string();
-}
-
-
-int GameVideoCapture::getUnsuccessfulFramesStreak() {
+int VideoCapture::getUnsuccessfulFramesStreak() {
     return unsuccessfulFramesStreak;
 }
 
@@ -34,7 +28,7 @@ std::chrono::milliseconds NullCapture::getDelayAfterLastFrame() {
 }
 
 
-cv::Mat NullCapture::captureRawFrameImpl() {
+cv::UMat NullCapture::captureFrameImpl() {
     // Returning an empty frame to indicate failure.
     return {};
 }

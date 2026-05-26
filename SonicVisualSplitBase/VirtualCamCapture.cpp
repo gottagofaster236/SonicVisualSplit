@@ -15,8 +15,8 @@ VirtualCamCapture::VirtualCamCapture(int deviceIndex) {
 }
 
 
-cv::Mat VirtualCamCapture::captureRawFrameImpl() {
-    cv::Mat frame;
+cv::UMat VirtualCamCapture::captureFrameImpl() {
+    cv::UMat frame;
     if (!videoCapture.isOpened())
         return {};
     videoCapture >> frame;
@@ -137,7 +137,7 @@ cv::Size VirtualCamCapture::getResolution(IMoniker* moniker) {
     if (supportedResolutions.empty())
         return {0, 0};
     auto hdResolutions = supportedResolutions | std::views::filter([](const auto& resolution) {
-        return resolution.height >= TimeRecognizer::MAX_ACCEPTABLE_FRAME_HEIGHT;
+        return resolution.height >= VideoCapture::MAX_ACCEPTABLE_FRAME_HEIGHT;
     });
 
     if (hdResolutions.empty()) {

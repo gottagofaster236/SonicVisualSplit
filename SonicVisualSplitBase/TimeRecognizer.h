@@ -1,7 +1,7 @@
 #pragma once
 #include "AnalysisSettings.h"
 #include "AnalysisResult.h"
-#include "FrameStorage.h"
+#include "VideoCaptureManager.h"
 #include <opencv2/core.hpp>
 #include <vector>
 #include <map>
@@ -14,6 +14,7 @@
 
 
 namespace SonicVisualSplitBase {
+namespace IGT {
 
 class TimeRecognizer {
 public:
@@ -65,8 +66,6 @@ public:
      * Should be up-to-date upon calling recognizeTime(). */
     void reportCurrentSplitIndex(int currentSplitIndex);
 
-    static const int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
-
     // We search for symbols in our code (hack hack).
     static const char SCORE = 'S';
     static const char TIME = 'T';
@@ -87,7 +86,7 @@ private:
     void onRecognitionFailure(AnalysisResult& result);
 
     Match findTopTimeLabel(const std::vector<Match>& labels);
-    
+
     std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale);
 
     void removeMatchesWithLowSimilarity(std::vector<Match>& matches);
@@ -126,7 +125,7 @@ private:
     std::tuple<cv::UMat, cv::UMat, int> loadSymbolTemplate(char symbol);
 
     cv::UMat getAlphaMask(cv::UMat image);
-    
+
     const AnalysisSettings settings;
 
     DigitsLocation curDigitsLocation;
@@ -146,14 +145,15 @@ private:
     // The split index that LiveSplit is currently at.
     int currentSplitIndex = -1;
 
-    class OnSourceChangedListenerImpl : public FrameStorage::OnSourceChangedListener {
+    class OnSourceChangedListenerImpl : public VideoCaptureManager::OnSourceChangedListener {
     public:
         OnSourceChangedListenerImpl(TimeRecognizer& timeRecognizer);
 
-        void onSourceChanged() const override;
+        void onSourceChanged() override;
     private:
         TimeRecognizer& timeRecognizer;
     } onSourceChangedListener;
 };
 
+}  // namespace IGT
 }  // namespace SonicVisualSplitBase

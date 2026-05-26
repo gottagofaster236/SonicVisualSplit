@@ -13,22 +13,23 @@
 
 
 namespace SonicVisualSplitBase {
+namespace IGT {
 
 
-TimeRecognizer::TimeRecognizer(const AnalysisSettings& settings) : 
-        settings(settings), onSourceChangedListener(*this) {
+TimeRecognizer::TimeRecognizer(const AnalysisSettings& settings) :
+    settings(settings), onSourceChangedListener(*this) {
     loadAllTemplates();
-    FrameStorage::addOnSourceChangedListener(onSourceChangedListener);
+    VideoCaptureManager::addOnSourceChangedListener(onSourceChangedListener);
 }
 
 
 TimeRecognizer::~TimeRecognizer() {
-    FrameStorage::removeOnSourceChangedListener(onSourceChangedListener);
+    VideoCaptureManager::removeOnSourceChangedListener(onSourceChangedListener);
 }
 
 
 std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
-        (cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result) {
+(cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result) {
     if (shouldResetDigitsLocation) {
         resetDigitsLocationSync();
         shouldResetDigitsLocation = false;
@@ -117,7 +118,7 @@ TimeRecognizer::OnSourceChangedListenerImpl::OnSourceChangedListenerImpl(TimeRec
     : timeRecognizer(timeRecognizer) {}
 
 
-void TimeRecognizer::OnSourceChangedListenerImpl::onSourceChanged() const {
+void TimeRecognizer::OnSourceChangedListenerImpl::onSourceChanged() {
     timeRecognizer.resetDigitsLocation();
 }
 
@@ -178,7 +179,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect
 bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
     std::ranges::sort(digitMatches, {}, [](const Match& match) {
         return match.location.x;
-    });
+        });
 
     for (int i = 0; i + 1 < digitMatches.size(); i++) {
         const cv::Rect2f& prevLocation = digitMatches[i].location, nextLocation = digitMatches[i + 1].location;
@@ -255,11 +256,11 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
         else
             scoreMatches.push_back(match);
     }
-    
+
     if (timeMatches.empty() || scoreMatches.empty())
         return false;
     auto topTimeLabel = findTopTimeLabel(labels);
-    
+
     // Location of TIME in "TIME BONUS" relative to the top time label.
     cv::Point2f expectedTimeBonusShift;
     switch (settings.game) {
@@ -286,7 +287,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
         cv::Point2f timeBonusShift = otherLocation.tl() - topLocation.tl();
         float difference = (float) cv::norm(timeBonusShift - expectedTimeBonusShift);
         return difference > maxDifference;
-    });
+        });
 
     /* There's always a "TIME" label on top of the screen.
      * But there's a second one during the score countdown screen ("TIME BONUS"). */
@@ -334,10 +335,10 @@ void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
 TimeRecognizer::Match TimeRecognizer::findTopTimeLabel(const std::vector<Match>& labels) {
     auto timeMatches = labels | std::views::filter([](const Match& match) {
         return match.symbol == TIME;
-    });
+        });
     auto topTimeLabel = std::ranges::min(timeMatches, {}, [](const Match& timeMatch) {
         return timeMatch.location.y;
-    });
+        });
     return topTimeLabel;
 }
 
@@ -438,7 +439,7 @@ void TimeRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches)
         double minSimilarity = getMinSimilarity(match.symbol);
         double similarityMultiplier = getSimilarityMultiplier(match.symbol);
         return match.similarity / similarityMultiplier < minSimilarity;
-    });
+        });
 }
 
 
@@ -453,7 +454,7 @@ void TimeRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
         for (const Match& other : resultSymbolLocations) {
             if (std::isdigit(match.symbol) && std::isdigit(other.symbol)) {
                 if (std::abs(match.location.x + match.location.width -
-                        (other.location.x + other.location.width)) * curDigitsLocation.bestScale < 12) {
+                    (other.location.x + other.location.width)) * curDigitsLocation.bestScale < 12) {
                     intersectsWithOthers = true;
                 }
             }
@@ -483,7 +484,7 @@ void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitM
         // If the difference in the y coordinates is more than one pixel, we consider it a wrong match.
         return std::abs(match.location.y - bestMatchLocation.y)
             * curDigitsLocation.bestScale > 1.5;
-    });
+        });
 }
 
 
@@ -509,19 +510,19 @@ double TimeRecognizer::getMinSimilarity(char symbol) const {
 double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
     switch (symbol)
     {
-    // No multiplier by default.
+        // No multiplier by default.
     default:
         return 1;
-    // Once again making one a less preferable option.
+        // Once again making one a less preferable option.
     case '1':
         return 2;
-    // Four is confused with one.
+        // Four is confused with one.
     case '4':
         return 1.2;
-    // Seven is confused with one and two.
+        // Seven is confused with one and two.
     case '7':
         return 1.15;
-    // Nine is confused with five.
+        // Nine is confused with five.
     case '9':
         if (settings.isComposite && settings.game != Game::Sonic2)
             return 1.15;
@@ -569,7 +570,7 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
 
     // We only need to recognize time before transition to white on Sonic 2's Death Egg.
     bool recognizeWhiteTransition = (settings.game == Game::Sonic2 && currentSplitIndex == 19);
-    
+
     if (!recognizeWhiteTransition) {
         uint8_t maxAcceptableBrightness;
         if (settings.game == Game::Sonic2) {
@@ -673,4 +674,5 @@ cv::UMat TimeRecognizer::getAlphaMask(cv::UMat image) {
 
 bool TimeRecognizer::Match::operator==(const Match& other) const = default;
 
-}
+}  // namespace IGT
+}  // namespace SonicVisualSplitBase

@@ -7,8 +7,12 @@
 namespace SonicVisualSplitBase {
 
 cv::UMat AnalysisSettings::loadTemplateImageFromFile(char symbol) const {
+    return loadTemplateImageFromFile(symbol + std::string(".png"));
+}
+
+cv::UMat AnalysisSettings::loadTemplateImageFromFile(std::string filename) const {
     // The path can contain unicode, so we read the file by ourselves.
-    std::filesystem::path templatePath = templatesDirectory / (symbol + std::string(".png"));
+    std::filesystem::path templatePath = templatesDirectory / filename;
     std::ifstream fin(templatePath, std::ios::binary);
     std::vector<uint8_t> fileBuffer((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
     fin.close();

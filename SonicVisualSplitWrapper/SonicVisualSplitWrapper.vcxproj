@@ -88,11 +88,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="SonicVisualSplitWrapper.h" />
+    <ClInclude Include="Common.h" />
+    <ClInclude Include="IGT.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
-    <ClCompile Include="SonicVisualSplitWrapper.cpp" />
+    <ClCompile Include="Common.cpp" />
+    <ClCompile Include="IGT.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

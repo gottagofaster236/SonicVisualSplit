@@ -88,7 +88,7 @@ void addOnFrameCapturedListener(OnFrameCapturedListener& listener) {
 
 static void stopCapturingFrames();
 
-void removeOnFrameCapturedListener(const OnFrameCapturedListener& listener) {
+void removeOnFrameCapturedListener(OnFrameCapturedListener& listener) {
     std::lock_guard guard(onFrameCapturedListenersMutex);
     auto findIter = std::ranges::find(onFrameCapturedListeners, &listener);
     if (findIter != onFrameCapturedListeners.end()) {

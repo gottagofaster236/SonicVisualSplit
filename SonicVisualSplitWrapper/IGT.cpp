@@ -1,39 +1,34 @@
-﻿#include "SonicVisualSplitWrapper.h"
+#include "IGT.h"
 #pragma managed(push, off)
 #include "../SonicVisualSplitBase/FrameAnalyzer.h"
 #include "../SonicVisualSplitBase/FrameStorage.h"
-#include "../SonicVisualSplitBase/VirtualCamCapture.h"
 #pragma managed(pop)
 #include <msclr/marshal_cppstd.h>
 #include <algorithm>
 #undef NO_ERROR  // defined in WinError.h
+
+using namespace System;
 using System::Drawing::Imaging::PixelFormat;
 using System::Drawing::Imaging::ImageLockMode;
 using System::Drawing::Imaging::BitmapData;
+using System::Drawing::Bitmap;
+using System::Collections::Generic::List;
 
 namespace SonicVisualSplitWrapper {
+namespace IGT {
 
-AnalysisSettings::AnalysisSettings(SonicVisualSplitWrapper::Game game, String^ templatesDirectory,
-        Boolean isStretchedTo16By9, Boolean isComposite) {
-    Game = game;
-    TemplatesDirectory = templatesDirectory;
-    IsStretchedTo16By9 = isStretchedTo16By9;
-    IsComposite = isComposite;
+SonicVisualSplitBase::IGT::FrameAnalyzer* getFrameAnalyzerFromIntPtr(System::IntPtr ptr) {
+    return static_cast<SonicVisualSplitBase::IGT::FrameAnalyzer*>(ptr.ToPointer());
 }
 
 
-Boolean AnalysisSettings::Equals(Object^ other) {
-    AnalysisSettings^ otherSettings = dynamic_cast<AnalysisSettings^>(other);
-    return otherSettings &&
-        otherSettings->Game == Game &&
-        otherSettings->TemplatesDirectory == TemplatesDirectory &&
-        otherSettings->IsStretchedTo16By9 == IsStretchedTo16By9 &&
-        otherSettings->IsComposite == IsComposite;
+SonicVisualSplitBase::IGT::FrameStorage* getFrameStorageFromIntPtr(System::IntPtr ptr) {
+    return static_cast<SonicVisualSplitBase::IGT::FrameStorage*>(ptr.ToPointer());
 }
 
 
 void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance, AnalysisSettings^ settings) {
-    bool shouldCreateNewInstance = 
+    bool shouldCreateNewInstance =
         oldInstance == nullptr || !oldInstance->settings->Equals(settings);
 
     if (shouldCreateNewInstance) {
@@ -45,18 +40,14 @@ void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance, Analy
 
 FrameAnalyzer::FrameAnalyzer(AnalysisSettings^ settings) : settings(settings) {
     msclr::interop::marshal_context context;
-    std::wstring templatesDirectoryConverted = 
+    std::wstring templatesDirectoryConverted =
         context.marshal_as<std::wstring>(settings->TemplatesDirectory);
     SonicVisualSplitBase::AnalysisSettings nativeSettings = {static_cast<SonicVisualSplitBase::Game>(settings->Game),
         templatesDirectoryConverted, settings->IsStretchedTo16By9, settings->IsComposite};
 
-    auto nativeFrameAnalyzer = new SonicVisualSplitBase::FrameAnalyzer(nativeSettings);
+    auto nativeFrameAnalyzer = new SonicVisualSplitBase::IGT::FrameAnalyzer(nativeSettings);
     nativeFrameAnalyzerPtr = System::IntPtr(nativeFrameAnalyzer);
-}
-
-
-SonicVisualSplitBase::FrameAnalyzer* getFrameAnalyzerFromIntPtr(System::IntPtr ptr) {
-    return static_cast<SonicVisualSplitBase::FrameAnalyzer*>(ptr.ToPointer());
+    _frameStorage = gcnew IGT::FrameStorage(System::IntPtr(&nativeFrameAnalyzer->frameStorage));
 }
 
 
@@ -68,7 +59,7 @@ FrameAnalyzer::~FrameAnalyzer() {
 // Converting non-managed types to managed ones to call the native version of the function
 AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize) {
     auto nativeFrameAnalyzer = getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr);
-    SonicVisualSplitBase::AnalysisResult result =
+    SonicVisualSplitBase::IGT::AnalysisResult result =
         nativeFrameAnalyzer->analyzeFrame(frameTime, checkForScoreScreen, visualize);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
@@ -85,7 +76,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
         // matrix to bitmap code taken from https://github.com/shimat/opencvsharp/blob/master/src/OpenCvSharp.Extensions/BitmapConverter.cs 
         const cv::Mat& mat = result.visualizedFrame;
         Bitmap^ converted = gcnew Bitmap(mat.cols, mat.rows, PixelFormat::Format24bppRgb);
-        Rectangle rect(0, 0, mat.cols, mat.rows);
+        System::Drawing::Rectangle rect(0, 0, mat.cols, mat.rows);
         BitmapData^ bitmapData = converted->LockBits(rect, ImageLockMode::WriteOnly, converted->PixelFormat);
         uint8_t* src = mat.data;
         uint8_t* dst = (uint8_t*) bitmapData->Scan0.ToPointer();
@@ -101,8 +92,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
 
         converted->UnlockBits(bitmapData);
         resultConverted->VisualizedFrame = converted;
-    }
-    else {
+    } else {
         resultConverted->VisualizedFrame = nullptr;
     }
     return resultConverted;
@@ -124,6 +114,11 @@ void FrameAnalyzer::ResetDigitsLocation() {
 }
 
 
+IGT::FrameStorage^ FrameAnalyzer::FrameStorage::get() {
+    return _frameStorage;
+}
+
+
 Boolean AnalysisResult::IsSuccessful() {
     return ErrorReason == ErrorReasonEnum::NO_ERROR;
 }
@@ -141,23 +136,17 @@ String^ AnalysisResult::ToString() {
 }
 
 
-void FrameStorage::SetVideoCapture(int sourceIndex) {
-    SonicVisualSplitBase::FrameStorage::setVideoCapture(sourceIndex);
-}
-
-
 void FrameStorage::StartSavingFrames() {
-    SonicVisualSplitBase::FrameStorage::startSavingFrames();
+    getFrameStorageFromIntPtr(nativeFrameStoragePtr)->startSavingFrames();
 }
 
 
 void FrameStorage::StopSavingFrames() {
-    SonicVisualSplitBase::FrameStorage::stopSavingFrames();
+    getFrameStorageFromIntPtr(nativeFrameStoragePtr)->stopSavingFrames();
 }
 
-
 List<Int64>^ FrameStorage::GetSavedFramesTimes() {
-    std::vector<long long> savedFramesTimes = SonicVisualSplitBase::FrameStorage::getSavedFramesTimes();
+    std::vector<long long> savedFramesTimes = getFrameStorageFromIntPtr(nativeFrameStoragePtr)->getSavedFramesTimes();
     List<Int64>^ converted = gcnew List<Int64>((int) savedFramesTimes.size());
     for (long long frameTime : savedFramesTimes) {
         converted->Add(frameTime);
@@ -182,32 +171,16 @@ void FrameStorage::DeleteAllSavedFrames() {
 
 
 void FrameStorage::DeleteSavedFramesInRange(Int64 beginFrameTime, Int64 endFrameTime) {
-    SonicVisualSplitBase::FrameStorage::deleteSavedFramesInRange(beginFrameTime, endFrameTime);
+    getFrameStorageFromIntPtr(nativeFrameStoragePtr)->deleteSavedFramesInRange(beginFrameTime, endFrameTime);
 }
 
 
 int FrameStorage::GetMaxCapacity() {
-    return SonicVisualSplitBase::FrameStorage::MAX_CAPACITY;
+    return SonicVisualSplitBase::IGT::FrameStorage::MAX_CAPACITY;
 }
 
 
-Int64 FrameStorage::GetCurrentTimeInMilliseconds() {
-    return SonicVisualSplitBase::FrameStorage::getCurrentTimeInMilliseconds();
-}
+FrameStorage::FrameStorage(System::IntPtr nativeFrameStoragePtr) : nativeFrameStoragePtr(nativeFrameStoragePtr) {}
 
-
-String^ FrameStorage::GetVideoDisconnectedReason() {
-    return gcnew String(SonicVisualSplitBase::FrameStorage::getVideoDisconnectedReason().c_str());
-}
-
-
-List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
-    std::vector<std::wstring> devices = SonicVisualSplitBase::VirtualCamCapture::getVideoDevicesList();
-    List<String^>^ converted = gcnew List<String^>((int) devices.size());
-    for (const std::wstring& deviceName : devices) {
-        converted->Add(gcnew String(deviceName.c_str()));
-    }
-    return converted;
-}
-
+}  // namespace IGT
 }  // namespace SonicVisualSplitWrapper

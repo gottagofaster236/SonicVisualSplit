@@ -1,22 +1,25 @@
 ﻿using LiveSplit.Model;
+using LiveSplit.UI;
 using LiveSplit.UI.Components;
+using SonicVisualSplitWrapper;
 using System;
 using System.Collections.Generic;
-using LiveSplit.UI;
 using System.Drawing;
+using System.IO;
+using System.IO.Compression;
+using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
-using SonicVisualSplitWrapper;
-using System.Threading;
 
 namespace SonicVisualSplit
 {
-    class SonicVisualSplitComponent : IComponent, FrameAnalyzer.IResultConsumer
+    class SonicVisualSplitComponent : IComponent, IGT.FrameAnalyzer.IResultConsumer
     {
         private StyledInfoTextComponent internalComponent;
         private LiveSplitState state;
         private SonicVisualSplitSettings settings;
-        private FrameAnalyzer frameAnalyzer;
+        private IGT.FrameAnalyzer igtFrameAnalyzer;
         private VideoSourcesManager videoSourcesManager;
 
         string IComponent.ComponentName => "SonicVisualSplit";
@@ -35,9 +38,10 @@ namespace SonicVisualSplit
             mainThread = Thread.CurrentThread;
             internalComponent = new StyledInfoTextComponent("Time on screen (SVS)", "Wait..");
 
+            UnpackTemplatesArrayIfNeeded();
             settings = new SonicVisualSplitSettings();
-            frameAnalyzer = new FrameAnalyzer(state, settings);
-            frameAnalyzer.AddResultConsumer(this);
+            igtFrameAnalyzer = new IGT.FrameAnalyzer(state, settings);
+            igtFrameAnalyzer.AddResultConsumer(this);
             settings.SettingsChanged += OnSettingsChanged;
 
             videoSourcesManager = new VideoSourcesManager(settings);
@@ -57,14 +61,14 @@ namespace SonicVisualSplit
                 return;
             }
             Disposed = true;
-            frameAnalyzer.Dispose();
+            igtFrameAnalyzer.Dispose();
             state.IsGameTimePaused = false;
             videoSourcesManager.StopScanningSources();
         }
 
         public bool VisualizeAnalysisResult => false;
 
-        public void OnFrameAnalyzed(AnalysisResult result)
+        public void OnFrameAnalyzed(SonicVisualSplitWrapper.IGT.AnalysisResult result)
         {
             RunOnUiThreadAsync(() =>
             {
@@ -80,7 +84,7 @@ namespace SonicVisualSplit
                 else
                 {
                     internalComponent.IsTime = false;
-                    if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                    if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.VIDEO_DISCONNECTED)
                     {
                         internalComponent.InformationValue = "Video Disconnected";
                     }
@@ -141,6 +145,36 @@ namespace SonicVisualSplit
         public static bool CanRunOnUiThreadAsync()
         {
             return mainForm.IsHandleCreated;
+        }
+
+        private static void UnpackTemplatesArrayIfNeeded()
+        {
+            string livesplitComponents = GetLivesplitComponentsDirectory();
+            string zipLocation = Path.Combine(livesplitComponents, "SVS Templates.zip");
+            if (File.Exists(zipLocation))
+            {
+                string destinationDirectory = Path.Combine(livesplitComponents, "SVS Templates");
+                try
+                {
+                    if (Directory.Exists(destinationDirectory))
+                    {
+                        Directory.Delete(destinationDirectory, recursive: true);
+                    }
+                    ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
+                    File.Delete(zipLocation);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    MessageBox.Show("Please restart LiveSplit with administrator privileges.", "SVS Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Environment.Exit(0);
+                }
+            }
+        }
+
+        public static string GetLivesplitComponentsDirectory()
+        {
+            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         }
 
         // Boilerplate code below.

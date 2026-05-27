@@ -17,7 +17,7 @@ namespace SonicVisualSplit
         COMBINED,
     }
 
-    public partial class SonicVisualSplitSettings : UserControl, FrameAnalyzer.IResultConsumer
+    public partial class SonicVisualSplitSettings : UserControl, IGT.FrameAnalyzer.IResultConsumer
     {
         public string VideoSource { get; private set; }
         public bool RGB { get; private set; }
@@ -33,7 +33,7 @@ namespace SonicVisualSplit
 
         public event EventHandler SettingsChanged;
 
-        public FrameAnalyzer FrameAnalyzer { get; set; }
+        public IGT.FrameAnalyzer FrameAnalyzer { get; set; }
         public bool VisualizeAnalysisResult => true;
 
         public VideoSourcesManager VideoSourcesManager { get; set; }
@@ -203,7 +203,7 @@ namespace SonicVisualSplit
         }
 
         // Shows the preview of digits recognition results.
-        public void OnFrameAnalyzed(AnalysisResult result)
+        public void OnFrameAnalyzed(SonicVisualSplitWrapper.IGT.AnalysisResult result)
         {
             RunOnUiThreadAsync(() =>
             {
@@ -219,26 +219,17 @@ namespace SonicVisualSplit
                 string resultText = null;
                 LinkArea linkArea = new LinkArea(0, 0);
 
-                if (result.ErrorReason == ErrorReasonEnum.VIDEO_DISCONNECTED)
+                if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
-                    resultText = "Video disconnected. ";
-                    var videoDisconnectedReason = FrameStorage.GetVideoDisconnectedReason();
-                    if (string.IsNullOrEmpty(videoDisconnectedReason))
-                    {
-                        resultText += "Read more at this link.";
-                        linkArea.Start = resultText.Length - 10;
-                        linkArea.Length = 9;
-                    }
-                    else
-                    {
-                        resultText += videoDisconnectedReason;
-                    }
+                    resultText = "Video disconnected. Read more at this link.";
+                    linkArea.Start = resultText.Length - 10;
+                    linkArea.Length = 9;
                 }
-                else if (result.ErrorReason == ErrorReasonEnum.NO_TIME_ON_SCREEN)
+                else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_TIME_ON_SCREEN)
                 {
                     resultText = "Can't recognize the time.";
                 }
-                else if (result.ErrorReason == ErrorReasonEnum.NO_ERROR)
+                else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_ERROR)
                 {
                     if (result.IsBlackScreen)
                     {

@@ -34,7 +34,7 @@ namespace SonicVisualSplit
         public void StopScanningSources()
         {
             sourcesScanTask.Stop();
-            FrameStorage.SetVideoCapture(FrameStorage.NO_VIDEO_CAPTURE);
+            VideoCaptureManager.SetVideoCapture(VideoCaptureManager.NO_VIDEO_CAPTURE);
         }
 
         private void ScanSources()
@@ -46,11 +46,11 @@ namespace SonicVisualSplit
             int index = scannedVideoSources.IndexOf(videoSource);
             if (index != -1)
             {
-                FrameStorage.SetVideoCapture(index);
+                VideoCaptureManager.SetVideoCapture(index);
             }
             else
             {
-                FrameStorage.SetVideoCapture(FrameStorage.NO_VIDEO_CAPTURE);
+                VideoCaptureManager.SetVideoCapture(VideoCaptureManager.NO_VIDEO_CAPTURE);
             }
 
             // Update the video source selection list in Settings.

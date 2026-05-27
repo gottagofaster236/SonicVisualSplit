@@ -3,20 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
-using System.Reflection;
-using System.Windows.Forms;
-using System.IO.Compression;
 using System.Threading;
 using System.Diagnostics;
 using LiveSplit.Model;
 using SonicVisualSplitWrapper;
+using SonicVisualSplitWrapper.IGT;
 using static SonicVisualSplit.SonicVisualSplitComponent;
 
-namespace SonicVisualSplit
+namespace SonicVisualSplit.IGT
 {
     public class FrameAnalyzer : IDisposable
     {
-        private SonicVisualSplitWrapper.FrameAnalyzer nativeFrameAnalyzer;
+        private SonicVisualSplitWrapper.IGT.FrameAnalyzer nativeFrameAnalyzer;
         private ReaderWriterLock nativeFrameAnalyzerLock = new ReaderWriterLock();
         // Not using ReaderWriterLockSlim to guarantee fairness.
 
@@ -84,8 +82,6 @@ namespace SonicVisualSplit
             this.settings = settings;
             this.settings.FrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
-
-            UnpackTemplatesArrayIfNeeded();
 
             StartObservingCurrentSplitIndex();
             frameAnalysisTask = new CancellableLoopTask(AnalyzeFrame, FRAME_ANALYSIS_PERIOD);
@@ -169,7 +165,7 @@ namespace SonicVisualSplit
                 }
 
                 previousResult = result;
-                FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+                nativeFrameAnalyzer.FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
             }
             finally
             {
@@ -205,7 +201,7 @@ namespace SonicVisualSplit
         // Gets the list of the times of saved frames, or an empty list in case of error.
         private List<long> GetSavedFrameTimes()
         {
-            List<long> savedFrameTimes = FrameStorage.GetSavedFramesTimes();
+            List<long> savedFrameTimes = nativeFrameAnalyzer.FrameStorage.GetSavedFramesTimes();
             if (!savedFrameTimes.Any())
             {
                 return savedFrameTimes;
@@ -214,15 +210,15 @@ namespace SonicVisualSplit
 
             if (ShouldWaitAfterReset(lastFrameTime))
             {
-                FrameStorage.DeleteAllSavedFrames();
+                nativeFrameAnalyzer.FrameStorage.DeleteAllSavedFrames();
                 return new List<long>();
             }
 
-            if (savedFrameTimes.Count == FrameStorage.GetMaxCapacity())
+            if (savedFrameTimes.Count == nativeFrameAnalyzer.FrameStorage.GetMaxCapacity())
             {
                 /* The frames are not saved if there are too many saved already (to prevent an OOM).
                  * In this case we unfortunately have to delete the old frames, even if we need them. */
-                FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
+                nativeFrameAnalyzer.FrameStorage.DeleteSavedFramesBefore(lastFrameTime);
                 return new List<long> { lastFrameTime };
             }
 
@@ -383,7 +379,8 @@ namespace SonicVisualSplit
         private void UpdateGameTime(int gameTime)
         {
             RunOnUiThreadAsync(() => {
-                if (ShouldWaitAfterReset(FrameStorage.GetCurrentTimeInMilliseconds()))
+                if (settings.TimingMethod != TimingMethod.IGT) return;
+                if (ShouldWaitAfterReset(VideoCaptureManager.GetCurrentTimeInMilliseconds()))
                 {
                     return;
                 }
@@ -554,7 +551,7 @@ namespace SonicVisualSplit
         {
             // Delete the frame so we don't try to analyze it again.
             long frameTime = result.FrameTime;
-            FrameStorage.DeleteSavedFrame(frameTime);
+            nativeFrameAnalyzer.FrameStorage.DeleteSavedFrame(frameTime);
             result.MarkAsIncorrectlyRecognized();
 
             if (incrementUnsuccessfulStreak)
@@ -563,7 +560,7 @@ namespace SonicVisualSplit
                 {
                     /* If the previous analyzed frame was also a fail, we delete the frames since that moment,
                      * to save up on memory usage. */
-                    FrameStorage.DeleteSavedFramesInRange(previousResult.FrameTime, frameTime);
+                    nativeFrameAnalyzer.FrameStorage.DeleteSavedFramesInRange(previousResult.FrameTime, frameTime);
                 }
                 unsuccessfulStreak++;
             }
@@ -577,13 +574,14 @@ namespace SonicVisualSplit
 
         private void StartAnalyzingFrames()
         {
-            state.CurrentTimingMethod = settings.TimingMethod == TimingMethod.IGT ?
-                LiveSplit.Model.TimingMethod.GameTime :
-                LiveSplit.Model.TimingMethod.RealTime;
-            state.IsGameTimePaused = true;  // stop the timer from automatically counting up
+            if (settings.TimingMethod == TimingMethod.IGT)
+            {
+                state.CurrentTimingMethod = LiveSplit.Model.TimingMethod.GameTime;
+            }
+            state.IsGameTimePaused = true;  // stop the IGT timer from automatically counting up
             state.OnReset += OnReset;
 
-            FrameStorage.StartSavingFrames();
+            nativeFrameAnalyzer.FrameStorage.StartSavingFrames();
             frameAnalysisTask.Start();
         }
 
@@ -591,8 +589,8 @@ namespace SonicVisualSplit
         {
             frameAnalysisTask.Stop();
 
-            FrameStorage.StopSavingFrames();
-            FrameStorage.DeleteAllSavedFrames();
+            nativeFrameAnalyzer.FrameStorage.StopSavingFrames();
+            nativeFrameAnalyzer.FrameStorage.DeleteAllSavedFrames();
 
             state.OnReset -= OnReset;
             OnReset();
@@ -608,7 +606,7 @@ namespace SonicVisualSplit
 
         private void OnSettingsChanged(object sender, EventArgs e)
         {
-            if (!settings.IsPracticeMode)
+            if (!settings.IsPracticeMode && settings.TimingMethod != TimingMethod.RTA_TB)
             {
                 RecreateNativeFrameAnalyzer();
             }
@@ -620,7 +618,7 @@ namespace SonicVisualSplit
                 nativeFrameAnalyzer = null;
             }
             
-            if (settings.AutoResetEnabled && !settings.IsPracticeMode)
+            if (settings.AutoResetEnabled && !settings.IsPracticeMode && settings.TimingMethod != TimingMethod.RTA_TB)
             {
                 resetCheckTask.Start();
             }
@@ -644,7 +642,7 @@ namespace SonicVisualSplit
                     settings.Stretched, isComposite: !settings.RGB);
 
                 bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
-                SonicVisualSplitWrapper.FrameAnalyzer.createNewInstanceIfNeeded(
+                SonicVisualSplitWrapper.IGT.FrameAnalyzer.createNewInstanceIfNeeded(
                     ref nativeFrameAnalyzer, analysisSettings);
 
                 if (!wasAnalyzingFrames)
@@ -658,41 +656,11 @@ namespace SonicVisualSplit
             }
         }
 
-        private static void UnpackTemplatesArrayIfNeeded()
-        {
-            string livesplitComponents = GetLivesplitComponentsDirectory();
-            string zipLocation = Path.Combine(livesplitComponents, "SVS Templates.zip");
-            if (File.Exists(zipLocation))
-            {
-                string destinationDirectory = Path.Combine(livesplitComponents, "SVS Templates");
-                try
-                {
-                    if (Directory.Exists(destinationDirectory))
-                    {
-                        Directory.Delete(destinationDirectory, recursive: true);
-                    }
-                    ZipFile.ExtractToDirectory(zipLocation, destinationDirectory);
-                    File.Delete(zipLocation);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    MessageBox.Show("Please restart LiveSplit with administrator privileges.", "SVS Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    Environment.Exit(0);
-                }
-            }
-        }
-
-        private static string GetLivesplitComponentsDirectory()
-        {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        }
-
         private void OnReset(object sender = null, TimerPhase value = 0)
         {
             if (!isPerformingAutomaticReset)
             {
-                Interlocked.Exchange(ref lastManualResetTime, FrameStorage.GetCurrentTimeInMilliseconds());
+                Interlocked.Exchange(ref lastManualResetTime, VideoCaptureManager.GetCurrentTimeInMilliseconds());
             }
 
             Task.Run(() =>
@@ -702,7 +670,7 @@ namespace SonicVisualSplit
                 {
                     // IsGameTimePaused is reset too, bring it back to true.
                     state.IsGameTimePaused = true;
-                    FrameStorage.DeleteAllSavedFrames();
+                    nativeFrameAnalyzer?.FrameStorage?.DeleteAllSavedFrames();
 
                     gameTime = 0;
                     gameTimeOnSegmentStart = 0;

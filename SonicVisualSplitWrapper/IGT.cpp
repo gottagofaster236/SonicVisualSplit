@@ -136,15 +136,6 @@ String^ AnalysisResult::ToString() {
 }
 
 
-void FrameStorage::StartSavingFrames() {
-    getFrameStorageFromIntPtr(nativeFrameStoragePtr)->startSavingFrames();
-}
-
-
-void FrameStorage::StopSavingFrames() {
-    getFrameStorageFromIntPtr(nativeFrameStoragePtr)->stopSavingFrames();
-}
-
 List<Int64>^ FrameStorage::GetSavedFramesTimes() {
     std::vector<long long> savedFramesTimes = getFrameStorageFromIntPtr(nativeFrameStoragePtr)->getSavedFramesTimes();
     List<Int64>^ converted = gcnew List<Int64>((int) savedFramesTimes.size());

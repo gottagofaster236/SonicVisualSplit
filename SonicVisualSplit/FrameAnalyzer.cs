@@ -379,7 +379,7 @@ namespace SonicVisualSplit.IGT
         private void UpdateGameTime(int gameTime)
         {
             RunOnUiThreadAsync(() => {
-                if (settings.TimingMethod != TimingMethod.IGT) return;
+                if (settings.TimingMethod != TimingMethod.IGT) return;  // TODO: update game time with TimingMethod.COMBINED
                 if (ShouldWaitAfterReset(VideoCaptureManager.GetCurrentTimeInMilliseconds()))
                 {
                     return;
@@ -574,14 +574,7 @@ namespace SonicVisualSplit.IGT
 
         private void StartAnalyzingFrames()
         {
-            if (settings.TimingMethod == TimingMethod.IGT)
-            {
-                state.CurrentTimingMethod = LiveSplit.Model.TimingMethod.GameTime;
-            }
-            state.IsGameTimePaused = true;  // stop the IGT timer from automatically counting up
             state.OnReset += OnReset;
-
-            nativeFrameAnalyzer.FrameStorage.StartSavingFrames();
             frameAnalysisTask.Start();
         }
 
@@ -589,11 +582,19 @@ namespace SonicVisualSplit.IGT
         {
             frameAnalysisTask.Stop();
 
-            nativeFrameAnalyzer.FrameStorage.StopSavingFrames();
             nativeFrameAnalyzer.FrameStorage.DeleteAllSavedFrames();
 
             state.OnReset -= OnReset;
             OnReset();
+        }
+
+        private void SetUpGameTime()
+        {
+            if (settings.TimingMethod == TimingMethod.IGT)
+            {
+                state.CurrentTimingMethod = LiveSplit.Model.TimingMethod.GameTime;
+            }
+            state.IsGameTimePaused = true;  // stop the IGT timer from automatically counting up
         }
 
         public void Dispose()
@@ -618,7 +619,7 @@ namespace SonicVisualSplit.IGT
                 nativeFrameAnalyzer = null;
             }
             
-            if (settings.AutoResetEnabled && !settings.IsPracticeMode && settings.TimingMethod != TimingMethod.RTA_TB)
+            if (settings.AutoResetEnabled && !settings.IsPracticeMode && settings.TimingMethod == TimingMethod.IGT)
             {
                 resetCheckTask.Start();
             }
@@ -645,6 +646,7 @@ namespace SonicVisualSplit.IGT
                 SonicVisualSplitWrapper.IGT.FrameAnalyzer.createNewInstanceIfNeeded(
                     ref nativeFrameAnalyzer, analysisSettings);
 
+                SetUpGameTime();
                 if (!wasAnalyzingFrames)
                 {
                     StartAnalyzingFrames();
@@ -668,8 +670,7 @@ namespace SonicVisualSplit.IGT
                 nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
                 try
                 {
-                    // IsGameTimePaused is reset too, bring it back to true.
-                    state.IsGameTimePaused = true;
+                    SetUpGameTime();
                     nativeFrameAnalyzer?.FrameStorage?.DeleteAllSavedFrames();
 
                     gameTime = 0;

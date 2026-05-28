@@ -19,12 +19,6 @@ public:
 
 	~FrameStorage();
 
-	// Creates a thread which saves a frame from the game video capture every 16 milliseconds.
-	void startSavingFrames();
-
-	// Stops that thread.
-	void stopSavingFrames();
-
 	// Returns the save times of the frames that are currently stored.
 	std::vector<long long> getSavedFramesTimes() const;
 

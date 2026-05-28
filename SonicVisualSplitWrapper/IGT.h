@@ -29,10 +29,6 @@ public:
 
 public ref class FrameStorage {
 public:
-    void StartSavingFrames();
-
-    void StopSavingFrames();
-
     System::Collections::Generic::List<System::Int64>^ GetSavedFramesTimes();
 
     void DeleteSavedFrame(System::Int64 frameTime);

@@ -5,21 +5,13 @@
 namespace SonicVisualSplitBase {
 namespace IGT {
 
-FrameStorage::FrameStorage() : onSourceChangedListener(*this), onFrameCapturedListener(*this) {}
-
-
-FrameStorage::~FrameStorage() {
-    stopSavingFrames();
-}
-
-
-void FrameStorage::startSavingFrames() {
+FrameStorage::FrameStorage() : onSourceChangedListener(*this), onFrameCapturedListener(*this) {
     VideoCaptureManager::addOnFrameCapturedListener(onFrameCapturedListener);
     VideoCaptureManager::addOnSourceChangedListener(onSourceChangedListener);
 }
 
 
-void FrameStorage::stopSavingFrames() {
+FrameStorage::~FrameStorage() {
     VideoCaptureManager::removeOnFrameCapturedListener(onFrameCapturedListener);
     VideoCaptureManager::removeOnSourceChangedListener(onSourceChangedListener);
 }

@@ -16,6 +16,7 @@ static yamc::fair::recursive_mutex videoCaptureMutex;
 static int currentVideoSourceIndex;
 
 static std::jthread framesThread;
+static std::mutex framesThreadMutex;
 
 static std::vector<OnSourceChangedListener*> onSourceChangedListeners;
 static std::mutex onSourceChangedListenersMutex;
@@ -74,13 +75,20 @@ void removeOnSourceChangedListener(OnSourceChangedListener& listener) {
 static void startCapturingFrames();
 
 void addOnFrameCapturedListener(OnFrameCapturedListener& listener) {
-    std::lock_guard guard(onFrameCapturedListenersMutex);
-    auto findIter = std::ranges::find(onFrameCapturedListeners, &listener);
-    if (findIter == onFrameCapturedListeners.end()) {
-        onFrameCapturedListeners.push_back(&listener);
-        if (onFrameCapturedListeners.size() == 1) {
-            startCapturingFrames();
+    std::lock_guard guard(framesThreadMutex);
+    bool shouldStartCapturingFrames = false;
+    {
+        std::lock_guard guard(onFrameCapturedListenersMutex);
+        auto findIter = std::ranges::find(onFrameCapturedListeners, &listener);
+        if (findIter == onFrameCapturedListeners.end()) {
+            onFrameCapturedListeners.push_back(&listener);
+            if (onFrameCapturedListeners.size() == 1) {
+                shouldStartCapturingFrames = true;
+            }
         }
+    }
+    if (shouldStartCapturingFrames) {
+        startCapturingFrames();
     }
 }
 
@@ -89,13 +97,20 @@ void addOnFrameCapturedListener(OnFrameCapturedListener& listener) {
 static void stopCapturingFrames();
 
 void removeOnFrameCapturedListener(OnFrameCapturedListener& listener) {
-    std::lock_guard guard(onFrameCapturedListenersMutex);
-    auto findIter = std::ranges::find(onFrameCapturedListeners, &listener);
-    if (findIter != onFrameCapturedListeners.end()) {
-        onFrameCapturedListeners.erase(findIter);
-        if (onFrameCapturedListeners.empty()) {
-            stopCapturingFrames();
+    std::lock_guard guard(framesThreadMutex);
+    bool shouldStopCapturingFrames = false;
+    {
+        std::lock_guard guard(onFrameCapturedListenersMutex);
+        auto findIter = std::ranges::find(onFrameCapturedListeners, &listener);
+        if (findIter != onFrameCapturedListeners.end()) {
+            onFrameCapturedListeners.erase(findIter);
+            if (onFrameCapturedListeners.empty()) {
+                shouldStopCapturingFrames = true;
+            }
         }
+    }
+    if (shouldStopCapturingFrames) {
+        stopCapturingFrames();
     }
 }
 

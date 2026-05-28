@@ -50,7 +50,7 @@ private:
 	 * It is crucial to use cv::Mat instead of cv::UMat here,
 	 * because saving frames in VRAM can cause the program to get out of VRAM and start corrupting itself. */
 	std::map<long long, cv::Mat> savedFrames;
-	mutable std::mutex savedFramesMutex;
+	mutable std::recursive_mutex savedFramesMutex;
 	
 	class OnSourceChangedListenerImpl : public VideoCaptureManager::OnSourceChangedListener {
 	public:

@@ -10,6 +10,7 @@ namespace RTA {
 class FrameAnalyzer {
 public:
     class TimerCallback {
+    public:
         virtual void split() = 0;
         virtual void reset() = 0;
         virtual void pauseTimer() = 0;
@@ -34,8 +35,9 @@ private:
     VideoCaptureManager::CapturedFrame previousFrame;
     std::mutex frameMutex;
 
-    cv::Rect2i gameRect;
-    std::mutex gameRectMutex;
+    cv::Rect gameRect;
+    long long lastSplitTime;
+    std::mutex analysisMutex;
 
     class OnFrameCapturedListenerImpl : public VideoCaptureManager::OnFrameCapturedListener {
     public:

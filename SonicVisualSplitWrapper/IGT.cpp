@@ -1,17 +1,11 @@
 #include "IGT.h"
 #pragma managed(push, off)
-#include "../SonicVisualSplitBase/FrameAnalyzer.h"
-#include "../SonicVisualSplitBase/FrameStorage.h"
+#include "../SonicVisualSplitBase/igt/FrameAnalyzer.h"
+#include "../SonicVisualSplitBase/igt/FrameStorage.h"
 #pragma managed(pop)
-#include <msclr/marshal_cppstd.h>
 #include <algorithm>
-#undef NO_ERROR  // defined in WinError.h
 
 using namespace System;
-using System::Drawing::Imaging::PixelFormat;
-using System::Drawing::Imaging::ImageLockMode;
-using System::Drawing::Imaging::BitmapData;
-using System::Drawing::Bitmap;
 using System::Collections::Generic::List;
 
 namespace SonicVisualSplitWrapper {
@@ -27,27 +21,10 @@ SonicVisualSplitBase::IGT::FrameStorage* getFrameStorageFromIntPtr(System::IntPt
 }
 
 
-void FrameAnalyzer::createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance, AnalysisSettings^ settings) {
-    bool shouldCreateNewInstance =
-        oldInstance == nullptr || !oldInstance->settings->Equals(settings);
-
-    if (shouldCreateNewInstance) {
-        delete oldInstance;
-        oldInstance = gcnew FrameAnalyzer(settings);
-    }
-}
-
-
 FrameAnalyzer::FrameAnalyzer(AnalysisSettings^ settings) : settings(settings) {
-    msclr::interop::marshal_context context;
-    std::wstring templatesDirectoryConverted =
-        context.marshal_as<std::wstring>(settings->TemplatesDirectory);
-    SonicVisualSplitBase::AnalysisSettings nativeSettings = {static_cast<SonicVisualSplitBase::Game>(settings->Game),
-        templatesDirectoryConverted, settings->IsStretchedTo16By9, settings->IsComposite};
-
-    auto nativeFrameAnalyzer = new SonicVisualSplitBase::IGT::FrameAnalyzer(nativeSettings);
+    auto nativeFrameAnalyzer = new SonicVisualSplitBase::IGT::FrameAnalyzer(static_cast<SonicVisualSplitBase::AnalysisSettings>(settings));
     nativeFrameAnalyzerPtr = System::IntPtr(nativeFrameAnalyzer);
-    _frameStorage = gcnew IGT::FrameStorage(System::IntPtr(&nativeFrameAnalyzer->frameStorage));
+    frameStorage = gcnew IGT::FrameStorage(System::IntPtr(&nativeFrameAnalyzer->frameStorage));
 }
 
 
@@ -73,25 +50,7 @@ AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForSco
     resultConverted->FrameTime = result.frameTime;
 
     if (resultConverted->ErrorReason != ErrorReasonEnum::VIDEO_DISCONNECTED && visualize) {
-        // matrix to bitmap code taken from https://github.com/shimat/opencvsharp/blob/master/src/OpenCvSharp.Extensions/BitmapConverter.cs 
-        const cv::Mat& mat = result.visualizedFrame;
-        Bitmap^ converted = gcnew Bitmap(mat.cols, mat.rows, PixelFormat::Format24bppRgb);
-        System::Drawing::Rectangle rect(0, 0, mat.cols, mat.rows);
-        BitmapData^ bitmapData = converted->LockBits(rect, ImageLockMode::WriteOnly, converted->PixelFormat);
-        uint8_t* src = mat.data;
-        uint8_t* dst = (uint8_t*) bitmapData->Scan0.ToPointer();
-        int srcStep = (int) mat.step;
-        int dstStep = bitmapData->Stride;
-
-        for (int y = 0; y < mat.rows; y++) {
-            long offsetSrc = (y * srcStep);
-            long offsetDst = (y * dstStep);
-            long bytesToCopy = mat.cols * 3;
-            std::copy(src + offsetSrc, src + offsetSrc + bytesToCopy, dst + offsetDst);
-        }
-
-        converted->UnlockBits(bitmapData);
-        resultConverted->VisualizedFrame = converted;
+        resultConverted->VisualizedFrame = toBitmap(result.visualizedFrame);
     } else {
         resultConverted->VisualizedFrame = nullptr;
     }
@@ -115,7 +74,12 @@ void FrameAnalyzer::ResetDigitsLocation() {
 
 
 IGT::FrameStorage^ FrameAnalyzer::FrameStorage::get() {
-    return _frameStorage;
+    return frameStorage;
+}
+
+
+AnalysisSettings^ FrameAnalyzer::Settings::get() {
+    return settings;
 }
 
 

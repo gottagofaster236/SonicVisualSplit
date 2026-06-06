@@ -10,6 +10,30 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AnalysisSettings.h" />
+    <ClInclude Include="FairMutex.h" />
+    <ClInclude Include="igt\AnalysisResult.h" />
+    <ClInclude Include="igt\FrameAnalyzer.h" />
+    <ClInclude Include="igt\FrameStorage.h" />
+    <ClInclude Include="igt\TimeRecognizer.h" />
+    <ClInclude Include="rta\FrameAnalyzer.h" />
+    <ClInclude Include="rta\ThreadPool.h" />
+    <ClInclude Include="rta\ThreadSafeQueue.h" />
+    <ClInclude Include="VideoCapture.h" />
+    <ClInclude Include="VideoCaptureManager.h" />
+    <ClInclude Include="VirtualCamCapture.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AnalysisSettings.cpp" />
+    <ClCompile Include="igt\FrameAnalyzer.cpp" />
+    <ClCompile Include="igt\FrameStorage.cpp" />
+    <ClCompile Include="igt\TimeRecognizer.cpp" />
+    <ClCompile Include="rta\FrameAnalyzer.cpp" />
+    <ClCompile Include="VideoCapture.cpp" />
+    <ClCompile Include="VideoCaptureManager.cpp" />
+    <ClCompile Include="VirtualCamCapture.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -74,6 +98,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(SolutionDir)\vcpkg_installed\x64-windows\x64-windows\include\opencv4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -105,6 +130,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)\vcpkg_installed\x64-windows\x64-windows\include\opencv4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -123,26 +149,6 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="AnalysisSettings.cpp" />
-    <ClCompile Include="FrameStorage.cpp" />
-    <ClCompile Include="FrameAnalyzer.cpp" />
-    <ClCompile Include="VideoCapture.cpp" />
-    <ClCompile Include="TimeRecognizer.cpp" />
-    <ClCompile Include="VideoCaptureManager.cpp" />
-    <ClCompile Include="VirtualCamCapture.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="AnalysisResult.h" />
-    <ClInclude Include="FairMutex.h" />
-    <ClInclude Include="FrameStorage.h" />
-    <ClInclude Include="FrameAnalyzer.h" />
-    <ClInclude Include="VideoCaptureManager.h" />
-    <ClInclude Include="VideoCapture.h" />
-    <ClInclude Include="AnalysisSettings.h" />
-    <ClInclude Include="TimeRecognizer.h" />
-    <ClInclude Include="VirtualCamCapture.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

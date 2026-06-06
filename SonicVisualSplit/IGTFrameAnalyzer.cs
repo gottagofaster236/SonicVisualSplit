@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using LiveSplit.Model;
@@ -80,7 +79,7 @@ namespace SonicVisualSplit.IGT
             model = new TimerModel() { CurrentState = state };
 
             this.settings = settings;
-            this.settings.FrameAnalyzer = this;
+            this.settings.IGTFrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
 
             StartObservingCurrentSplitIndex();
@@ -582,7 +581,7 @@ namespace SonicVisualSplit.IGT
         {
             frameAnalysisTask.Stop();
 
-            nativeFrameAnalyzer.FrameStorage.DeleteAllSavedFrames();
+            nativeFrameAnalyzer?.FrameStorage.DeleteAllSavedFrames();
 
             state.OnReset -= OnReset;
             OnReset();
@@ -634,17 +633,13 @@ namespace SonicVisualSplit.IGT
             nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
             try
             {
-                // Find the path with the template images for the game.
-                string livesplitComponents = GetLivesplitComponentsDirectory();
-                string directoryName = settings.GameString + "@" + (settings.RGB ? "RGB" : "Composite");
-                string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
-
-                var analysisSettings = new AnalysisSettings(settings.Game, templatesDirectory,
-                    settings.Stretched, isComposite: !settings.RGB);
-
                 bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
-                SonicVisualSplitWrapper.IGT.FrameAnalyzer.createNewInstanceIfNeeded(
-                    ref nativeFrameAnalyzer, analysisSettings);
+                AnalysisSettings analysisSettings = settings.GetAnalysisSettings();
+                if (analysisSettings != nativeFrameAnalyzer?.Settings)
+                {
+                    nativeFrameAnalyzer?.Dispose();
+                    nativeFrameAnalyzer = new SonicVisualSplitWrapper.IGT.FrameAnalyzer(analysisSettings);
+                }
 
                 SetUpGameTime();
                 if (!wasAnalyzingFrames)

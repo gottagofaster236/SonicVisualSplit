@@ -1,7 +1,7 @@
 #pragma once
-#include "AnalysisSettings.h"
+#include "../AnalysisSettings.h"
 #include "AnalysisResult.h"
-#include "VideoCaptureManager.h"
+#include "../VideoCaptureManager.h"
 #include <opencv2/core.hpp>
 #include <vector>
 #include <map>

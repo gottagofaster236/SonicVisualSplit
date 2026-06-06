@@ -1,7 +1,6 @@
 ﻿using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
-using SonicVisualSplitWrapper;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -20,6 +19,7 @@ namespace SonicVisualSplit
         private LiveSplitState state;
         private SonicVisualSplitSettings settings;
         private IGT.FrameAnalyzer igtFrameAnalyzer;
+        private RTA.FrameAnalyzer rtaFrameAnalyzer;
         private VideoSourcesManager videoSourcesManager;
 
         string IComponent.ComponentName => "SonicVisualSplit";
@@ -42,6 +42,7 @@ namespace SonicVisualSplit
             settings = new SonicVisualSplitSettings();
             igtFrameAnalyzer = new IGT.FrameAnalyzer(state, settings);
             igtFrameAnalyzer.AddResultConsumer(this);
+            rtaFrameAnalyzer = new RTA.FrameAnalyzer(state, settings);
             settings.SettingsChanged += OnSettingsChanged;
 
             videoSourcesManager = new VideoSourcesManager(settings);
@@ -62,6 +63,7 @@ namespace SonicVisualSplit
             }
             Disposed = true;
             igtFrameAnalyzer.Dispose();
+            rtaFrameAnalyzer.Dispose();
             state.IsGameTimePaused = false;
             videoSourcesManager.StopScanningSources();
         }

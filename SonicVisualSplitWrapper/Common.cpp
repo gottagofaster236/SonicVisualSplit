@@ -3,7 +3,12 @@
 #include "../SonicVisualSplitBase/VideoCaptureManager.h"
 #include "../SonicVisualSplitBase/VirtualCamCapture.h"
 #pragma managed(pop)
+#include <msclr/marshal_cppstd.h>
 using namespace System;
+using System::Drawing::Imaging::PixelFormat;
+using System::Drawing::Imaging::ImageLockMode;
+using System::Drawing::Imaging::BitmapData;
+using System::Drawing::Bitmap;
 using System::Collections::Generic::List;
 
 namespace SonicVisualSplitWrapper {
@@ -26,6 +31,13 @@ Boolean AnalysisSettings::Equals(Object^ other) {
         otherSettings->IsComposite == IsComposite;
 }
 
+AnalysisSettings::operator SonicVisualSplitBase::AnalysisSettings() {
+    msclr::interop::marshal_context context;
+    std::wstring templatesDirectoryConverted =
+        context.marshal_as<std::wstring>(TemplatesDirectory);
+    return {static_cast<SonicVisualSplitBase::Game>(Game), templatesDirectoryConverted, IsStretchedTo16By9, IsComposite};
+}
+
 
 void VideoCaptureManager::SetVideoCapture(int sourceIndex) {
     SonicVisualSplitBase::VideoCaptureManager::setVideoCapture(sourceIndex);
@@ -43,6 +55,29 @@ List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
     for (const std::wstring& deviceName : devices) {
         converted->Add(gcnew String(deviceName.c_str()));
     }
+    return converted;
+}
+
+
+System::Drawing::Bitmap^ toBitmap(const cv::Mat& mat) {
+    // cv::Mat to Bitmap code taken from https://github.com/shimat/opencvsharp/blob/ba919eab93bf56c44332cd8eb326db3b50b11c88/src/OpenCvSharp.Extensions/BitmapConverter.cs
+    // (c) shimat,vladkol, Apache 2.0 License
+    Bitmap^ converted = gcnew Bitmap(mat.cols, mat.rows, PixelFormat::Format24bppRgb);
+    System::Drawing::Rectangle rect(0, 0, mat.cols, mat.rows);
+    BitmapData^ bitmapData = converted->LockBits(rect, ImageLockMode::WriteOnly, converted->PixelFormat);
+    uint8_t* src = mat.data;
+    uint8_t* dst = (uint8_t*) bitmapData->Scan0.ToPointer();
+    int srcStep = (int) mat.step;
+    int dstStep = bitmapData->Stride;
+
+    for (int y = 0; y < mat.rows; y++) {
+        long offsetSrc = (y * srcStep);
+        long offsetDst = (y * dstStep);
+        long bytesToCopy = mat.cols * 3;
+        std::copy(src + offsetSrc, src + offsetSrc + bytesToCopy, dst + offsetDst);
+    }
+
+    converted->UnlockBits(bitmapData);
     return converted;
 }
 

@@ -1,12 +1,13 @@
-﻿using System;
+﻿using LiveSplit.UI;
+using SonicVisualSplitWrapper;
+using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
-using LiveSplit.UI;
-using SonicVisualSplitWrapper;
 using static SonicVisualSplit.SonicVisualSplitComponent;
-using System.Linq;
 
 namespace SonicVisualSplit
 {
@@ -33,7 +34,7 @@ namespace SonicVisualSplit
 
         public event EventHandler SettingsChanged;
 
-        public IGT.FrameAnalyzer FrameAnalyzer { get; set; }
+        public IGT.FrameAnalyzer IGTFrameAnalyzer { get; set; }
         public bool VisualizeAnalysisResult => true;
 
         public VideoSourcesManager VideoSourcesManager { get; set; }
@@ -80,6 +81,14 @@ namespace SonicVisualSplit
                 SettingsHelper.CreateSetting(document, parent, "Game", ToSettingsString(Game)) ^
                 SettingsHelper.CreateSetting(document, parent, "AutoResetEnabled", AutoResetEnabled) ^
                 SettingsHelper.CreateSetting(document, parent, "TimingMethod", ToSettingsString(TimingMethod));
+        }
+
+        public AnalysisSettings GetAnalysisSettings()
+        {
+            string livesplitComponents = GetLivesplitComponentsDirectory();
+            string directoryName = GameString + "@" + (RGB ? "RGB" : "Composite");
+            string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
+            return new AnalysisSettings(Game, templatesDirectory, Stretched, isComposite: !RGB);
         }
 
         private static string ToSettingsString(Game game)
@@ -267,7 +276,7 @@ namespace SonicVisualSplit
 
         private void OnDisposed(object sender, EventArgs e)
         {
-            FrameAnalyzer.RemoveResultConsumer(this);
+            IGTFrameAnalyzer.RemoveResultConsumer(this);
         }
 
         private void OnVisibleChanged(object sender, EventArgs e)
@@ -279,12 +288,12 @@ namespace SonicVisualSplit
         {
             if (Visible)
             {
-                FrameAnalyzer.AddResultConsumer(this);
+                IGTFrameAnalyzer.AddResultConsumer(this);
                 return true;
             }
             else
             {
-                FrameAnalyzer.RemoveResultConsumer(this);
+                IGTFrameAnalyzer.RemoveResultConsumer(this);
                 return false;
             }
         }

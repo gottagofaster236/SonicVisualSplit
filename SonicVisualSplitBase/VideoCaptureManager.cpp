@@ -72,6 +72,13 @@ void removeOnSourceChangedListener(OnSourceChangedListener& listener) {
 }
 
 
+void swap(CapturedFrame& first, CapturedFrame& second) {
+    using std::swap;
+    swap(first.frame, second.frame);
+    swap(first.timestamp, second.timestamp);
+}
+
+
 static void startCapturingFrames();
 
 void addOnFrameCapturedListener(OnFrameCapturedListener& listener) {

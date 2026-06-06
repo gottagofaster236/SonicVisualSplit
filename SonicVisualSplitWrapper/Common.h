@@ -1,4 +1,8 @@
 ﻿#pragma once
+#pragma managed(push, off)
+#include "../SonicVisualSplitBase/AnalysisSettings.h"
+#include <opencv2/core.hpp>
+#pragma managed(pop)
 
 namespace SonicVisualSplitWrapper {
 
@@ -15,6 +19,8 @@ public:
         System::Boolean isStretchedTo16By9, System::Boolean isComposite);
 
     System::Boolean Equals(Object^ other) override;
+
+    operator SonicVisualSplitBase::AnalysisSettings();
 
     property Game Game;
     property System::String^ TemplatesDirectory;
@@ -37,5 +43,7 @@ public ref class VirtualCamCapture {
 public:
     static System::Collections::Generic::List<System::String^>^ GetVideoDevicesList();
 };
+
+System::Drawing::Bitmap^ toBitmap(const cv::Mat& mat);
 
 }  // namespace SonicVisualSplitWrapper

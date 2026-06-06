@@ -30,6 +30,8 @@ struct CapturedFrame {
     long long timestamp;
 };
 
+void swap(CapturedFrame& first, CapturedFrame& second);
+
 class OnFrameCapturedListener {
 public:
     // Must not do any processing synchronously to avoid slowing down the capture

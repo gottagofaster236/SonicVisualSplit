@@ -1,5 +1,4 @@
 #include "VirtualCamCapture.h"
-#include "TimeRecognizer.h"
 #include <ranges>
 #include <algorithm>
 

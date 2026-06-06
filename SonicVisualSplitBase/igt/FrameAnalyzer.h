@@ -1,6 +1,6 @@
 #pragma once
 #include "TimeRecognizer.h"
-#include "AnalysisSettings.h"
+#include "../AnalysisSettings.h"
 #include "AnalysisResult.h"
 #include "FrameStorage.h"
 #include <opencv2/core.hpp>

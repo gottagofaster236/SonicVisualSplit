@@ -51,10 +51,7 @@ private:
 
 public ref class FrameAnalyzer {
 public:
-    /* Creates a new instance of FrameAnalyzer if the parameters differ from the oldInstance.
-     * Calls Dispose() for the oldInstance if the new instance  */
-    static void createNewInstanceIfNeeded(FrameAnalyzer^% oldInstance,
-        AnalysisSettings^ settings);
+    FrameAnalyzer(AnalysisSettings^ settings);
 
     ~FrameAnalyzer();
 
@@ -70,12 +67,14 @@ public:
         IGT::FrameStorage^ get();
     }
 
-private:
-    FrameAnalyzer(AnalysisSettings^ settings);
+    property AnalysisSettings^ Settings {
+        AnalysisSettings^ get();
+    }
 
+private:
     System::IntPtr nativeFrameAnalyzerPtr;
-    AnalysisSettings^ settings;
-    IGT::FrameStorage^ _frameStorage;
+    SonicVisualSplitWrapper::AnalysisSettings^ settings;
+    IGT::FrameStorage^ frameStorage;
 };
 
 

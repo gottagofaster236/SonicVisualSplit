@@ -13,32 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\igt">
+      <UniqueIdentifier>{88051c94-b5b8-41cd-9332-9f09bd174afb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rta">
+      <UniqueIdentifier>{b87212f2-8671-4c8c-b97f-a67c3f3fba88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\igt">
+      <UniqueIdentifier>{bd9349f0-1222-46cb-8705-a2111d8d8d32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rta">
+      <UniqueIdentifier>{1e9eea3c-a060-454c-9283-361742753d4d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FrameAnalyzer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FrameStorage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VirtualCamCapture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VideoCapture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TimeRecognizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AnalysisSettings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VideoCaptureManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
+    <ClInclude Include="VideoCaptureManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="VideoCapture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AnalysisSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VirtualCamCapture.h">
@@ -47,23 +42,52 @@
     <ClInclude Include="FairMutex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AnalysisSettings.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="igt\AnalysisResult.h">
+      <Filter>Header Files\igt</Filter>
     </ClInclude>
-    <ClInclude Include="VideoCaptureManager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="rta\FrameAnalyzer.h">
+      <Filter>Header Files\rta</Filter>
     </ClInclude>
-    <ClInclude Include="AnalysisResult.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="igt\FrameAnalyzer.h">
+      <Filter>Header Files\igt</Filter>
     </ClInclude>
-    <ClInclude Include="FrameAnalyzer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="igt\FrameStorage.h">
+      <Filter>Header Files\igt</Filter>
     </ClInclude>
-    <ClInclude Include="FrameStorage.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="igt\TimeRecognizer.h">
+      <Filter>Header Files\igt</Filter>
     </ClInclude>
-    <ClInclude Include="TimeRecognizer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="rta\ThreadPool.h">
+      <Filter>Header Files\rta</Filter>
     </ClInclude>
+    <ClInclude Include="rta\ThreadSafeQueue.h">
+      <Filter>Header Files\rta</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="VideoCaptureManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoCapture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualCamCapture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AnalysisSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="igt\FrameAnalyzer.cpp">
+      <Filter>Source Files\igt</Filter>
+    </ClCompile>
+    <ClCompile Include="rta\FrameAnalyzer.cpp">
+      <Filter>Source Files\rta</Filter>
+    </ClCompile>
+    <ClCompile Include="igt\FrameStorage.cpp">
+      <Filter>Source Files\igt</Filter>
+    </ClCompile>
+    <ClCompile Include="igt\TimeRecognizer.cpp">
+      <Filter>Source Files\igt</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

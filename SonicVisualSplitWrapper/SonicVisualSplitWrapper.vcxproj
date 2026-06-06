@@ -90,11 +90,13 @@
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="IGT.h" />
+    <ClInclude Include="RTA.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="IGT.cpp" />
+    <ClCompile Include="RTA.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

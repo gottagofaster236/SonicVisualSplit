@@ -74,6 +74,7 @@
   <ItemGroup>
     <Compile Include="CancellableLoopTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RTAFrameAnalyzer.cs" />
     <Compile Include="SonicVisualSplitComponent.cs" />
     <Compile Include="SonicVisualSplitFactory.cs" />
     <Compile Include="SonicVisualSplitSettings.cs">
@@ -82,7 +83,7 @@
     <Compile Include="SonicVisualSplitSettings.Designer.cs">
       <DependentUpon>SonicVisualSplitSettings.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrameAnalyzer.cs" />
+    <Compile Include="IGTFrameAnalyzer.cs" />
     <Compile Include="StyledInfoTextComponent.cs" />
     <Compile Include="VideoSourcesManager.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">

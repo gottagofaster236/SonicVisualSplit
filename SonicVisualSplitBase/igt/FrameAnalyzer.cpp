@@ -132,6 +132,8 @@ std::vector<cv::Rect> FrameAnalyzer::getResetTemplateMatchAreas() {
     case Game::SonicCD:
         // Match the Eggman-shaped mountain.
         return {{6, 102, 67, 47}};
+    default:
+        std::terminate();
     }
 }
 

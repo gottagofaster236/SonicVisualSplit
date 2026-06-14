@@ -17,6 +17,7 @@ struct AnalysisSettings {
     std::filesystem::path templatesDirectory;
     bool isStretchedTo16By9;
     bool isComposite;
+    bool autoResetEnabled;
 
     cv::UMat loadTemplateImageFromFile(char symbol) const;
 

@@ -7,6 +7,7 @@ namespace RTA {
 public ref class FrameAnalyzer {
 public:
     interface class TimerCallback {
+        void StartTimer();
         void Split();
         void Reset();
         void PauseTimer();
@@ -18,6 +19,8 @@ public:
     ~FrameAnalyzer();
 
     System::Drawing::Bitmap^ VisualizeLastFrame();
+
+    void OnReset();
 
     property AnalysisSettings^ Settings {
         AnalysisSettings^ get();

@@ -7,43 +7,56 @@ namespace SonicVisualSplit.RTA
 {
     public class FrameAnalyzer : IDisposable, SonicVisualSplitWrapper.RTA.FrameAnalyzer.TimerCallback
     {
+        private LiveSplitState state;
         private ITimerModel model;
         private SonicVisualSplitSettings settings;
 
         private SonicVisualSplitWrapper.RTA.FrameAnalyzer nativeFrameAnalyzer;
-        private object nativeFrameAnalyzerLock = new object();
 
         public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings)
         {
             model = new TimerModel() { CurrentState = state };
             this.settings = settings;
-            this.settings.SettingsChanged += OnSettingsChanged;
+            settings.SettingsChanged += OnSettingsChanged;
+            this.state = state;
+            state.OnReset += OnReset;
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
         {
             AnalysisSettings analysisSettings = settings.GetAnalysisSettings();
-            lock (nativeFrameAnalyzerLock)
+            if (!settings.IsPracticeMode && settings.TimingMethod != TimingMethod.IGT)
             {
-                if (!settings.IsPracticeMode && settings.TimingMethod != TimingMethod.IGT)
-                {
-                    if (analysisSettings != nativeFrameAnalyzer?.Settings)
-                    {
-                        nativeFrameAnalyzer?.Dispose();
-                        nativeFrameAnalyzer = new SonicVisualSplitWrapper.RTA.FrameAnalyzer(analysisSettings, this);
-                    }
-                }
-                else
+                if (analysisSettings != nativeFrameAnalyzer?.Settings)
                 {
                     nativeFrameAnalyzer?.Dispose();
-                    nativeFrameAnalyzer = null;
+                    nativeFrameAnalyzer = new SonicVisualSplitWrapper.RTA.FrameAnalyzer(analysisSettings, this);
                 }
+            }
+            else
+            {
+                nativeFrameAnalyzer?.Dispose();
+                nativeFrameAnalyzer = null;
             }
         }
 
         public void Dispose()
         {
             nativeFrameAnalyzer?.Dispose();
+            state.OnReset -= OnReset;
+        }
+
+        public void OnReset(object sender, TimerPhase value)
+        {
+            nativeFrameAnalyzer?.OnReset();
+        }
+
+        public void StartTimer()
+        {
+            RunOnUiThreadAsync(() =>
+            {
+                model.Start();
+            });
         }
 
         public void Split()

@@ -11,6 +11,10 @@ class TimerCallbackWrapper : public SonicVisualSplitBase::RTA::FrameAnalyzer::Ti
 public:
     TimerCallbackWrapper(FrameAnalyzer::TimerCallback^ timerCallback) : timerCallback(timerCallback) {}
 
+    virtual void startTimer() override {
+        timerCallback->StartTimer();
+    }
+
     virtual void split() override {
         timerCallback->Split();
     }
@@ -49,6 +53,11 @@ FrameAnalyzer::~FrameAnalyzer() {
 System::Drawing::Bitmap^ FrameAnalyzer::VisualizeLastFrame() {
     auto nativeFrameAnalyzer = static_cast<SonicVisualSplitBase::RTA::FrameAnalyzer*>(nativeFrameAnalyzerPtr.ToPointer());
     return toBitmap(nativeFrameAnalyzer->visualizeLastFrame());
+}
+
+void FrameAnalyzer::OnReset() {
+    auto nativeFrameAnalyzer = static_cast<SonicVisualSplitBase::RTA::FrameAnalyzer*>(nativeFrameAnalyzerPtr.ToPointer());
+    nativeFrameAnalyzer->onReset();
 }
 
 

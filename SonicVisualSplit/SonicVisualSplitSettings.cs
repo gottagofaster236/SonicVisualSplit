@@ -88,7 +88,7 @@ namespace SonicVisualSplit
             string livesplitComponents = GetLivesplitComponentsDirectory();
             string directoryName = GameString + "@" + (RGB ? "RGB" : "Composite");
             string templatesDirectory = Path.Combine(livesplitComponents, "SVS Templates", directoryName);
-            return new AnalysisSettings(Game, templatesDirectory, Stretched, isComposite: !RGB);
+            return new AnalysisSettings(Game, templatesDirectory, Stretched, isComposite: !RGB, AutoResetEnabled);
         }
 
         private static string ToSettingsString(Game game)

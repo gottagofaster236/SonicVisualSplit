@@ -14,11 +14,12 @@ using System::Collections::Generic::List;
 namespace SonicVisualSplitWrapper {
 
 AnalysisSettings::AnalysisSettings(SonicVisualSplitWrapper::Game game, String^ templatesDirectory,
-    Boolean isStretchedTo16By9, Boolean isComposite) {
+    Boolean isStretchedTo16By9, Boolean isComposite, Boolean autoResetEnabled) {
     Game = game;
     TemplatesDirectory = templatesDirectory;
     IsStretchedTo16By9 = isStretchedTo16By9;
     IsComposite = isComposite;
+    AutoResetEnabled = autoResetEnabled;
 }
 
 

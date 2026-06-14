@@ -16,7 +16,7 @@ public enum class Game {
 public ref class AnalysisSettings {
 public:
     AnalysisSettings(Game game, System::String^ templatesDirectory,
-        System::Boolean isStretchedTo16By9, System::Boolean isComposite);
+        System::Boolean isStretchedTo16By9, System::Boolean isComposite, System::Boolean autoResetEnabled);
 
     System::Boolean Equals(Object^ other) override;
 
@@ -26,6 +26,7 @@ public:
     property System::String^ TemplatesDirectory;
     property System::Boolean IsStretchedTo16By9;
     property System::Boolean IsComposite;
+    property System::Boolean AutoResetEnabled;
 };
 
 

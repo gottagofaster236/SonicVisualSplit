@@ -3,6 +3,8 @@ MIT License
 
 Copyright (c) 2021-2023 Paul Tsouchlos
 
+Copyright (c) 2026 Lev Leontev
+
 https://github.com/ptsouchlos/thread-pool
 */
 #pragma once
@@ -47,8 +49,9 @@ namespace dp {
                      std::is_same_v<void, std::invoke_result_t<InitializationFunction, std::size_t>>
         explicit thread_pool(
             const unsigned int& number_of_threads = std::thread::hardware_concurrency(),
+            const unsigned int& max_unassigned_tasks_per_thread = 3,
             InitializationFunction init = [](std::size_t) {})
-            : tasks_(number_of_threads) {
+            : tasks_(number_of_threads), max_unassigned_tasks(max_unassigned_tasks_per_thread * number_of_threads) {
             std::size_t current_id = 0;
             for (std::size_t i = 0; i < number_of_threads; ++i) {
                 priority_queue_.push_back(size_t(current_id));
@@ -71,9 +74,11 @@ namespace dp {
                                 while (auto task = tasks_[id].tasks.pop_front()) {
                                     // decrement the unassigned tasks as the task is now going
                                     // to be executed
-                                    unassigned_tasks_.fetch_sub(1, std::memory_order_release);
-                                    // invoke the task
-                                    std::invoke(std::move(task.value()));
+                                    auto prev_unassigned_task = unassigned_tasks_.fetch_sub(1, std::memory_order_release);
+                                    if (prev_unassigned_task <= max_unassigned_tasks) {
+                                        // invoke the task unless the queue is overfilled, otherwise skip to newer task immediately
+                                        std::invoke(std::move(task.value()));
+                                    }
                                     // the above task can push more work onto the pool, so we
                                     // only decrement the in flights once the task has been
                                     // executed because now it's now longer "in flight"
@@ -301,6 +306,7 @@ namespace dp {
 
         std::vector<ThreadType> threads_;
         std::deque<task_item> tasks_;
+        const unsigned int max_unassigned_tasks;
         dp::thread_safe_queue<std::size_t> priority_queue_;
         // guarantee these get zero-initialized
         std::atomic_int_fast64_t unassigned_tasks_{0}, in_flight_tasks_{0};

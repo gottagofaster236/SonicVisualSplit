@@ -19,8 +19,6 @@ public:
 
     virtual ~VideoCapture() {}
 
-    static constexpr int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
-
 private:
     virtual cv::UMat captureFrameImpl() = 0;
 

@@ -17,6 +17,7 @@
     <ClInclude Include="igt\FrameAnalyzer.h" />
     <ClInclude Include="igt\FrameStorage.h" />
     <ClInclude Include="igt\TimeRecognizer.h" />
+    <ClInclude Include="rta\AnalysisResult.h" />
     <ClInclude Include="rta\FrameAnalyzer.h" />
     <ClInclude Include="rta\ThreadPool.h" />
     <ClInclude Include="rta\ThreadSafeQueue.h" />

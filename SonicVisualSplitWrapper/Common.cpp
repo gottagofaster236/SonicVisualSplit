@@ -29,14 +29,15 @@ Boolean AnalysisSettings::Equals(Object^ other) {
         otherSettings->Game == Game &&
         otherSettings->TemplatesDirectory == TemplatesDirectory &&
         otherSettings->IsStretchedTo16By9 == IsStretchedTo16By9 &&
-        otherSettings->IsComposite == IsComposite;
+        otherSettings->IsComposite == IsComposite &&
+        otherSettings->AutoResetEnabled == AutoResetEnabled;
 }
 
 AnalysisSettings::operator SonicVisualSplitBase::AnalysisSettings() {
     msclr::interop::marshal_context context;
     std::wstring templatesDirectoryConverted =
         context.marshal_as<std::wstring>(TemplatesDirectory);
-    return {static_cast<SonicVisualSplitBase::Game>(Game), templatesDirectoryConverted, IsStretchedTo16By9, IsComposite};
+    return {static_cast<SonicVisualSplitBase::Game>(Game), templatesDirectoryConverted, IsStretchedTo16By9, IsComposite, AutoResetEnabled};
 }
 
 

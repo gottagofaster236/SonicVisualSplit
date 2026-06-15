@@ -1,4 +1,5 @@
 #include "VirtualCamCapture.h"
+#include "VideoCaptureManager.h"
 #include <ranges>
 #include <algorithm>
 
@@ -136,7 +137,7 @@ cv::Size VirtualCamCapture::getResolution(IMoniker* moniker) {
     if (supportedResolutions.empty())
         return {0, 0};
     auto hdResolutions = supportedResolutions | std::views::filter([](const auto& resolution) {
-        return resolution.height >= VideoCapture::MAX_ACCEPTABLE_FRAME_HEIGHT;
+        return resolution.height >= VideoCaptureManager::MAX_ACCEPTABLE_FRAME_HEIGHT;
     });
 
     if (hdResolutions.empty()) {

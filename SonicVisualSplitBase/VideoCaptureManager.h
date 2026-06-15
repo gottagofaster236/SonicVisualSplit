@@ -5,6 +5,8 @@
 namespace SonicVisualSplitBase {
 namespace VideoCaptureManager {
 
+constexpr int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
+
 /* Sets the video source.
  * If sourceIndex is non-negative, it'll treated as the index of a video source (i.e. webcam) in the system.
  * You can also pass NO_VIDEO_CAPTURE or OBS_WINDOW_CAPTURE. */
@@ -27,7 +29,7 @@ void removeOnSourceChangedListener(OnSourceChangedListener& listener);
 struct CapturedFrame {
     cv::UMat frame;
     // See getCurrentTimeInMilliseconds()
-    long long timestamp;
+    long long timestamp = 0;
 };
 
 void swap(CapturedFrame& first, CapturedFrame& second);
@@ -36,6 +38,8 @@ class OnFrameCapturedListener {
 public:
     // Must not do any processing synchronously to avoid slowing down the capture
     virtual void onFrameCaptured(const CapturedFrame& capturedFrame) = 0;
+
+    virtual bool needsHighQualityResize() = 0;
 };
 
 void addOnFrameCapturedListener(OnFrameCapturedListener& listener);

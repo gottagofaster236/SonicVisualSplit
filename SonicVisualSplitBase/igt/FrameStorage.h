@@ -59,7 +59,9 @@ private:
     public:
         OnFrameCapturedListenerImpl(FrameStorage& frameStorage);
 
-        void onFrameCaptured(const VideoCaptureManager::CapturedFrame& capturedFrame) override;
+        void onFrameCaptured(const VideoCaptureManager::CapturedFrame& capturedFrame) final override;
+
+        bool needsHighQualityResize() final override;
     private:
         FrameStorage& frameStorage;
     } onFrameCapturedListener;

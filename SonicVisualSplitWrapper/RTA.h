@@ -4,6 +4,16 @@
 namespace SonicVisualSplitWrapper {
 namespace RTA {
 
+public enum class ErrorReasonEnum {
+    VIDEO_DISCONNECTED, NO_GAME_RECT, UNSUPPORTED_GAME, NO_ERROR,
+};
+
+public ref class AnalysisResult {
+public:
+    property System::Drawing::Bitmap^ VisualizedFrame;
+    property ErrorReasonEnum ErrorReason;
+};
+
 public ref class FrameAnalyzer {
 public:
     interface class TimerCallback {
@@ -18,7 +28,7 @@ public:
 
     ~FrameAnalyzer();
 
-    System::Drawing::Bitmap^ VisualizeLastFrame();
+    AnalysisResult^ GetLastAnalysisResult();
 
     void OnReset();
 

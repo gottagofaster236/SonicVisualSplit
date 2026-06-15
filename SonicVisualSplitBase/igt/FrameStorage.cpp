@@ -75,5 +75,9 @@ void FrameStorage::OnFrameCapturedListenerImpl::onFrameCaptured(const VideoCaptu
     frameStorage.savedFrames[capturedFrame.timestamp] = mat;
 }
 
+bool FrameStorage::OnFrameCapturedListenerImpl::needsHighQualityResize() {
+    return true;
+}
+
 }  // namespace IGT
 }  // namespace SonicVisualSplitBase

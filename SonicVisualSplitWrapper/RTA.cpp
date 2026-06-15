@@ -50,9 +50,13 @@ FrameAnalyzer::~FrameAnalyzer() {
 }
 
 
-System::Drawing::Bitmap^ FrameAnalyzer::VisualizeLastFrame() {
+AnalysisResult^ FrameAnalyzer::GetLastAnalysisResult() {
     auto nativeFrameAnalyzer = static_cast<SonicVisualSplitBase::RTA::FrameAnalyzer*>(nativeFrameAnalyzerPtr.ToPointer());
-    return toBitmap(nativeFrameAnalyzer->visualizeLastFrame());
+    SonicVisualSplitBase::RTA::AnalysisResult result = nativeFrameAnalyzer->getLastAnalysisResult();
+    AnalysisResult^ resultConverted = gcnew AnalysisResult();
+    resultConverted->ErrorReason = static_cast<ErrorReasonEnum>(result.errorReason);
+    resultConverted->VisualizedFrame = toBitmap(result.visualizedFrame);
+    return resultConverted;
 }
 
 void FrameAnalyzer::OnReset() {

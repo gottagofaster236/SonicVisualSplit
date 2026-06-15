@@ -63,6 +63,9 @@
     <ClInclude Include="rta\ThreadSafeQueue.h">
       <Filter>Header Files\rta</Filter>
     </ClInclude>
+    <ClInclude Include="rta\AnalysisResult.h">
+      <Filter>Header Files\rta</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoCaptureManager.cpp">

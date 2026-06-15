@@ -4,6 +4,8 @@
 #include <opencv2/highgui.hpp>
 #include <vector>
 #include <algorithm>
+#include <cassert>
+#include <cmath>
 
 namespace SonicVisualSplitBase {
 namespace RTA {
@@ -14,95 +16,113 @@ constexpr long long WAIT_AFTER_SPLIT_MS = 3000;
 using VideoCaptureManager::CapturedFrame;
 
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings, TimerCallback& callback) :
-    settings(settings), callback(callback), onFrameCapturedListener(*this), gameRectTimestamp(0), 
-    lastSplitTime(0), splitIndex(0) {
+    settings(settings), callback(callback),
+    gameRect{}, gameRectTimestamp(0), lastSplitTime(0), splitIndex(0), lastResetCheckTime(0),
+    onFrameCapturedListener(*this) {
     VideoCaptureManager::addOnFrameCapturedListener(onFrameCapturedListener);
 }
+
 
 FrameAnalyzer::~FrameAnalyzer() {
     VideoCaptureManager::removeOnFrameCapturedListener(onFrameCapturedListener);
 }
 
 
-cv::Mat FrameAnalyzer::visualizeLastFrame() {
-    /*
-    cv::UMat visualizedFrame;
-    frame.copyTo(visualizedFrame);
-    int lineThickness = 1 + frame.rows / 500;
-    cv::rectangle(visualizedFrame, gameRect, cv::Scalar(0, 0, 255), lineThickness);
-    cv::drawContours(visualizedFrame, contours, -1, cv::Scalar(255, 0, 0), lineThickness);
-    cv::imwrite("C:\\tmp\\" + std::to_string(currentFrame.timestamp) + "contours.png", visualizedFrame);
-    */
-    return cv::Mat();  // TODO
+AnalysisResult FrameAnalyzer::getLastAnalysisResult() {
+    AnalysisResult result;
+
+    CapturedFrame currentFrame;
+    {
+        std::lock_guard guard(frameMutex);
+        currentFrame = this->currentFrame;
+    }
+    if (currentFrame.frame.empty() || VideoCaptureManager::getCurrentTimeInMilliseconds() - currentFrame.timestamp > 5000) {
+        result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
+    }
+
+    cv::Rect gameRect;
+    {
+        std::lock_guard guard(analysisMutex);
+        gameRect = this->gameRect;
+    }
+
+    currentFrame.frame.copyTo(result.visualizedFrame);
+    if (!gameRect.empty()) {
+        int lineThickness = 1 + result.visualizedFrame.rows / 500;
+        cv::rectangle(result.visualizedFrame, gameRect, cv::Scalar(0, 0, 255), lineThickness);
+    } else if (result.errorReason == ErrorReasonEnum::NO_ERROR) {
+        result.errorReason = ErrorReasonEnum::NO_GAME_RECT;
+    }
+
+    if (!isSupportedGame()) {
+        result.errorReason = ErrorReasonEnum::UNSUPPORTED_GAME;
+    }
+
+    return result;
 }
+
+
+bool FrameAnalyzer::isSupportedGame() const {
+    return settings.game == Game::Sonic1 || settings.game == Game::Sonic2;
+}
+
 
 void FrameAnalyzer::onReset() {
     std::lock_guard guard(analysisMutex);
     splitIndex = 0;
-    lastSplitTime = VideoCaptureManager::getCurrentTimeInMilliseconds();
 }
 
 
-static bool isTitleScreen(const cv::UMat& gameRect);
-
 void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame) {
+    if (!isSupportedGame()) return;
     if (currentFrame.frame.empty() || previousFrame.frame.empty() || currentFrame.frame.size != previousFrame.frame.size) {
         return;
     }
 
+    cv::Rect gameRectOnFade = detectGameRectOnFade(currentFrame, previousFrame);
+    if (gameRectOnFade.empty()) return;
+    bool timerStarted;
     {
         std::lock_guard guard(analysisMutex);
-        if (currentFrame.timestamp - lastSplitTime < WAIT_AFTER_SPLIT_MS) return;
-    }
-
-    cv::Rect gameRectOnFade = detectGameRectOnFade(currentFrame, previousFrame);
-
-    bool haveToDetectTitleScreen = false;
-    if (!gameRectOnFade.empty()) {
-        std::lock_guard guard(analysisMutex);
+        // Prefer the first game rectangle, as it operates with higher brightness and thus more accurate
         if (currentFrame.timestamp - gameRectTimestamp >= WAIT_AFTER_SPLIT_MS) {
             gameRect = gameRectOnFade;
             gameRectTimestamp = currentFrame.timestamp;
         }
-        haveToDetectTitleScreen = splitIndex == 0;
-    } else {
-        // TODO: reset detection against previously computed game rect here
+        timerStarted = splitIndex != 0;  // Don't start timer on "SEGA" logo fadeout, that's too early
+    }
+
+    cv::UMat gameScreen = previousFrame.frame(gameRectOnFade);
+    if (!timerStarted && !isTitleScreen(gameScreen)) {
         return;
     }
 
-    if (haveToDetectTitleScreen) {
-        if (!isTitleScreen(previousFrame.frame(gameRectOnFade))) {
-            return;
+    if (timerStarted && isSegaScreen(gameScreen)) {
+        {
+            std::lock_guard guard(analysisMutex);
+            if (lastSplitTime == 0) return;  // Check again to avoid a race condition
+            lastSplitTime = 0;
         }
+        callback.reset();
+        return;
     }
 
     {
         std::lock_guard guard(analysisMutex);
-        // Check again to avoid a race condition
         if (currentFrame.timestamp - lastSplitTime < WAIT_AFTER_SPLIT_MS) return;
         lastSplitTime = currentFrame.timestamp;
         splitIndex++;
     }
 
-    if (haveToDetectTitleScreen) {
+    if (!timerStarted) {
         callback.startTimer();
     } else {
         callback.split();
     }
 }
 
-
-static double maskNonZeroPart(const cv::UMat& mask);
-
-bool isTitleScreen(const cv::UMat& gameRect) {
-    // Both Sonic 1 and 2 have red backgrounds behind letters on the title screen.
-    cv::UMat redColorMask;
-    cv::inRange(gameRect, cv::Scalar(0, 0, 80), cv::Scalar(10, 10, 240), redColorMask);
-    return maskNonZeroPart(redColorMask) > 0.015;
-}
-
-
 static cv::UMat calculateIncreasedBrightnessMask(cv::UMat src1, cv::UMat src2, double threshold);
+static double maskNonZeroPart(const cv::UMat& mask);
 
 /**
  * currentFrame and previousFrame have to be the same size.
@@ -112,7 +132,7 @@ static cv::UMat calculateIncreasedBrightnessMask(cv::UMat src1, cv::UMat src2, d
  * Returns an empty rect if a fade to black isn't going on or on detection failure.
  */
 cv::Rect FrameAnalyzer::detectGameRectOnFade(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame) const {
-    cv::UMat decreasedBrightnessMask = calculateIncreasedBrightnessMask(previousFrame.frame, currentFrame.frame, 0.0);
+    cv::UMat decreasedBrightnessMask = calculateIncreasedBrightnessMask(previousFrame.frame, currentFrame.frame, 3.0);
     // The game can take a part of the screen. Also fading has a limited color pallete, so only a part of the image fades.
     if (maskNonZeroPart(decreasedBrightnessMask) < 0.15) return {};
 
@@ -142,7 +162,6 @@ cv::Rect FrameAnalyzer::detectGameRectOnFade(const CapturedFrame& currentFrame, 
     if (maskNonZeroPart(decreasedBrightnessMask(gameRect)) < 0.6) return {};
     cv::UMat gameRectBrightnessIncrease =
         calculateIncreasedBrightnessMask(currentFrame.frame(gameRect), previousFrame.frame(gameRect), 3.0);
-
     if (maskNonZeroPart(gameRectBrightnessIncrease) > 0.15) return {};
     return gameRect;
 }
@@ -172,6 +191,37 @@ cv::UMat calculateIncreasedBrightnessMask(cv::UMat src1, cv::UMat src2, double t
 }
 
 
+bool FrameAnalyzer::isTitleScreen(const cv::UMat& gameRect) {
+    // Both Sonic 1 and 2 have red backgrounds behind letters on the title screen.
+    cv::UMat redColorMask;
+    cv::inRange(gameRect, cv::Scalar(0, 0, 80), cv::Scalar(30, 30, 240), redColorMask);
+    return maskNonZeroPart(redColorMask) > 0.015;
+}
+
+
+bool FrameAnalyzer::isSegaScreen(const cv::UMat& gameRect) const {
+    cv::UMat whiteColorMask;
+    cv::inRange(gameRect, cv::Scalar(180, 180, 180), cv::Scalar(255, 255, 255), whiteColorMask);
+    if (maskNonZeroPart(whiteColorMask) < 0.6) return false;
+    cv::UMat blueColorMask;
+    switch (settings.game) {
+    case Game::Sonic1:
+        cv::inRange(gameRect, cv::Scalar(180, 0, 0), cv::Scalar(255, 30, 30), blueColorMask);
+        break;
+    default:
+        cv::inRange(gameRect, cv::Scalar(170, 60, 0), cv::Scalar(255, 130, 30), blueColorMask);
+        break;
+    }
+    return maskNonZeroPart(blueColorMask) > 0.04;
+}
+
+
+static cv::UMat tryCrop(const cv::UMat& src, const cv::Rect& roi) {
+    if (roi.x + roi.width > src.cols || roi.y + roi.height > src.rows) return {};
+    return src(roi);
+}
+
+
 FrameAnalyzer::OnFrameCapturedListenerImpl::OnFrameCapturedListenerImpl(FrameAnalyzer& frameAnalyzer) : frameAnalyzer(frameAnalyzer) {}
 
 
@@ -182,6 +232,11 @@ void FrameAnalyzer::OnFrameCapturedListenerImpl::onFrameCaptured(const VideoCapt
     frameAnalyzer.analysisThreadPool.enqueue_detach([this, currentFrame = frameAnalyzer.currentFrame, previousFrame = frameAnalyzer.previousFrame]() {
         frameAnalyzer.analyzeFrame(currentFrame, previousFrame);
     });
+}
+
+
+bool FrameAnalyzer::OnFrameCapturedListenerImpl::needsHighQualityResize() {
+    return false;
 }
 
 }  // namespace RTA

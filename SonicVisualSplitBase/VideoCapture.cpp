@@ -10,10 +10,6 @@ cv::UMat VideoCapture::captureFrame() {
         unsuccessfulFramesStreak++;
     else
         unsuccessfulFramesStreak = 0;
-    if (frame.rows > MAX_ACCEPTABLE_FRAME_HEIGHT) {
-        double scaleFactor = ((double)MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
-        cv::resize(frame, frame, {}, scaleFactor, scaleFactor, cv::INTER_AREA);
-    }
     return frame;
 }
 

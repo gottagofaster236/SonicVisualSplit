@@ -3,6 +3,7 @@
 #include "FairMutex.h"
 #include "VirtualCamCapture.h"
 #include <chrono>
+#include <opencv2/imgproc.hpp>
 #define NOMINMAX
 #include <Windows.h>
 
@@ -149,6 +150,19 @@ static void captureOneFrame() {
     cv::UMat frame;
     if (videoCapture)
         frame = videoCapture->captureFrame();
+
+    bool needsHighQualityResize;
+    {
+        std::lock_guard guard2(onFrameCapturedListenersMutex);
+        needsHighQualityResize = std::ranges::any_of(onFrameCapturedListeners, [](OnFrameCapturedListener* listener) { 
+            return listener->needsHighQualityResize(); 
+        });
+    }
+
+    if (frame.rows > MAX_ACCEPTABLE_FRAME_HEIGHT) {
+        double scaleFactor = ((double) MAX_ACCEPTABLE_FRAME_HEIGHT) / frame.rows;
+        cv::resize(frame, frame, {}, scaleFactor, scaleFactor, needsHighQualityResize ? cv::INTER_AREA : cv::INTER_NEAREST);
+    }
     
     std::lock_guard guard2(onFrameCapturedListenersMutex);
     CapturedFrame capturedFrame{frame, getCurrentTimeInMilliseconds()};

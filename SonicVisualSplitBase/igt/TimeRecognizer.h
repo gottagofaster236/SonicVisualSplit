@@ -32,7 +32,7 @@ public:
 
     /* Recognizes the time on a frame, checks if the frame has a score screen if needed.
      * Returns the found positions of digits and SCORE/TIME labels. */
-    std::vector<Match> recognizeTime(cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result);
+    std::vector<Match> recognizeTime(cv::UMat frame, bool checkForScoreScreen, bool croppedToGameRect, AnalysisResult& result);
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
@@ -71,7 +71,7 @@ public:
     static const char TIME = 'T';
 
 private:
-    std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame);
+    std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame, bool croppedToGameRect);
 
     bool checkRecognizedDigits(std::vector<Match>& digitMatches);
 
@@ -87,7 +87,7 @@ private:
 
     Match findTopTimeLabel(const std::vector<Match>& labels);
 
-    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale);
+    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale, bool croppedToGameRect);
 
     void removeMatchesWithLowSimilarity(std::vector<Match>& matches);
 

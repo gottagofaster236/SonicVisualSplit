@@ -14,6 +14,8 @@ public:
     property ErrorReasonEnum ErrorReason;
 };
 
+class TimerCallbackWrapper;
+
 public ref class FrameAnalyzer {
 public:
     interface class TimerCallback {
@@ -30,11 +32,13 @@ public:
 
     AnalysisResult^ GetLastAnalysisResult();
 
-    void OnReset();
+    void ReportSplitIndex(int splitIndex);
 
     property AnalysisSettings^ Settings {
         AnalysisSettings^ get();
     }
+
+    volatile System::Nullable<System::Drawing::Rectangle> GameRect;
 
 private:
     AnalysisSettings^ settings;

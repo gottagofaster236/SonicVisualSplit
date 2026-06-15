@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <optional>
 
 
 namespace SonicVisualSplitBase {
@@ -19,7 +20,7 @@ class FrameAnalyzer {
 public:
     FrameAnalyzer(const AnalysisSettings& settings);
 
-    AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize);
+    AnalysisResult analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, const std::optional<cv::Rect>& gameRect);
 
     // See TimeRecognizer::resetDigitsLocation.
     void resetDigitsLocation();
@@ -33,9 +34,9 @@ public:
     FrameStorage frameStorage;
 
 private:
-    cv::UMat fixAspectRatio(cv::UMat frame);
+    cv::UMat fixAspectRatio(const cv::UMat& frame) const;
 
-    double getAspectRatioScaleFactor();
+    double getAspectRatioScaleFactor() const;
 
     /* Returns several areas of the template which have to be matched
      * to detect a reset screen.
@@ -51,7 +52,7 @@ private:
 
     bool checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference);
 
-    void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame);
+    void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame, const std::optional<cv::Rect>& gameRect);
 
     const AnalysisSettings settings;
 

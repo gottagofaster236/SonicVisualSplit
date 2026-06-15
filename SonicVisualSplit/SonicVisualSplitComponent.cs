@@ -40,7 +40,7 @@ namespace SonicVisualSplit
 
             UnpackTemplatesArrayIfNeeded();
             settings = new SonicVisualSplitSettings();
-            igtFrameAnalyzer = new IGT.FrameAnalyzer(state, settings);
+            igtFrameAnalyzer = new IGT.FrameAnalyzer(state, settings, () => rtaFrameAnalyzer?.GameRect);
             igtFrameAnalyzer.AddResultConsumer(this);
             rtaFrameAnalyzer = new RTA.FrameAnalyzer(state, settings);
             settings.SettingsChanged += OnSettingsChanged;

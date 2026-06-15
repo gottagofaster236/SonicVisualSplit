@@ -5,6 +5,7 @@
 #include "AnalysisResult.h"
 #include <opencv2/core.hpp>
 #include <mutex>
+#include <optional>
 
 namespace SonicVisualSplitBase {
 namespace RTA {
@@ -18,6 +19,7 @@ public:
         virtual void reset() = 0;
         virtual void pauseTimer() = 0;
         virtual void unpauseTimer() = 0;
+        virtual void onGameRectUpdated(const cv::Rect& gameRect) = 0;
     };
 
     FrameAnalyzer(const AnalysisSettings& settings, TimerCallback& callback);
@@ -26,17 +28,17 @@ public:
 
     AnalysisResult getLastAnalysisResult();
 
-    void onReset();
+    void reportSplitIndex(int splitIndex);
 
 private:
     void analyzeFrame(const VideoCaptureManager::CapturedFrame& currentFrame, const VideoCaptureManager::CapturedFrame& previousFrame);
 
-    static bool isTitleScreen(const cv::UMat& gameRect);
-
-    bool isSegaScreen(const cv::UMat& gameRect) const;
-
     cv::Rect detectGameRectOnFade(const VideoCaptureManager::CapturedFrame& currentFrame, const VideoCaptureManager::CapturedFrame& previousFrame) const;
 
+    bool detectGameRectOnSegaScreen(const VideoCaptureManager::CapturedFrame& frame, const cv::Rect& gameRectOnFade);
+
+    bool verifyGameRectAspectRatio(const cv::Rect& gameRect) const;
+    
     bool isSupportedGame() const;
 
     const AnalysisSettings settings;
@@ -50,6 +52,7 @@ private:
     std::mutex frameMutex;
 
     cv::Rect gameRect;
+    cv::Size gameRectFrameSize;
     long long gameRectTimestamp;
     long long lastSplitTime;
     int splitIndex;

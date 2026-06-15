@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <numeric>
 #include <cctype>
+#include <cmath>
 
 
 namespace SonicVisualSplitBase {
@@ -22,7 +23,7 @@ FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
 }
 
 
-AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize) {
+AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForScoreScreen, bool visualize, const std::optional<cv::Rect>& gameRect) {
     result = AnalysisResult();
     result.frameTime = frameTime;
     result.recognizedTime = false;
@@ -32,15 +33,28 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
         return result;
     }
-    cv::UMat frame = fixAspectRatio(originalFrame);
+
+    cv::UMat frame;
+    if (gameRect.has_value()) {
+        if (gameRect->empty() || gameRect->x + gameRect->width > originalFrame.cols || gameRect->y + gameRect->height > originalFrame.rows) {
+            result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+            if (visualize)
+                visualizeResult({}, originalFrame, {});
+            return result;
+        }
+        frame = originalFrame(*gameRect);
+        cv::resize(frame, frame, genesisResolution * 2, 0.0, 0.0, cv::INTER_AREA);
+    } else {
+        frame = fixAspectRatio(frame);
+    }
 
     std::vector<TimeRecognizer::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
-        allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, result);
+        allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, gameRect.has_value(), result);
     }
 
     if (visualize)
-        visualizeResult(allMatches, originalFrame);
+        visualizeResult(allMatches, originalFrame, gameRect);
     return result;
 }
 
@@ -100,22 +114,20 @@ bool FrameAnalyzer::checkForResetScreen() {
 }
 
 
-cv::UMat FrameAnalyzer::fixAspectRatio(cv::UMat frame) {
+cv::UMat FrameAnalyzer::fixAspectRatio(const cv::UMat& frame) const {
     if (settings.isStretchedTo16By9 && !frame.empty())
         cv::resize(frame, frame, {}, getAspectRatioScaleFactor(), 1, cv::INTER_AREA);
     return frame;
 }
 
 
-double FrameAnalyzer::getAspectRatioScaleFactor() {
+double FrameAnalyzer::getAspectRatioScaleFactor() const {
     const double scaleFactor16by9To4By3 = (4 / 3.) / (16 / 9.);
-    // Genesis' resolution is not actually 4 by 3, so it has to be fixed too.
-    const double scaleFactor4By3ToGenesis = (320 / 224.) / (4 / 3.);
-
-    if (settings.isStretchedTo16By9)
-        return scaleFactor16by9To4By3 * scaleFactor4By3ToGenesis;
-    else
-        return scaleFactor4By3ToGenesis;
+    if (settings.isStretchedTo16By9) {
+        return scaleFactor16by9To4By3;
+    } else {
+        return 1;
+    }
 }
 
 
@@ -133,7 +145,7 @@ std::vector<cv::Rect> FrameAnalyzer::getResetTemplateMatchAreas() {
         // Match the Eggman-shaped mountain.
         return {{6, 102, 67, 47}};
     default:
-        std::terminate();
+        std::abort();
     }
 }
 
@@ -224,16 +236,29 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, do
 
 
 void FrameAnalyzer::visualizeResult(
-    const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame) {
+    const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame, const std::optional<cv::Rect>& gameRect) {
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
-    double aspectRatioScaleFactor = getAspectRatioScaleFactor();
     for (auto match : allMatches) {
-        if (settings.isStretchedTo16By9) {
-            match.location.x /= (float) aspectRatioScaleFactor;
-            match.location.width /= (float) aspectRatioScaleFactor;
+        if (gameRect.has_value() && !gameRect->empty()) {
+            float cx = (float) gameRect->width / (genesisResolution.width * 2);
+            float cy = (float) gameRect->height / (genesisResolution.height * 2);
+            match.location.x *= cx;
+            match.location.y *= cy;
+            match.location.width *= cx;
+            match.location.height *= cy;
+            match.location.x += gameRect->x;
+            match.location.y += gameRect->y;
+        }
+        else if (settings.isStretchedTo16By9) {
+            float aspectRatioScaleFactor = (float) getAspectRatioScaleFactor();
+            match.location.x /= aspectRatioScaleFactor;
+            match.location.width /= aspectRatioScaleFactor;
         }
         cv::rectangle(result.visualizedFrame, match.location, cv::Scalar(0, 0, 255), lineThickness);
+    }
+    if (gameRect.has_value() && !gameRect->empty()) {
+        cv::rectangle(result.visualizedFrame, *gameRect, cv::Scalar(255, 0, 255), lineThickness);
     }
 }
 

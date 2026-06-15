@@ -34,10 +34,15 @@ FrameAnalyzer::~FrameAnalyzer() {
 
 
 // Converting non-managed types to managed ones to call the native version of the function
-AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize) {
+AnalysisResult^ FrameAnalyzer::AnalyzeFrame(Int64 frameTime, Boolean checkForScoreScreen, Boolean visualize, System::Nullable<System::Drawing::Rectangle> gameRect) {
     auto nativeFrameAnalyzer = getFrameAnalyzerFromIntPtr(nativeFrameAnalyzerPtr);
+    std::optional<cv::Rect> gameRectOptional;
+    if (gameRect.HasValue) {
+        gameRectOptional = {{gameRect.Value.Left, gameRect.Value.Top, gameRect.Value.Width, gameRect.Value.Height}};
+    }
+
     SonicVisualSplitBase::IGT::AnalysisResult result =
-        nativeFrameAnalyzer->analyzeFrame(frameTime, checkForScoreScreen, visualize);
+        nativeFrameAnalyzer->analyzeFrame(frameTime, checkForScoreScreen, visualize, gameRectOptional);
 
     AnalysisResult^ resultConverted = gcnew AnalysisResult();
     resultConverted->RecognizedTime = result.recognizedTime;

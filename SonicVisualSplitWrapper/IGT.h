@@ -55,7 +55,8 @@ public:
 
     ~FrameAnalyzer();
 
-    AnalysisResult^ AnalyzeFrame(System::Int64 frameTime, System::Boolean checkForScoreScreen, System::Boolean visualize);
+    AnalysisResult^ AnalyzeFrame(System::Int64 frameTime, System::Boolean checkForScoreScreen, System::Boolean visualize, 
+        System::Nullable<System::Drawing::Rectangle> gameRect);
 
     System::Boolean CheckForResetScreen();
 

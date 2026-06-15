@@ -29,7 +29,7 @@ TimeRecognizer::~TimeRecognizer() {
 
 
 std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
-(cv::UMat frame, bool checkForScoreScreen, AnalysisResult& result) {
+(cv::UMat frame, bool checkForScoreScreen, bool croppedToGameRect, AnalysisResult& result) {
     if (shouldResetDigitsLocation) {
         resetDigitsLocationSync();
         shouldResetDigitsLocation = false;
@@ -51,7 +51,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         checkForScoreScreen = true;
     }
     if (checkForScoreScreen) {
-        std::vector<Match> labels = findLabelsAndUpdateDigitsRect(frame);
+        std::vector<Match> labels = findLabelsAndUpdateDigitsRect(frame, croppedToGameRect);
         if (curDigitsLocation.digitsRect.empty())
             curDigitsLocation.digitsRect = lastSuccessfulDigitsLocation.load().digitsRect;
         if (!curDigitsLocation.isValid()) {
@@ -72,7 +72,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
 
     std::vector<Match> digitMatches;
     for (char digit = '0'; digit <= '9'; digit++) {
-        std::vector<Match> matches = findSymbolLocations(frame, digit, false);
+        std::vector<Match> matches = findSymbolLocations(frame, digit, false, croppedToGameRect);
 
         for (Match& match : matches) {
             // The frame is cropped to digitsRect to speed up the search. Now we have to compensate for that.
@@ -138,12 +138,12 @@ void TimeRecognizer::reportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
-std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(cv::UMat frame) {
+std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(cv::UMat frame, bool croppedToGameRect) {
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter = convertFrameToGray(frame, true);
     bool recalculateBestScale = (curDigitsLocation.bestScale == -1);
     recalculatedBestScaleLastTime = recalculateBestScale;
-    std::vector<Match> timeMatches = findSymbolLocations(frameWithYellowFilter, TIME, recalculateBestScale);
+    std::vector<Match> timeMatches = findSymbolLocations(frameWithYellowFilter, TIME, recalculateBestScale, croppedToGameRect);
     if (timeMatches.empty())
         return {};
 
@@ -155,7 +155,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect
         cv::resize(frameWithYellowFilter, frameWithYellowFilter, {},
             curDigitsLocation.bestScale, curDigitsLocation.bestScale, cv::INTER_AREA);
     }
-    std::vector<Match> scoreMatches = findSymbolLocations(frameWithYellowFilter, SCORE, false);
+    std::vector<Match> scoreMatches = findSymbolLocations(frameWithYellowFilter, SCORE, false, croppedToGameRect);
     if (scoreMatches.empty())
         return {};
 
@@ -346,13 +346,13 @@ TimeRecognizer::Match TimeRecognizer::findTopTimeLabel(const std::vector<Match>&
 /* Returns all found positions of a digit. If recalculateBestScale is set to true,
  * goes through different scales of the original frame (see the link below).
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
-std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale) {
+std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale, bool croppedToGameRect) {
     const auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
 
     // if we already found the scale, we don't go through different scales
     double minScale, maxScale;
 
-    if (recalculateBestScale) {
+    if (recalculateBestScale && !croppedToGameRect) {
         /* Sega Genesis resolution is 320×224 (height = 224).
          * We double the size of the template images, so we have to do the same for the resolution. */
         const int minHeight = 200 * 2;
@@ -361,8 +361,9 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
          * Thus the frame should take at least 70% of stream's height. (80% for safety). */
         minScale = ((double) minHeight) / frame.rows;
         maxScale = ((double) maxHeight) / frame.rows;
-    }
-    else {
+    } else if (recalculateBestScale) {
+        minScale = maxScale = 224. * 2 / frame.rows;  // Height should be double the Genesis resolution height
+    } else {
         minScale = maxScale = 1;
     }
 

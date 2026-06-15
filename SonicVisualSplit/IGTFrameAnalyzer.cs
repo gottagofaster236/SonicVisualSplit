@@ -8,6 +8,7 @@ using LiveSplit.Model;
 using SonicVisualSplitWrapper;
 using SonicVisualSplitWrapper.IGT;
 using static SonicVisualSplit.SonicVisualSplitComponent;
+using System.Drawing;
 
 namespace SonicVisualSplit.IGT
 {
@@ -72,8 +73,10 @@ namespace SonicVisualSplit.IGT
         private ITimerModel model;
         private volatile int currentSplitIndex;
         private SonicVisualSplitSettings settings;
-
-        public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings)
+        public delegate Rectangle? GetGameRect();
+        private GetGameRect getGameRect;
+    
+        public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings, GetGameRect getGameRect)
         {
             this.state = state;
             model = new TimerModel() { CurrentState = state };
@@ -81,6 +84,8 @@ namespace SonicVisualSplit.IGT
             this.settings = settings;
             this.settings.IGTFrameAnalyzer = this;
             this.settings.SettingsChanged += OnSettingsChanged;
+
+            this.getGameRect = getGameRect;
 
             StartObservingCurrentSplitIndex();
             frameAnalysisTask = new CancellableLoopTask(AnalyzeFrame, FRAME_ANALYSIS_PERIOD);
@@ -123,7 +128,7 @@ namespace SonicVisualSplit.IGT
 
                 nativeFrameAnalyzer.ReportCurrentSplitIndex(currentSplitIndex);
 
-                AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize);
+                AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(lastFrameTime, checkForScoreScreen, visualize, getGameRect());
                 SendResultToConsumers(result);
 
                 ConfirmFirstFrameOfSegmentIfNeeded(result);
@@ -239,7 +244,7 @@ namespace SonicVisualSplit.IGT
                 else
                 {
                     AnalysisResult scoreScreenCheck = nativeFrameAnalyzer.AnalyzeFrame(result.FrameTime,
-                        checkForScoreScreen: true, visualize: false);
+                        checkForScoreScreen: true, visualize: false, getGameRect());
                     isScoreScreen = scoreScreenCheck.IsScoreScreen;
                 }
 
@@ -415,7 +420,7 @@ namespace SonicVisualSplit.IGT
             {
                 long frameTime = savedFrameTimes[frameIndex];
                 AnalysisResult result = nativeFrameAnalyzer.AnalyzeFrame(frameTime,
-                    checkForScoreScreen: false, visualize: false);
+                    checkForScoreScreen: false, visualize: false, getGameRect());
                 if (result.RecognizedTime)
                 {
                     if (CheckAnalysisResult(result))
@@ -455,7 +460,7 @@ namespace SonicVisualSplit.IGT
                 AnalysisResult secondFrameOfSegment;
                 if (frameTime != newResult.FrameTime)
                 {
-                    secondFrameOfSegment = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false, visualize: false);
+                    secondFrameOfSegment = nativeFrameAnalyzer.AnalyzeFrame(frameTime, checkForScoreScreen: false, visualize: false, getGameRect());
                 }
                 else
                 {

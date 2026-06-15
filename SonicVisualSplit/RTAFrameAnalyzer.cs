@@ -1,6 +1,8 @@
 ﻿using LiveSplit.Model;
+using LiveSplit.Options;
 using SonicVisualSplitWrapper;
 using System;
+using System.Drawing;
 using static SonicVisualSplit.SonicVisualSplitComponent;
 
 namespace SonicVisualSplit.RTA
@@ -19,7 +21,7 @@ namespace SonicVisualSplit.RTA
             this.settings = settings;
             settings.SettingsChanged += OnSettingsChanged;
             this.state = state;
-            state.OnReset += OnReset;
+            StartObservingCurrentSplitIndex();
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
@@ -42,13 +44,49 @@ namespace SonicVisualSplit.RTA
 
         public void Dispose()
         {
+            StopObservingCurrentSplitIndex();
             nativeFrameAnalyzer?.Dispose();
-            state.OnReset -= OnReset;
         }
 
-        public void OnReset(object sender, TimerPhase value)
+        public Rectangle? GameRect
         {
-            nativeFrameAnalyzer?.OnReset();
+            get
+            {
+                if (settings.TimingMethod == TimingMethod.IGT) return null;
+                var gameRect = nativeFrameAnalyzer?.GameRect;
+                if (gameRect != null) return gameRect;
+                return new Rectangle();  // Empty rectangle instead of null to signify it should be used, but not ready yet
+            }
+        }
+
+        private void StartObservingCurrentSplitIndex()
+        {
+            state.OnSplit += UpdateCurrentSplitIndex;
+            state.OnUndoSplit += UpdateCurrentSplitIndex;
+            state.OnSkipSplit += UpdateCurrentSplitIndex;
+            state.OnStart += UpdateCurrentSplitIndex;
+            state.OnReset += UpdateCurrentSplitIndex;
+            UpdateCurrentSplitIndex();
+        }
+
+        // See StartObservingCurrentSplitIndex().
+        private void StopObservingCurrentSplitIndex()
+        {
+            state.OnSplit -= UpdateCurrentSplitIndex;
+            state.OnUndoSplit -= UpdateCurrentSplitIndex;
+            state.OnSkipSplit -= UpdateCurrentSplitIndex;
+            state.OnStart -= UpdateCurrentSplitIndex;
+            state.OnReset -= UpdateCurrentSplitIndex;
+        }
+
+        private void UpdateCurrentSplitIndex(object sender = null, EventArgs e = null)
+        {
+            nativeFrameAnalyzer?.ReportSplitIndex(state.CurrentSplitIndex);
+        }
+
+        private void UpdateCurrentSplitIndex(object sender, TimerPhase timerPhase)
+        {
+            UpdateCurrentSplitIndex();
         }
 
         public void StartTimer()

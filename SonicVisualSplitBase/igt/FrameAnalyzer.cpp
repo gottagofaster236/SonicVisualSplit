@@ -17,7 +17,7 @@ static const cv::Size genesisResolution = {320, 224};
 
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings) :
     settings(settings), timeRecognizer(settings) {
-    resetTemplate = settings.loadTemplateImageFromFile('R');
+    resetTemplate = settings.loadTemplateImageFromFile("R");
     // Remove the alpha channel.
     cv::cvtColor(resetTemplate, resetTemplate, cv::COLOR_BGRA2BGR);
 }
@@ -45,10 +45,10 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
         frame = originalFrame(*gameRect);
         cv::resize(frame, frame, genesisResolution * 2, 0.0, 0.0, cv::INTER_AREA);
     } else {
-        frame = fixAspectRatio(frame);
+        frame = fixAspectRatio(originalFrame);
     }
 
-    std::vector<TimeRecognizer::Match> allMatches;
+    std::vector<TemplateMatcher::Match> allMatches;
     if (!checkIfFrameIsSingleColor(frame)) {
         allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, gameRect.has_value(), result);
     }
@@ -236,7 +236,7 @@ bool FrameAnalyzer::checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, do
 
 
 void FrameAnalyzer::visualizeResult(
-    const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame, const std::optional<cv::Rect>& gameRect) {
+    const std::vector<TemplateMatcher::Match>& allMatches, cv::UMat originalFrame, const std::optional<cv::Rect>& gameRect) {
     originalFrame.copyTo(result.visualizedFrame);
     int lineThickness = 1 + result.visualizedFrame.rows / 500;
     for (auto match : allMatches) {

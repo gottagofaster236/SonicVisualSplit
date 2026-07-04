@@ -215,6 +215,7 @@ bool FrameAnalyzer::detectGameRectOnSegaScreen(const VideoCaptureManager::Captur
     segaLogo.x += withoutBorders.x;
     segaLogo.y += withoutBorders.y;
     if (segaLogo.empty()) return false;
+    // TODO: this should be Rect2f
     cv::Rect gameRect{
         segaLogo.x - static_cast<int>(std::round(segaLogo.width / 374. * 130.)),
         segaLogo.y - static_cast<int>(std::round(segaLogo.height / 116. * (182. - 16.))),

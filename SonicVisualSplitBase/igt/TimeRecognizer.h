@@ -2,6 +2,7 @@
 #include "../AnalysisSettings.h"
 #include "AnalysisResult.h"
 #include "../VideoCaptureManager.h"
+#include "../TemplateMatcher.h"
 #include <opencv2/core.hpp>
 #include <vector>
 #include <map>
@@ -22,17 +23,9 @@ public:
 
     ~TimeRecognizer();
 
-    struct Match {
-        cv::Rect2f location;
-        char symbol;
-        double similarity;
-
-        bool operator==(const Match& other) const;
-    };
-
     /* Recognizes the time on a frame, checks if the frame has a score screen if needed.
      * Returns the found positions of digits and SCORE/TIME labels. */
-    std::vector<Match> recognizeTime(cv::UMat frame, bool checkForScoreScreen, bool croppedToGameRect, AnalysisResult& result);
+    std::vector<TemplateMatcher::Match> recognizeTime(cv::UMat frame, bool checkForScoreScreen, bool croppedToGameRect, AnalysisResult& result);
 
     /* We precalculate the rectangle where all of the digits are located.
      * In case of error (e.g. video source properties changed), we may want to recalculate that. */
@@ -60,73 +53,48 @@ public:
     // This method is thread-safe.
     DigitsLocation getLastSuccessfulDigitsLocation();
 
-    std::chrono::steady_clock::duration getTimeSinceDigitsLocationLastUpdated();
+    std::chrono::steady_clock::duration getTimeSinceDigitsLocationLastUpdated() const;
 
     /* Reports the current LiveSplit split index.
      * Should be up-to-date upon calling recognizeTime(). */
     void reportCurrentSplitIndex(int currentSplitIndex);
 
-    // We search for symbols in our code (hack hack).
-    static const char SCORE = 'S';
-    static const char TIME = 'T';
-
 private:
-    std::vector<Match> findLabelsAndUpdateDigitsRect(cv::UMat frame, bool croppedToGameRect);
+    std::vector<TemplateMatcher::Match> findLabelsAndUpdateDigitsRect(const cv::UMat& frame, bool croppedToGameRect);
 
-    bool checkRecognizedDigits(std::vector<Match>& digitMatches);
+    bool checkRecognizedDigits(std::vector<TemplateMatcher::Match>& digitMatches);
 
-    void getTimeFromRecognizedDigits(const std::vector<Match>& digitMatches, AnalysisResult& result);
+    void getTimeFromRecognizedDigits(const std::vector<TemplateMatcher::Match>& digitMatches, AnalysisResult& result);
 
-    void updateDigitsRect(const std::vector<Match>& labels);
+    void updateDigitsRect(const std::vector<TemplateMatcher::Match>& labels);
 
-    bool doCheckForScoreScreen(std::vector<Match>& labels, int originalFrameHeight);
+    bool doCheckForScoreScreen(std::vector<TemplateMatcher::Match>& labels, int originalFrameHeight);
 
     void onRecognitionSuccess();
 
     void onRecognitionFailure(AnalysisResult& result);
 
-    Match findTopTimeLabel(const std::vector<Match>& labels);
+    TemplateMatcher::Match findTopTimeLabel(const std::vector<TemplateMatcher::Match>& labels);
 
-    std::vector<Match> findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale, bool croppedToGameRect);
-
-    void removeMatchesWithLowSimilarity(std::vector<Match>& matches);
-
-    void removeOverlappingMatches(std::vector<Match>& matches);
-
-    void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches);
+    std::vector<TemplateMatcher::Match> calculateBestScaleAndFindMatches(cv::UMat& frame, const std::string& templateName, bool croppedToGameRect);
 
     void resetDigitsLocationSync();
 
-    // Returns the minimum acceptable similarity of a symbol.
-    double getMinSimilarity(char symbol) const;
-
-    /* Similarity of a symbol may be multiplied by a coefficient
-     * in order to make it a less or more preferable option when choosing between symbols. */
-    double getSimilarityMultiplier(char symbol) const;
-
     // Crops the frame to the region of interest where the digits are located.
-    cv::UMat cropToDigitsRect(cv::UMat frame);
+    cv::UMat cropToDigitsRect(const cv::UMat& frame) const;
 
     /* Increases the contrast for an image. Returns an empty image on error.
      * Needed in order to recognize digits better on a frame before a transition
      * (as the frames before a transition are either too dark or too bright). */
-    cv::UMat applyColorCorrection(cv::UMat img);
-
-    /* Converts a frame to grayscale.
-     * If filterYellowColor is true, then yellow will be white in the resulting image.
-     * (This method is needed to speed up template matching by reducing the number of channels to 1). */
-    static cv::UMat convertFrameToGray(cv::UMat frame, bool filterYellowColor = false);
+    cv::UMat applyColorCorrection(cv::UMat img) const;
 
     bool timeIncludesMilliseconds() const;
 
-    void loadAllTemplates();
-
-    // Returns a tuple of {gray image, binary alpha mask, count of opaque pixels}.
-    std::tuple<cv::UMat, cv::UMat, int> loadSymbolTemplate(char symbol);
-
-    cv::UMat getAlphaMask(cv::UMat image);
+    static cv::Rect scaleAndRound(cv::Rect src, double scale);
 
     const AnalysisSettings settings;
+
+    const TemplateMatcher templateMatcher;
 
     DigitsLocation curDigitsLocation;
 
@@ -135,9 +103,6 @@ private:
     std::atomic<DigitsLocation> lastSuccessfulDigitsLocation;
 
     std::chrono::steady_clock::time_point lastRecognitionSuccessTime;
-
-    // Map: symbol (a digit, TIME or SCORE) -> {image of the symbol, binary alpha mask, count of opaque pixels}.
-    std::map<char, std::tuple<cv::UMat, cv::UMat, int>> templates;
 
     // Flag for resetDigitsLocationAsync().
     std::atomic<bool> shouldResetDigitsLocation{false};

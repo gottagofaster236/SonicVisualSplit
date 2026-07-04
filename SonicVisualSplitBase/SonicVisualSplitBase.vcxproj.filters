@@ -66,6 +66,9 @@
     <ClInclude Include="rta\AnalysisResult.h">
       <Filter>Header Files\rta</Filter>
     </ClInclude>
+    <ClInclude Include="TemplateMatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoCaptureManager.cpp">
@@ -91,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="igt\TimeRecognizer.cpp">
       <Filter>Source Files\igt</Filter>
+    </ClCompile>
+    <ClCompile Include="TemplateMatcher.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

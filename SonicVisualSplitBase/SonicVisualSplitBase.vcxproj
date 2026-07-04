@@ -21,6 +21,7 @@
     <ClInclude Include="rta\FrameAnalyzer.h" />
     <ClInclude Include="rta\ThreadPool.h" />
     <ClInclude Include="rta\ThreadSafeQueue.h" />
+    <ClInclude Include="TemplateMatcher.h" />
     <ClInclude Include="VideoCapture.h" />
     <ClInclude Include="VideoCaptureManager.h" />
     <ClInclude Include="VirtualCamCapture.h" />
@@ -31,6 +32,7 @@
     <ClCompile Include="igt\FrameStorage.cpp" />
     <ClCompile Include="igt\TimeRecognizer.cpp" />
     <ClCompile Include="rta\FrameAnalyzer.cpp" />
+    <ClCompile Include="TemplateMatcher.cpp" />
     <ClCompile Include="VideoCapture.cpp" />
     <ClCompile Include="VideoCaptureManager.cpp" />
     <ClCompile Include="VirtualCamCapture.cpp" />

@@ -52,7 +52,7 @@ private:
 
     bool checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference);
 
-    void visualizeResult(const std::vector<TimeRecognizer::Match>& allMatches, cv::UMat originalFrame, const std::optional<cv::Rect>& gameRect);
+    void visualizeResult(const std::vector<TemplateMatcher::Match>& allMatches, cv::UMat originalFrame, const std::optional<cv::Rect>& gameRect);
 
     const AnalysisSettings settings;
 

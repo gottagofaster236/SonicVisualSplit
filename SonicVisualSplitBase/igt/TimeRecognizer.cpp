@@ -17,8 +17,9 @@ namespace IGT {
 
 
 TimeRecognizer::TimeRecognizer(const AnalysisSettings& settings) :
-    settings(settings), onSourceChangedListener(*this) {
-    loadAllTemplates();
+    settings(settings), 
+    templateMatcher(settings, TemplateMatcher::ALL_TEMPLATES),
+    onSourceChangedListener(*this) {
     VideoCaptureManager::addOnSourceChangedListener(onSourceChangedListener);
 }
 
@@ -28,7 +29,7 @@ TimeRecognizer::~TimeRecognizer() {
 }
 
 
-std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
+std::vector<TemplateMatcher::Match> TimeRecognizer::recognizeTime
 (cv::UMat frame, bool checkForScoreScreen, bool croppedToGameRect, AnalysisResult& result) {
     if (shouldResetDigitsLocation) {
         resetDigitsLocationSync();
@@ -40,10 +41,10 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         curDigitsLocation.frameSize = frame.size();
     }
 
-    std::vector<Match> allMatches;
+    std::vector<TemplateMatcher::Match> allMatches;
 
     if (curDigitsLocation.isValid()) {
-        cv::resize(frame, frame, {}, curDigitsLocation.bestScale, curDigitsLocation.bestScale);
+        cv::resize(frame, frame, {}, curDigitsLocation.bestScale, curDigitsLocation.bestScale, cv::INTER_AREA);
         recalculatedBestScaleLastTime = false;
     }
     else {
@@ -51,7 +52,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         checkForScoreScreen = true;
     }
     if (checkForScoreScreen) {
-        std::vector<Match> labels = findLabelsAndUpdateDigitsRect(frame, croppedToGameRect);
+        std::vector<TemplateMatcher::Match> labels = findLabelsAndUpdateDigitsRect(frame, croppedToGameRect);
         if (curDigitsLocation.digitsRect.empty())
             curDigitsLocation.digitsRect = lastSuccessfulDigitsLocation.load().digitsRect;
         if (!curDigitsLocation.isValid()) {
@@ -70,21 +71,7 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
         return allMatches;
     }
 
-    std::vector<Match> digitMatches;
-    for (char digit = '0'; digit <= '9'; digit++) {
-        std::vector<Match> matches = findSymbolLocations(frame, digit, false, croppedToGameRect);
-
-        for (Match& match : matches) {
-            // The frame is cropped to digitsRect to speed up the search. Now we have to compensate for that.
-            match.location += cv::Point2f((float) (curDigitsLocation.digitsRect.x / curDigitsLocation.bestScale),
-                (float) (curDigitsLocation.digitsRect.y / curDigitsLocation.bestScale));
-        }
-        digitMatches.insert(digitMatches.end(), matches.begin(), matches.end());
-    }
-
-    removeMatchesWithLowSimilarity(digitMatches);
-    removeMatchesWithIncorrectYCoord(digitMatches);
-    removeOverlappingMatches(digitMatches);
+    std::vector<TemplateMatcher::Match> digitMatches = templateMatcher.findTemplateLocations(frame, TemplateMatcher::DIGIT_TEMPLATES, true);
 
     if (checkRecognizedDigits(digitMatches))
         getTimeFromRecognizedDigits(digitMatches, result);
@@ -94,7 +81,20 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::recognizeTime
     else
         onRecognitionFailure(result);
 
+    for (TemplateMatcher::Match& match : digitMatches) {
+        // The frame is cropped to digitsRect to speed up the search. Now we have to compensate for that.
+        match.location += cv::Point(curDigitsLocation.digitsRect.x, curDigitsLocation.digitsRect.y);
+    }
+
     allMatches.insert(allMatches.end(), digitMatches.begin(), digitMatches.end());
+    double bestScale = curDigitsLocation.bestScale;
+    if (bestScale == -1) bestScale = 1;
+    for (TemplateMatcher::Match& match : allMatches) {
+        match.location.x = static_cast<int>(std::round(match.location.x / bestScale));
+        match.location.y = static_cast<int>(std::round(match.location.y / bestScale));
+        match.location.width = static_cast<int>(std::round(match.location.width / bestScale));
+        match.location.height = static_cast<int>(std::round(match.location.height / bestScale));
+    }
     return allMatches;
 }
 
@@ -128,7 +128,7 @@ TimeRecognizer::DigitsLocation TimeRecognizer::getLastSuccessfulDigitsLocation()
 }
 
 
-std::chrono::steady_clock::duration TimeRecognizer::getTimeSinceDigitsLocationLastUpdated() {
+std::chrono::steady_clock::duration TimeRecognizer::getTimeSinceDigitsLocationLastUpdated() const {
     return std::chrono::steady_clock::now() - lastRecognitionSuccessTime;
 }
 
@@ -138,31 +138,30 @@ void TimeRecognizer::reportCurrentSplitIndex(int currentSplitIndex) {
 }
 
 
-std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(cv::UMat frame, bool croppedToGameRect) {
+std::vector<TemplateMatcher::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(const cv::UMat& frame, bool croppedToGameRect) {
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
-    cv::UMat frameWithYellowFilter = convertFrameToGray(frame, true);
+    cv::UMat frameWithYellowFilter = TemplateMatcher::convertToGray(frame, true);
     bool recalculateBestScale = (curDigitsLocation.bestScale == -1);
     recalculatedBestScaleLastTime = recalculateBestScale;
-    std::vector<Match> timeMatches = findSymbolLocations(frameWithYellowFilter, TIME, recalculateBestScale, croppedToGameRect);
-    if (timeMatches.empty())
-        return {};
+
+    std::vector<TemplateMatcher::Match> timeMatches;
+    if (recalculateBestScale) {
+        timeMatches = calculateBestScaleAndFindMatches(frameWithYellowFilter, TemplateMatcher::TIME, croppedToGameRect);
+    } else {
+        timeMatches = templateMatcher.findTemplateLocations(frameWithYellowFilter, std::vector<std::string>{TemplateMatcher::TIME}, false);
+    }
+    if (timeMatches.empty()) return {};
 
     // Checking only the top half of the frame, so that "SCORE" is searched faster.
-    cv::Rect topHalf = {0, 0, frame.cols, frame.rows / 2};
+    cv::Rect topHalf = {0, 0, frameWithYellowFilter.cols, frameWithYellowFilter.rows / 2};
     frameWithYellowFilter = frameWithYellowFilter(topHalf);
-    if (recalculateBestScale) {
-        // bestScale is calculated already after we found "TIME".
-        cv::resize(frameWithYellowFilter, frameWithYellowFilter, {},
-            curDigitsLocation.bestScale, curDigitsLocation.bestScale, cv::INTER_AREA);
-    }
-    std::vector<Match> scoreMatches = findSymbolLocations(frameWithYellowFilter, SCORE, false, croppedToGameRect);
+    std::vector<TemplateMatcher::Match> scoreMatches = templateMatcher.findTemplateLocations(frameWithYellowFilter, std::vector<std::string>{TemplateMatcher::SCORE}, false);
     if (scoreMatches.empty())
         return {};
 
-    std::vector<Match> labelMatches = std::move(timeMatches);
+    std::vector<TemplateMatcher::Match> labelMatches = std::move(timeMatches);
     labelMatches.insert(labelMatches.end(), scoreMatches.begin(), scoreMatches.end());
-    removeMatchesWithLowSimilarity(labelMatches);
-    removeOverlappingMatches(labelMatches);
+    TemplateMatcher::sortAndRemoveOverlappingMatches(labelMatches, false);
     if (labelMatches.size() > 15) {
         // There can't be that many matches, even if some of them are wrong.
         return {};
@@ -176,27 +175,26 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect
 }
 
 
-bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
-    std::ranges::sort(digitMatches, {}, [](const Match& match) {
+bool TimeRecognizer::checkRecognizedDigits(std::vector<TemplateMatcher::Match>& digitMatches) {
+    std::ranges::sort(digitMatches, {}, [](const TemplateMatcher::Match& match) {
         return match.location.x;
-        });
+    });
 
     for (int i = 0; i + 1 < digitMatches.size(); i++) {
-        const cv::Rect2f& prevLocation = digitMatches[i].location, nextLocation = digitMatches[i + 1].location;
-        double interval = ((nextLocation.x + nextLocation.width) -
-            (prevLocation.x + prevLocation.width)) * curDigitsLocation.bestScale;
+        const cv::Rect& prevLocation = digitMatches[i].location, nextLocation = digitMatches[i + 1].location;
+        int interval = (nextLocation.x + nextLocation.width) -(prevLocation.x + prevLocation.width);
 
         if (i == 0 || i == 2) {
             /* Checking that separators (:, ' and ") aren't detected as digits.
              * For that we check that the digits adjacent to the separator have increased interval. */
-            if (interval < 26.5) {
+            if (interval <= 26) {
                 digitMatches.erase(digitMatches.begin() + i + 1);
                 i--;
             }
         }
         else {
             // Checking that the interval is not too high.
-            if (interval > 20.5) {
+            if (interval > 20) {
                 return false;
             }
         }
@@ -209,7 +207,7 @@ bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
         requiredDigitsCount = 3;
 
     if (settings.isComposite) {
-        while (digitMatches.size() > requiredDigitsCount && digitMatches.back().symbol == '1')
+        while (digitMatches.size() > requiredDigitsCount && digitMatches.back().templateName == "1")
             digitMatches.pop_back();
     }
 
@@ -220,10 +218,10 @@ bool TimeRecognizer::checkRecognizedDigits(std::vector<Match>& digitMatches) {
 }
 
 
-void TimeRecognizer::getTimeFromRecognizedDigits(const std::vector<Match>& digitMatches, AnalysisResult& result) {
+void TimeRecognizer::getTimeFromRecognizedDigits(const std::vector<TemplateMatcher::Match>& digitMatches, AnalysisResult& result) {
     std::string timeDigitsStr;
-    for (const Match& match : digitMatches)
-        timeDigitsStr += match.symbol;
+    for (const TemplateMatcher::Match& match : digitMatches)
+        timeDigitsStr += match.templateName;
 
     // Formatting the timeString and calculating timeInMilliseconds
     std::string minutes = timeDigitsStr.substr(0, 1), seconds = timeDigitsStr.substr(1, 2);
@@ -248,10 +246,10 @@ void TimeRecognizer::getTimeFromRecognizedDigits(const std::vector<Match>& digit
 }
 
 
-bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int originalFrameHeight) {
-    std::vector<Match> timeMatches, scoreMatches;
-    for (const Match& match : labels) {
-        if (match.symbol == TIME)
+bool TimeRecognizer::doCheckForScoreScreen(std::vector<TemplateMatcher::Match>& labels, int originalFrameHeight) {
+    std::vector<TemplateMatcher::Match> timeMatches, scoreMatches;
+    for (const TemplateMatcher::Match& match : labels) {
+        if (match.templateName == TemplateMatcher::TIME)
             timeMatches.push_back(match);
         else
             scoreMatches.push_back(match);
@@ -287,7 +285,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<Match>& labels, int origi
         cv::Point2f timeBonusShift = otherLocation.tl() - topLocation.tl();
         float difference = (float) cv::norm(timeBonusShift - expectedTimeBonusShift);
         return difference > maxDifference;
-        });
+    });
 
     /* There's always a "TIME" label on top of the screen.
      * But there's a second one during the score countdown screen ("TIME BONUS"). */
@@ -316,62 +314,56 @@ void TimeRecognizer::onRecognitionFailure(AnalysisResult& result) {
 }
 
 
-void TimeRecognizer::updateDigitsRect(const std::vector<Match>& labels) {
-    cv::Rect2f timeRectScaled = findTopTimeLabel(labels).location;
-    const double& bestScale = curDigitsLocation.bestScale;
-    auto& timeRect = curDigitsLocation.timeRect;
-    timeRect = {(int) std::round(timeRectScaled.x * bestScale), (int) std::round(timeRectScaled.y * bestScale),
-        (int) std::round(timeRectScaled.width * bestScale), (int) std::round(timeRectScaled.height * bestScale)};
+void TimeRecognizer::updateDigitsRect(const std::vector<TemplateMatcher::Match>& labels) {
+    cv::Rect timeRect = findTopTimeLabel(labels).location;
+    curDigitsLocation.timeRect = timeRect;
     double rightBorderCoefficient = (settings.game == Game::SonicCD ? 3.2 : 2.45);
-    int digitsRectLeft = (int) (timeRect.x + timeRect.width * 1.22);
-    int digitsRectRight = (int) (timeRect.x + timeRect.width * rightBorderCoefficient);
-    int digitsRectTop = (int) (timeRect.y - timeRect.height * 0.1);
-    int digitsRectBottom = (int) (timeRect.y + timeRect.height * 1.1);
+    int digitsRectLeft = timeRect.x + static_cast<int>(timeRect.width * 1.22);
+    int digitsRectRight = timeRect.x + static_cast<int>(timeRect.width * rightBorderCoefficient);
+    int digitsRectTop = timeRect.y - static_cast<int>(timeRect.height * 0.1);
+    int digitsRectBottom = timeRect.y + static_cast<int>(timeRect.height * 1.1);
     curDigitsLocation.digitsRect = {digitsRectLeft, digitsRectTop,
         digitsRectRight - digitsRectLeft, digitsRectBottom - digitsRectTop};
 }
 
 
-TimeRecognizer::Match TimeRecognizer::findTopTimeLabel(const std::vector<Match>& labels) {
-    auto timeMatches = labels | std::views::filter([](const Match& match) {
-        return match.symbol == TIME;
-        });
-    auto topTimeLabel = std::ranges::min(timeMatches, {}, [](const Match& timeMatch) {
+TemplateMatcher::Match TimeRecognizer::findTopTimeLabel(const std::vector<TemplateMatcher::Match>& labels) {
+    auto timeMatches = labels | std::views::filter([](const TemplateMatcher::Match& match) {
+        return match.templateName == TemplateMatcher::TIME;
+    });
+    auto topTimeLabel = std::ranges::min(timeMatches, {}, [](const TemplateMatcher::Match& timeMatch) {
         return timeMatch.location.y;
-        });
+    });
     return topTimeLabel;
 }
 
 
-/* Returns all found positions of a digit. If recalculateBestScale is set to true,
- * goes through different scales of the original frame (see the link below).
+/* Returns all found positions of a template.
+ * Goes through different scales of the original frame (see the link below).
+ * Modifies frame in-place to be scaled to bestScale.
  * Algorithm based on: https://www.pyimagesearch.com/2015/01/26/multi-scale-template-matching-using-python-opencv */
-std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat frame, char symbol, bool recalculateBestScale, bool croppedToGameRect) {
-    const auto& [templateImage, templateMask, opaquePixels] = templates[symbol];
-
+std::vector<TemplateMatcher::Match> TimeRecognizer::calculateBestScaleAndFindMatches(cv::UMat& frame, const std::string& templateName, bool croppedToGameRect) {
     // if we already found the scale, we don't go through different scales
     double minScale, maxScale;
 
-    if (recalculateBestScale && !croppedToGameRect) {
+    if (croppedToGameRect) {
+        minScale = maxScale = 224. * 2 / frame.rows;  // Height should be double the Genesis resolution height
+    } else {
         /* Sega Genesis resolution is 320×224 (height = 224).
-         * We double the size of the template images, so we have to do the same for the resolution. */
+            * We double the size of the template images, so we have to do the same for the resolution. */
         const int minHeight = 200 * 2;
         const int maxHeight = 320 * 2;
         /* 224 / 320 = 0.7
-         * Thus the frame should take at least 70% of stream's height. (80% for safety). */
+            * Thus the frame should take at least 70% of stream's height. (80% for safety). */
         minScale = ((double) minHeight) / frame.rows;
         maxScale = ((double) maxHeight) / frame.rows;
-    } else if (recalculateBestScale) {
-        minScale = maxScale = 224. * 2 / frame.rows;  // Height should be double the Genesis resolution height
-    } else {
-        minScale = maxScale = 1;
     }
 
-    double globalMinSimilarity = getMinSimilarity(symbol);
-    double bestSimilarityForScales = globalMinSimilarity;
+    double bestSimilarityForScales = -1e10;
     // bestSimilarityForScales is used only if recalculateBestScale is true.
 
-    std::vector<Match> matches;  // Pairs: {supposed digit location, similarity coefficient}.
+    std::vector<TemplateMatcher::Match> matches;
+    cv::UMat resizedToBestScale;
 
     for (double scale = maxScale; scale >= minScale; scale *= 0.96) {
         cv::UMat resized;
@@ -380,175 +372,44 @@ std::vector<TimeRecognizer::Match> TimeRecognizer::findSymbolLocations(cv::UMat 
         else
             resized = frame;
 
-        if (resized.cols < templateImage.cols || resized.rows < templateImage.rows)
-            continue;
-        cv::UMat matchResult;
-        cv::matchTemplate(resized, templateImage, matchResult, cv::TM_SQDIFF, templateMask);
+        std::vector<TemplateMatcher::Match> matchesForScale = 
+            templateMatcher.findTemplateLocations(resized, std::vector<std::string>{templateName}, false);
+        if (matchesForScale.empty()) continue;
 
-        if (recalculateBestScale) {
-            double minimumSqdiff;
-            cv::minMaxLoc(matchResult, &minimumSqdiff);
-            double bestSimilarityForScale = -minimumSqdiff / opaquePixels;
-            if (bestSimilarityForScales < bestSimilarityForScale) {
-                bestSimilarityForScales = bestSimilarityForScale;
-                curDigitsLocation.bestScale = scale;
-            }
-            else {
-                // This is not the best scale.
-                continue;
-            }
-        }
-
-        matches.clear();
-
-        cv::UMat matchResultBinary;
-        cv::threshold(matchResult, matchResultBinary, -globalMinSimilarity * opaquePixels, 1, cv::THRESH_BINARY_INV);
-        std::vector<cv::Point> matchPoints;
-        cv::findNonZero(matchResultBinary, matchPoints);
-
-        cv::Mat matchResultRead = matchResult.getMat(cv::ACCESS_READ);
-
-        for (const cv::Point& match : matchPoints) {
-            int x = match.x, y = match.y;
-            /* If the method of template matching is square difference (TM_SQDIFF),
-             * then the lower value is a better match.
-             * We want the higher similarity to be a better match, so we negate the square difference. */
-            double similarity = -matchResultRead.at<float>(y, x) / opaquePixels;
-
-            if (symbol == '1') {
-                // We want the right edge to be aligned with the 8x8 tile of the digit.
-                x += 2;
-            }
-
-            // The frame is resized to the bestScale, so the match rectangle will be different.
-            const double& bestScale = curDigitsLocation.bestScale;
-            cv::Rect2f matchRect((float) (x / bestScale), (float) (y / bestScale),
-                (float) (templateImage.cols / bestScale), (float) (templateImage.rows / bestScale));
-            matches.push_back({matchRect, symbol, similarity});
+        double bestSimilarityForScale =
+            std::ranges::max(matchesForScale | std::views::transform([](const TemplateMatcher::Match& match) { return match.similarity; }));
+        if (bestSimilarityForScales < bestSimilarityForScale) {
+            bestSimilarityForScales = bestSimilarityForScale;
+            curDigitsLocation.bestScale = scale;
+            matches = std::move(matchesForScale);
+            resizedToBestScale = std::move(resized);
         }
     }
 
-    for (Match& match : matches) {
-        match.similarity *= getSimilarityMultiplier(symbol);
+    if (!matches.empty()) {
+        // Save one cv::resize operation by returning its result the caller
+        frame = resizedToBestScale;
     }
+
     return matches;
 }
 
 
-void TimeRecognizer::removeMatchesWithLowSimilarity(std::vector<Match>& matches) {
-    std::erase_if(matches, [&](const Match& match) {
-        double minSimilarity = getMinSimilarity(match.symbol);
-        double similarityMultiplier = getSimilarityMultiplier(match.symbol);
-        return match.similarity / similarityMultiplier < minSimilarity;
-        });
-}
-
-
-void TimeRecognizer::removeOverlappingMatches(std::vector<Match>& matches) {
-    // Sorting the matches by similarity in descending order, and removing the overlapping ones.
-    std::ranges::sort(matches, std::greater<>(), &Match::similarity);
-    std::vector<Match> resultSymbolLocations;
-
-    for (const auto& match : matches) {
-        bool intersectsWithOthers = false;
-
-        for (const Match& other : resultSymbolLocations) {
-            if (std::isdigit(match.symbol) && std::isdigit(other.symbol)) {
-                if (std::abs(match.location.x + match.location.width -
-                    (other.location.x + other.location.width)) * curDigitsLocation.bestScale < 12) {
-                    intersectsWithOthers = true;
-                }
-            }
-            else if (!(match.location & other.location).empty()) {
-                intersectsWithOthers = true;
-            }
-
-            if (intersectsWithOthers)
-                break;
-        }
-
-        if (!intersectsWithOthers)
-            resultSymbolLocations.push_back(match);
-    }
-
-    matches = resultSymbolLocations;
-}
-
-
-void TimeRecognizer::removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches) {
-    if (digitMatches.empty())
-        return;
-    const Match& bestMatch = std::ranges::max(digitMatches, {}, &Match::similarity);
-    const cv::Rect2f& bestMatchLocation = bestMatch.location;
-
-    std::erase_if(digitMatches, [&](const Match& match) {
-        // If the difference in the y coordinates is more than one pixel, we consider it a wrong match.
-        return std::abs(match.location.y - bestMatchLocation.y)
-            * curDigitsLocation.bestScale > 1.5;
-        });
-}
-
-
-double TimeRecognizer::getMinSimilarity(char symbol) const {
-    if (std::isdigit(symbol)) {
-        double baselineMinSimilarity = (settings.isComposite ? -8000 : -7000);
-        /* If a multiplier is present, that means that the symbol tends to get false matches.
-         * Therefore the minimum acceptable similarity is lowered. */
-        double multiplier = getSimilarityMultiplier(symbol);
-        multiplier = std::min(multiplier, 1.5);
-        return baselineMinSimilarity / multiplier;
-    }
-    else {
-        // TIME and SCORE labelMatches.
-        if (settings.isComposite)
-            return -4500;
-        else
-            return -7000;
-    }
-}
-
-
-double TimeRecognizer::getSimilarityMultiplier(char symbol) const {
-    switch (symbol)
-    {
-        // No multiplier by default.
-    default:
-        return 1;
-        // Once again making one a less preferable option.
-    case '1':
-        return 2;
-        // Four is confused with one.
-    case '4':
-        return 1.2;
-        // Seven is confused with one and two.
-    case '7':
-        return 1.15;
-        // Nine is confused with five.
-    case '9':
-        if (settings.isComposite && settings.game != Game::Sonic2)
-            return 1.15;
-        else
-            return 1;
-    }
-}
-
-
-cv::UMat TimeRecognizer::cropToDigitsRect(cv::UMat frame) {
+cv::UMat TimeRecognizer::cropToDigitsRect(const cv::UMat& frame) const {
     // Checking that digitsRect is inside the frame.
     cv::Rect frameRect({0, 0}, frame.size());
     const cv::Rect& digitsRect = curDigitsLocation.digitsRect;
     if ((digitsRect & frameRect) != digitsRect) {
         return {};
     }
-    frame = frame(digitsRect);
-    return frame;
+    return frame(digitsRect);
 }
 
 
-cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
+cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) const {
     if (img.empty())
         return {};
-    img = convertFrameToGray(img);
+    img = TemplateMatcher::convertToGray(img, false);
 
     std::vector<uint8_t> pixels;
     cv::Mat imgMat = img.getMat(cv::ACCESS_READ);
@@ -611,69 +472,16 @@ cv::UMat TimeRecognizer::applyColorCorrection(cv::UMat img) {
 }
 
 
-cv::UMat TimeRecognizer::convertFrameToGray(cv::UMat frame, bool filterYellowColor) {
-    cv::UMat result;
-
-    if (!filterYellowColor) {
-        auto conversionType = (frame.channels() == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY);
-        cv::cvtColor(frame, result, conversionType);
-    }
-    else {
-        /* Getting the yellow color intensity by adding green and red channels (BGR).
-         * TIME and SCORE are yellow, so it's probably a good way to convert a frame to grayscale. */
-        std::vector<cv::UMat> channels(4);
-        cv::split(frame, channels);
-        cv::addWeighted(channels[1], 0.5, channels[2], 0.5, 0, result);
-    }
-
-    result.convertTo(result, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.
-    return result;
-}
-
-
 bool TimeRecognizer::timeIncludesMilliseconds() const {
     return settings.game == Game::SonicCD;
 }
 
 
-void TimeRecognizer::loadAllTemplates(){
-    std::vector<char> symbolsToLoad = {TIME, SCORE};
-    for (char digit = '0'; digit <= '9'; digit++)
-        symbolsToLoad.push_back(digit);
-
-    for (char symbol : symbolsToLoad) {
-        templates[symbol] = loadSymbolTemplate(symbol);
-    }
+cv::Rect TimeRecognizer::scaleAndRound(cv::Rect src, double scale) {
+    return {(int) std::round(src.x * scale), (int) std::round(src.y * scale), 
+        (int) std::round(src.width * scale), (int) std::round(src.height * scale)};
 }
 
-
-std::tuple<cv::UMat, cv::UMat, int> TimeRecognizer::loadSymbolTemplate(char symbol) {
-    cv::UMat image = settings.loadTemplateImageFromFile(symbol);
-    // We double the size of the image, as then matching is more accurate.
-    cv::resize(image, image, {}, 2, 2, cv::INTER_NEAREST);
-
-    bool filterYellowColor = (symbol == TIME || symbol == SCORE);
-    cv::UMat grayImage = convertFrameToGray(image, filterYellowColor);
-
-    cv::UMat templateMask = getAlphaMask(image);
-    int opaquePixels = cv::countNonZero(templateMask);
-
-    return {grayImage, templateMask, opaquePixels};
-}
-
-
-cv::UMat TimeRecognizer::getAlphaMask(cv::UMat image) {
-    std::vector<cv::UMat> channels(4);
-    cv::split(image, channels);
-
-    cv::UMat mask = channels[3];  // Get the alpha channel.
-    cv::threshold(mask, mask, 0, 1.0, cv::THRESH_BINARY);
-    mask.convertTo(mask, CV_32F);  // Converting to CV_32F since matchTemplate does that anyway.
-
-    return mask;
-}
-
-bool TimeRecognizer::Match::operator==(const Match& other) const = default;
 
 }  // namespace IGT
 }  // namespace SonicVisualSplitBase

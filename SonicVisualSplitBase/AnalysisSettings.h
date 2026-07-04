@@ -19,9 +19,7 @@ struct AnalysisSettings {
     bool isComposite;
     bool autoResetEnabled;
 
-    cv::UMat loadTemplateImageFromFile(char symbol) const;
-
-    cv::UMat loadTemplateImageFromFile(std::string filename) const;
+    cv::UMat loadTemplateImageFromFile(const std::string& templateName) const;
 };
 
 }

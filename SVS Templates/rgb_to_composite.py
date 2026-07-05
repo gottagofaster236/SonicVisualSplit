@@ -1,5 +1,6 @@
 from PIL import Image
 import os
+import shutil
 
 game_name = input("Enter game name: (for example, Sonic 1): ")
 directory = f"./{game_name}@RGB"
@@ -9,7 +10,12 @@ os.makedirs(output_directory, exist_ok=True)
 
 for file in os.listdir(directory):
     path = os.path.join(directory, file)
+    output_path = os.path.join(output_directory, file)
     print(path)
+    if not file.split(".")[0].isdigit():
+        shutil.copy(path, output_path)
+        continue
+
     im = Image.open(path)
     im = im.convert('RGBA')
     width, height = im.size
@@ -27,4 +33,4 @@ for file in os.listdir(directory):
                 result = ((pixel1[0] + pixel2[0]) // 2, (pixel1[1] + pixel2[1]) // 2, (pixel1[2] + pixel2[2]) // 2, 255)
             result_im.putpixel((x, y), result)
             
-    result_im.save(os.path.join(output_directory, file))
+    result_im.save(output_path)

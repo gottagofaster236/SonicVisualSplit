@@ -21,7 +21,7 @@ TemplateMatcher::~TemplateMatcher() = default;
 
 
 std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
-    const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord) const {
+    const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord, int splitIndex) const {
     std::vector<Match> matches;
     cv::UMat graySrc, graySrcFilteredYellowColor;
     for (const std::string& templateName : templateNames) {
@@ -30,7 +30,7 @@ std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
         if (correctSrc.empty()) {
             correctSrc = convertToGray(src, filterYellowColor);
         }
-        std::vector<Match> result = findTemplateLocations(correctSrc, templateName, allMatchesHaveSameYCoord);
+        std::vector<Match> result = findTemplateLocations(correctSrc, templateName, allMatchesHaveSameYCoord, splitIndex);
         matches.insert(matches.end(), result.begin(), result.end());
     }
 
@@ -42,7 +42,8 @@ std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
 }
 
 
-std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(const cv::UMat& src, const std::string& templateName, bool allMatchesHaveSameYCoord) const {
+std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
+    const cv::UMat& src, const std::string& templateName, bool allMatchesHaveSameYCoord, int splitIndex) const {
     const Template& templateImage = templates.find(templateName)->second;
     if (src.cols < templateImage.image.cols || src.rows < templateImage.image.rows) {
         return {};
@@ -52,7 +53,7 @@ std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(const
     cv::matchTemplate(src, templateImage.image, matchResult, cv::TM_SQDIFF, templateImage.mask);
 
     cv::UMat matchResultBinary;
-    double globalMinSimilarity = getMinSimilarity(templateName);
+    double globalMinSimilarity = getMinSimilarity(templateName, splitIndex);
     cv::threshold(matchResult, matchResultBinary, -globalMinSimilarity * templateImage.countOpaquePixels, 1, cv::THRESH_BINARY_INV);
     std::vector<cv::Point> matchPoints;
     cv::findNonZero(matchResultBinary, matchPoints);
@@ -76,7 +77,7 @@ std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(const
     }
 
     for (Match& match : matches) {
-        match.similarity *= getSimilarityMultiplier(templateName);
+        match.similarity *= getSimilarityMultiplier(templateName, splitIndex);
     }
     return matches;
 }
@@ -124,25 +125,22 @@ void TemplateMatcher::removeMatchesWithIncorrectYCoord(std::vector<Match>& match
 }
 
 
-double TemplateMatcher::getMinSimilarity(const std::string& templateName) const {
+double TemplateMatcher::getMinSimilarity(const std::string& templateName, int splitIndex) const {
     if (templateName == TIME || templateName == SCORE) {
-        if (settings.isComposite)
-            return -4500;
-        else
-            return -7000;
+        return -7000;
     }
     else {
         double baselineMinSimilarity = (settings.isComposite ? -8000 : -7000);
         /* If a multiplier is present, that means that the template tends to get false matches.
          * Therefore the minimum acceptable similarity is lowered. */
-        double multiplier = getSimilarityMultiplier(templateName);
+        double multiplier = getSimilarityMultiplier(templateName, splitIndex);
         multiplier = std::min(multiplier, 1.5);
         return baselineMinSimilarity / multiplier;
     }
 }
 
 
-double TemplateMatcher::getSimilarityMultiplier(const std::string& templateName) const {
+double TemplateMatcher::getSimilarityMultiplier(const std::string& templateName, int splitIndex) const {
     if (templateName == "1") {
         // Making one a less preferable option.
         return 2;
@@ -158,10 +156,16 @@ double TemplateMatcher::getSimilarityMultiplier(const std::string& templateName)
         } else {
             return 1;
         }
-    } else {
-        // No multiplier by default.
-        return 1;
+    } else if (splitIndex == 3 && settings.game == Game::Sonic2) {
+        // Chemical Plant 2, 3 is recognized as 8 because of the white background
+        if (templateName == "3") {
+            return 0.9;
+        } else if (templateName == "8") {
+            return 1.1;
+        }
     }
+    // No multiplier by default.
+    return 1;
 }
 
 
@@ -186,11 +190,12 @@ cv::UMat TemplateMatcher::convertToGray(const cv::UMat& src, bool filterYellowCo
         auto conversionType = (src.channels() == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY);
         cv::cvtColor(src, result, conversionType);
     } else {
-        /* Getting the yellow color intensity by adding green and red channels (BGR).
+        /* Getting the yellow color intensity by adding green and red channels (BGR) and subtracting blue.
          * TIME and SCORE are yellow, so it's probably a good way to convert a frame to grayscale. */
         std::vector<cv::UMat> channels(4);
         cv::split(src, channels);
         cv::addWeighted(channels[1], 0.5, channels[2], 0.5, 0, result);
+        cv::addWeighted(result, 1.0, channels[0], -0.25, 0, result);
     }
 
     result.convertTo(result, CV_32F);  // Converting to CV_32F since matchTemplate does that anyways.

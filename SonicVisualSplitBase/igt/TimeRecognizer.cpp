@@ -71,7 +71,7 @@ std::vector<TemplateMatcher::Match> TimeRecognizer::recognizeTime
         return allMatches;
     }
 
-    std::vector<TemplateMatcher::Match> digitMatches = templateMatcher.findTemplateLocations(frame, TemplateMatcher::DIGIT_TEMPLATES, true);
+    std::vector<TemplateMatcher::Match> digitMatches = templateMatcher.findTemplateLocations(frame, TemplateMatcher::DIGIT_TEMPLATES, true, currentSplitIndex);
 
     if (checkRecognizedDigits(digitMatches))
         getTimeFromRecognizedDigits(digitMatches, result);
@@ -274,7 +274,7 @@ bool TimeRecognizer::doCheckForScoreScreen(std::vector<TemplateMatcher::Match>& 
     }
     expectedTimeBonusShift *= topTimeLabel.location.height;
 
-    float maxDifference = topTimeLabel.location.height * 3;
+    int maxDifference = topTimeLabel.location.height * 3;
 
     // Make sure that the other TIME matches are valid.
     std::erase_if(timeMatches, [&](const auto& timeMatch) {

@@ -22,7 +22,8 @@ public:
     };
 
     // Note: this already calls convertToGray and sortAndRemoveOverlappingMatches
-    std::vector<Match> findTemplateLocations(const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord) const;
+    std::vector<Match> findTemplateLocations(
+        const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord, int splitIndex = -1) const;
 
     static void sortAndRemoveOverlappingMatches(std::vector<Match>& matches, bool allMatchesHaveSameYCoord);
 
@@ -37,16 +38,16 @@ public:
     static const std::vector<std::string> ALL_TEMPLATES;
 
 private:
-    std::vector<Match> findTemplateLocations(const cv::UMat& src, const std::string& templateName, bool allMatchesHaveSameYCoord) const;
+    std::vector<Match> findTemplateLocations(const cv::UMat& src, const std::string& templateName, bool allMatchesHaveSameYCoord, int splitIndex) const;
 
     void removeMatchesWithIncorrectYCoord(std::vector<Match>& digitMatches) const;
 
     // Returns the minimum acceptable similarity of a template.
-    double getMinSimilarity(const std::string& templateName) const;
+    double getMinSimilarity(const std::string& templateName, int splitIndex) const;
 
     /* Similarity of a template may be multiplied by a coefficient
      * in order to make it a less or more preferable option when choosing between symbols. */
-    double getSimilarityMultiplier(const std::string& templateName) const;
+    double getSimilarityMultiplier(const std::string& templateName, int splitIndex) const;
 
     struct Template {
         cv::UMat image;
@@ -60,7 +61,7 @@ private:
 
     cv::UMat getAlphaMask(const cv::UMat& image) const;
 
-    const AnalysisSettings& settings;
+    const AnalysisSettings settings;
     std::map<std::string, Template> templates;
 };
 

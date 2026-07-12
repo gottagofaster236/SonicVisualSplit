@@ -98,7 +98,7 @@ private:
 
     DigitsLocation curDigitsLocation;
 
-    bool recalculatedBestScaleLastTime;
+    bool recalculatedBestScaleLastTime = false;
 
     std::atomic<DigitsLocation> lastSuccessfulDigitsLocation;
 

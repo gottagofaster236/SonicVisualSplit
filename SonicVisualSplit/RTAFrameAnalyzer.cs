@@ -117,7 +117,10 @@ namespace SonicVisualSplit.RTA
         {
             RunOnUiThreadAsync(() =>
             {
-                model.Pause();
+                if (model.CurrentState.CurrentPhase == TimerPhase.Running)
+                {
+                    model.Pause();
+                }
             });
         }
 
@@ -125,7 +128,10 @@ namespace SonicVisualSplit.RTA
         {
             RunOnUiThreadAsync(() =>
             {
-                model.UndoAllPauses();
+                if (model.CurrentState.CurrentPhase == TimerPhase.Paused)
+                {
+                    model.Pause();
+                }
             });
         }
     }

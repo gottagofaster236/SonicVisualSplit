@@ -25,6 +25,8 @@ public:
     std::vector<Match> findTemplateLocations(
         const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord, int splitIndex = -1) const;
 
+    double getNewSimilarity(const cv::UMat& src, const Match& match, int splitIndex = -1) const;
+
     static void sortAndRemoveOverlappingMatches(std::vector<Match>& matches, bool allMatchesHaveSameYCoord);
 
     /* Converts a frame to grayscale.

@@ -6,21 +6,24 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <array>
+#include <chrono>
+#include <thread>
 
 namespace SonicVisualSplitBase {
 namespace RTA {
 
 // Avoid several consecutive splits at once
 constexpr long long WAIT_AFTER_SPLIT_MS = 3000;
+constexpr long long TIME_BONUS_CHECK_PERIOD_MS = 500;
 constexpr double MIN_BRIGHTNESS_DECREASE_PART = 0.6;
 constexpr double MAX_BRIGHTNESS_INCREASE_PART = 0.15;
 
 using VideoCaptureManager::CapturedFrame;
 
 FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings, TimerCallback& callback) :
-    settings(settings), callback(callback),
-    gameRect{}, gameRectTimestamp(0), lastSplitTime(0), splitIndex(-1), lastResetCheckTime(0),
-    onFrameCapturedListener(*this) {
+    settings(settings), callback(callback), onFrameCapturedListener(*this), 
+    templateMatcher(settings, {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", TemplateMatcher::TIME}) {
     VideoCaptureManager::addOnFrameCapturedListener(onFrameCapturedListener);
 }
 
@@ -68,10 +71,26 @@ bool FrameAnalyzer::isSupportedGame() const {
     return settings.game == Game::Sonic1 || settings.game == Game::Sonic2;
 }
 
+bool FrameAnalyzer::splitWithoutTimeBonus(int splitIndex) const {
+    if (settings.game == Game::Sonic1 && splitIndex == 17)
+    {
+        /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
+         * If it's actually a death, you have to manually undo the split. */
+        return true;
+    } else if (settings.game == Game::Sonic2 && (splitIndex == 17 || splitIndex == 18))
+    {
+        // Same for Sonic 2's Sky Chase and Wing Fortress.
+        return true;
+    }
+    return false;
+}
+
 
 void FrameAnalyzer::reportSplitIndex(int splitIndex) {
     std::lock_guard guard(analysisMutex);
+    if (this->splitIndex == splitIndex) return;
     this->splitIndex = splitIndex;
+    timeBonusState = TimeBonusState::INITIAL;
 }
 
 
@@ -115,8 +134,10 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
             }
             std::lock_guard guard(analysisMutex);
             if (currentFrame.timestamp - lastSplitTime < WAIT_AFTER_SPLIT_MS) return;
+            if (timerStarted && timeBonusState != TimeBonusState::AFTER_TIME_BONUS && !splitWithoutTimeBonus(splitIndex)) return;
             lastSplitTime = currentFrame.timestamp;
             splitIndex++;
+            timeBonusState = TimeBonusState::INITIAL;
         }
 
         if (!timerStarted) {
@@ -125,6 +146,8 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
             callback.split();
         }
     }
+
+    processTimeBonus(currentFrame.frame(gameRect), currentFrame.timestamp);
 }
 
 static cv::UMat calculateIncreasedBrightnessMask(cv::UMat src1, cv::UMat src2, double threshold = 3.0);
@@ -215,7 +238,6 @@ bool FrameAnalyzer::detectGameRectOnSegaScreen(const VideoCaptureManager::Captur
     segaLogo.x += withoutBorders.x;
     segaLogo.y += withoutBorders.y;
     if (segaLogo.empty()) return false;
-    // TODO: this should be Rect2f
     cv::Rect gameRect{
         segaLogo.x - static_cast<int>(std::round(segaLogo.width / 374. * 130.)),
         segaLogo.y - static_cast<int>(std::round(segaLogo.height / 116. * (182. - 16.))),
@@ -262,6 +284,168 @@ bool isTitleScreen(const cv::UMat& gameScreen) {
 }
 
 
+void FrameAnalyzer::processTimeBonus(const cv::UMat& gameRect, long long timestamp) {
+    TimeBonusState timeBonusState;
+    {
+        std::lock_guard guard(analysisMutex);
+        timeBonusState = this->timeBonusState;
+    }
+
+    switch (timeBonusState) {
+    case TimeBonusState::INITIAL:
+        {
+            std::lock_guard guard(analysisMutex);
+            if (timestamp - lastTimeBonusCheckTime < TIME_BONUS_CHECK_PERIOD_MS) return;
+            lastTimeBonusCheckTime = timestamp;
+        }
+        if (hasTimeBonus(gameRect)) {
+            std::lock_guard guard(analysisMutex);
+            if (this->timeBonusState == TimeBonusState::INITIAL) {
+                this->timeBonusState = TimeBonusState::CONFIRM_TIME_BONUS_LABEL;
+            }
+        }
+        break;
+    case TimeBonusState::CONFIRM_TIME_BONUS_LABEL:
+    case TimeBonusState::CONFIRM_TIME_BONUS_POINTS:
+    {
+        std::string lastTimeBonusString;
+        {
+            std::lock_guard guard(analysisMutex);
+            if (timestamp - lastTimeBonusCheckTime < TIME_BONUS_CHECK_PERIOD_MS) return;
+            lastTimeBonusCheckTime = timestamp;
+            lastTimeBonusString = timeBonusString;
+        }
+        bool foundTimeBonusPoints = getTimeBonusPoints(gameRect);
+        bool timeBonusStringChanged;
+        {
+            std::lock_guard guard(analysisMutex);
+            timeBonusStringChanged = timeBonusString != lastTimeBonusString;
+        }
+        {
+            std::lock_guard guard(analysisMutex);
+            if (!foundTimeBonusPoints || (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS && timeBonusStringChanged)) {
+                this->timeBonusState = TimeBonusState::INITIAL;
+            } else if (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_LABEL) {
+                this->timeBonusState = TimeBonusState::CONFIRM_TIME_BONUS_POINTS;
+            } else if (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS) {
+                this->timeBonusState = TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START;
+            }
+        }
+        break;
+    }
+    case TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START:
+    {
+        TemplateMatcher::Match digitMatchToObserve;
+        {
+            std::lock_guard guard(analysisMutex);
+            digitMatchToObserve = this->digitMatchToObserve;
+        }
+        if (templateMatcher.getNewSimilarity(cropToDigitsRect(gameRect), digitMatchToObserve) < 1.1 * digitMatchToObserve.similarity) {
+            {
+                std::lock_guard guard(analysisMutex);
+                if (this->timeBonusState != TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START) break;
+                this->timeBonusState = TimeBonusState::PAUSED_FOR_TIME_BONUS;
+            }
+            pauseForTimeBonus(timeBonusPoints);
+            {
+                std::lock_guard guard(analysisMutex);
+                if (this->timeBonusState == TimeBonusState::PAUSED_FOR_TIME_BONUS) {
+                    this->timeBonusState = TimeBonusState::AFTER_TIME_BONUS;
+                }
+            }
+        }
+        break;
+    }
+    default: {}
+    }
+}
+
+
+static cv::UMat cropGameRectRelative(const cv::UMat& src, int x, int y, int width, int height, bool filterYellowColor);
+
+
+bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
+    // TODO: visualization, maybe save matches to a field?
+    if (!hasTimeBonus(gameRect)) return false;
+
+    cv::UMat digitsRect = cropToDigitsRect(gameRect);
+    std::vector<TemplateMatcher::Match> matches = templateMatcher.findTemplateLocations(digitsRect, TemplateMatcher::DIGIT_TEMPLATES, true);
+    if (matches.empty()) return false;
+
+    std::ranges::sort(matches, {}, [](const TemplateMatcher::Match& match) { return match.location.x; });
+    std::string timeBonusString;
+    for (const TemplateMatcher::Match& match : matches) {
+        timeBonusString += match.templateName;
+    }
+
+    std::vector<std::string> allowedTimeBonuses;
+    if (settings.game == Game::Sonic1) {
+        allowedTimeBonuses = {"50000", "10000", "5000", "4000", "3000", "2000", "1000", "500", "0"};
+    } else {
+        allowedTimeBonuses = {"100000", "50000", "25000", "10000", "5000", "2500", "1000",
+            "900", "800", "700", "600", "500", "400", "300", "200", "100", "0"};
+    }
+    for (const std::string& possibleTimeBonus : allowedTimeBonuses) {
+        if (timeBonusString.ends_with(possibleTimeBonus)) {
+            std::lock_guard guard(analysisMutex);
+            this->timeBonusPoints = std::stoi(possibleTimeBonus);
+            this->timeBonusString = timeBonusString;
+            this->digitMatchToObserve = matches[timeBonusString.size() - possibleTimeBonus.size()];
+            return true;
+        }
+    }
+    return false;
+}
+
+
+cv::UMat FrameAnalyzer::cropToDigitsRect(const cv::UMat& gameRect) const {
+    if (settings.game == Game::Sonic1) {
+        return cropGameRectRelative(gameRect, 382, 230, 102, 30, false);
+    } else {
+        return cropGameRectRelative(gameRect, 412, 222, 104, 30, false);
+    }
+}
+
+
+bool FrameAnalyzer::hasTimeBonus(const cv::UMat& gameRect) const {
+    cv::UMat timeMatchRect;
+    if (settings.game == Game::Sonic1) {
+        timeMatchRect = cropGameRectRelative(gameRect, 158, 230, 70, 30, true);
+    } else {
+        timeMatchRect = cropGameRectRelative(gameRect, 134, 222, 68, 30, true);
+    }
+    return !templateMatcher.findTemplateLocations(timeMatchRect, {TemplateMatcher::TIME}, false).empty();
+}
+
+
+void FrameAnalyzer::pauseForTimeBonus(int timeBonusPoints) {
+    int framesToPause = timeBonusPoints / 100;
+    if (settings.game == Game::Sonic2 && timeBonusPoints >= 1000) {
+        // Add frames for continue
+        framesToPause += 120;
+    }
+    // Sega Genesis has a framerate different from the standard NTSC 59.94 one
+    std::chrono::microseconds pauseDuration{static_cast<long long>(1000 * 1000 * framesToPause / 59.9228)};
+    auto start = std::chrono::steady_clock::now();
+    callback.pauseTimer();
+    std::this_thread::sleep_until(start + pauseDuration);
+    callback.unpauseTimer();
+}
+
+cv::UMat cropGameRectRelative(const cv::UMat& gameRect, int x, int y, int width, int height, bool filterYellowColor) {
+    cv::Rect timeMatchRect = {
+        static_cast<int>(std::round(x * gameRect.cols / 640.)),
+        static_cast<int>(std::round(y * gameRect.rows / 448.)),
+        static_cast<int>(std::round(width * gameRect.cols / 640.)),
+        static_cast<int>(std::round(height * gameRect.rows / 448.)),
+    };
+    cv::UMat cropped = gameRect(timeMatchRect);
+    cropped = TemplateMatcher::convertToGray(cropped, filterYellowColor);  // Convert to gray before resizing
+    cv::resize(cropped, cropped, {width, height}, cv::INTER_AREA);
+    return cropped;
+}
+
+
 FrameAnalyzer::OnFrameCapturedListenerImpl::OnFrameCapturedListenerImpl(FrameAnalyzer& frameAnalyzer) : frameAnalyzer(frameAnalyzer) {}
 
 
@@ -276,7 +460,11 @@ void FrameAnalyzer::OnFrameCapturedListenerImpl::onFrameCaptured(const VideoCapt
 
 
 bool FrameAnalyzer::OnFrameCapturedListenerImpl::needsHighQualityResize() {
-    return false;
+    std::lock_guard guard(frameAnalyzer.analysisMutex);
+    TimeBonusState state = frameAnalyzer.timeBonusState;
+    return state == TimeBonusState::CONFIRM_TIME_BONUS_LABEL ||
+        state == TimeBonusState::CONFIRM_TIME_BONUS_POINTS ||
+        state == TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START;
 }
 
 }  // namespace RTA

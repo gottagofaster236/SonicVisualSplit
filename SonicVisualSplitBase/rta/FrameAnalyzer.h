@@ -1,6 +1,7 @@
 #pragma once
 #include "../AnalysisSettings.h"
 #include "../VideoCaptureManager.h"
+#include "../TemplateMatcher.h"
 #include "ThreadPool.h"
 #include "AnalysisResult.h"
 #include <opencv2/core.hpp>
@@ -41,22 +42,42 @@ private:
     
     bool isSupportedGame() const;
 
+    bool splitWithoutTimeBonus(int splitIndex) const;
+
+    void processTimeBonus(const cv::UMat& gameRect, long long timestamp);
+    bool getTimeBonusPoints(const cv::UMat& gameRect);
+    cv::UMat cropToDigitsRect(const cv::UMat& gameRect) const;
+    bool hasTimeBonus(const cv::UMat& gameRect) const;
+    void pauseForTimeBonus(int timeBonusPoints);
+
     const AnalysisSettings settings;
     TimerCallback& callback;
-    const cv::UMat resetTemplate;
+    const TemplateMatcher templateMatcher;
 
     dp::thread_pool<> analysisThreadPool;
 
+    // Section guarded by frameMutex
     VideoCaptureManager::CapturedFrame currentFrame;
     VideoCaptureManager::CapturedFrame previousFrame;
     std::mutex frameMutex;
 
+    // Section guarded by analysisMutex
     cv::Rect gameRect;
     cv::Size gameRectFrameSize;
-    long long gameRectTimestamp;
-    long long lastSplitTime;
-    int splitIndex;
-    long long lastResetCheckTime;
+    long long gameRectTimestamp = 0;
+
+    long long lastSplitTime = 0;
+    int splitIndex = -1;
+
+    enum class TimeBonusState {
+        INITIAL, CONFIRM_TIME_BONUS_LABEL, CONFIRM_TIME_BONUS_POINTS, WAIT_FOR_COUNTDOWN_TO_START, PAUSED_FOR_TIME_BONUS, AFTER_TIME_BONUS,
+    };
+    TimeBonusState timeBonusState = TimeBonusState::INITIAL;
+    long long lastTimeBonusCheckTime = 0;
+    int timeBonusPoints = 0;
+    std::string timeBonusString;
+    TemplateMatcher::Match digitMatchToObserve;
+
     mutable std::mutex analysisMutex;
 
     class OnFrameCapturedListenerImpl : public VideoCaptureManager::OnFrameCapturedListener {

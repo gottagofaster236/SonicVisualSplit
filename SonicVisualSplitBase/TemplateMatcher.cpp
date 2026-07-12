@@ -83,6 +83,20 @@ std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
 }
 
 
+double TemplateMatcher::getNewSimilarity(const cv::UMat& src, const Match& match, int splitIndex) const {
+    cv::Rect location = match.location;
+    if (match.templateName == "1") {
+        location.x -= 2;  // Undo the change in findTemplateLocations
+    }
+    if (location.x + location.width > src.cols || location.y + location.height > src.rows) return -100000.;
+    const Template& templateImage = templates.find(match.templateName)->second;
+    cv::UMat cropped = src(location);
+    cropped = convertToGray(cropped, shouldFilterYellowColor(match.templateName));
+    double norm = cv::norm(cropped, templateImage.image, cv::NORM_L2SQR, templateImage.mask);
+    return -norm / templateImage.countOpaquePixels * getSimilarityMultiplier(match.templateName, splitIndex);
+}
+
+
 void TemplateMatcher::sortAndRemoveOverlappingMatches(std::vector<Match>& matches, bool allMatchesHaveSameYCoord) {
     // Sorting the matches by similarity in descending order, and removing the overlapping ones.
     std::ranges::sort(matches, std::greater<>(), &Match::similarity);
@@ -214,7 +228,7 @@ cv::UMat TemplateMatcher::getAlphaMask(const cv::UMat& image) const {
 
     cv::UMat mask = channels[3];  // Get the alpha channel.
     cv::threshold(mask, mask, 0, 1.0, cv::THRESH_BINARY);
-    mask.convertTo(mask, CV_32F);  // Converting to CV_32F since matchTemplate does that anyway.
+    mask.convertTo(mask, CV_8U);
 
     return mask;
 }

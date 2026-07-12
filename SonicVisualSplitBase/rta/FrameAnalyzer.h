@@ -50,6 +50,8 @@ private:
     bool hasTimeBonus(const cv::UMat& gameRect) const;
     void pauseForTimeBonus(int timeBonusPoints);
 
+    bool detectRunFinish(const cv::UMat& gameRect) const;
+
     const AnalysisSettings settings;
     TimerCallback& callback;
     const TemplateMatcher templateMatcher;

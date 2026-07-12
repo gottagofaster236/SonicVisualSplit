@@ -30,6 +30,8 @@ FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings, TimerCallback& ca
 
 FrameAnalyzer::~FrameAnalyzer() {
     VideoCaptureManager::removeOnFrameCapturedListener(onFrameCapturedListener);
+    analysisThreadPool.clear_tasks();
+    analysisThreadPool.wait_for_tasks();
 }
 
 
@@ -72,10 +74,9 @@ bool FrameAnalyzer::isSupportedGame() const {
 }
 
 bool FrameAnalyzer::splitWithoutTimeBonus(int splitIndex) const {
-    if (settings.game == Game::Sonic1 && splitIndex == 17)
+    if (settings.game == Game::Sonic1 && (splitIndex == 17 || splitIndex == 18))
     {
-        /* Hack: Sonic 1's Scrap Brain 3 doesn't have the proper transition.
-         * If it's actually a death, you have to manually undo the split. */
+        // Sonic 1's Scrap Brain 3 doesn't have the proper transition. Also, Final Zone just fades to black normally.
         return true;
     } else if (settings.game == Game::Sonic2 && (splitIndex == 17 || splitIndex == 18))
     {
@@ -124,7 +125,9 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
         timerStarted = splitIndex != -1;
     }
 
-    if (detectFade(currentFrame, previousFrame, gameRect)) {
+    bool detectedFade = detectFade(currentFrame, previousFrame, gameRect);
+    bool detectedRunFinish = !detectedFade && detectRunFinish(currentFrame.frame(gameRect));
+    if (detectedFade || detectedRunFinish) {
         {
             if (!timerStarted) {
                 if (!isTitleScreen(previousFrame.frame(gameRect))) return;
@@ -134,7 +137,8 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
             }
             std::lock_guard guard(analysisMutex);
             if (currentFrame.timestamp - lastSplitTime < WAIT_AFTER_SPLIT_MS) return;
-            if (timerStarted && timeBonusState != TimeBonusState::AFTER_TIME_BONUS && !splitWithoutTimeBonus(splitIndex)) return;
+            if (timerStarted && !detectedRunFinish && 
+                timeBonusState != TimeBonusState::AFTER_TIME_BONUS && !splitWithoutTimeBonus(splitIndex)) return;
             lastSplitTime = currentFrame.timestamp;
             splitIndex++;
             timeBonusState = TimeBonusState::INITIAL;
@@ -378,13 +382,7 @@ bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
         timeBonusString += match.templateName;
     }
 
-    std::vector<std::string> allowedTimeBonuses;
-    if (settings.game == Game::Sonic1) {
-        allowedTimeBonuses = {"50000", "10000", "5000", "4000", "3000", "2000", "1000", "500", "0"};
-    } else {
-        allowedTimeBonuses = {"100000", "50000", "25000", "10000", "5000", "2500", "1000",
-            "900", "800", "700", "600", "500", "400", "300", "200", "100", "0"};
-    }
+    const std::vector<std::string> allowedTimeBonuses = {"100000", "50000", "10000", "5000", "4000", "3000", "2000", "1000", "500", "0"};
     for (const std::string& possibleTimeBonus : allowedTimeBonuses) {
         if (timeBonusString.ends_with(possibleTimeBonus)) {
             std::lock_guard guard(analysisMutex);
@@ -432,6 +430,7 @@ void FrameAnalyzer::pauseForTimeBonus(int timeBonusPoints) {
     callback.unpauseTimer();
 }
 
+
 cv::UMat cropGameRectRelative(const cv::UMat& gameRect, int x, int y, int width, int height, bool filterYellowColor) {
     cv::Rect timeMatchRect = {
         static_cast<int>(std::round(x * gameRect.cols / 640.)),
@@ -443,6 +442,19 @@ cv::UMat cropGameRectRelative(const cv::UMat& gameRect, int x, int y, int width,
     cropped = TemplateMatcher::convertToGray(cropped, filterYellowColor);  // Convert to gray before resizing
     cv::resize(cropped, cropped, {width, height}, cv::INTER_AREA);
     return cropped;
+}
+
+
+bool FrameAnalyzer::detectRunFinish(const cv::UMat& gameRect) const {
+    if (settings.game != Game::Sonic2) return false;  // Sonic 1 has a usual fade, no need for special detection.
+    {
+        std::lock_guard lock(analysisMutex);
+        // Death Egg Zone
+        if (splitIndex != 19) return false;
+    }
+    cv::UMat whiteColorMask;
+    cv::inRange(gameRect, cv::Scalar(180, 180, 180), cv::Scalar(255, 255, 255), whiteColorMask);
+    return maskNonZeroPart(whiteColorMask) > 0.7;
 }
 
 

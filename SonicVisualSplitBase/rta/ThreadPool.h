@@ -59,11 +59,11 @@ namespace dp {
                     threads_.emplace_back([&, id = current_id,
                                            init](const std::stop_token& stop_tok) {
                         // invoke the init function on the thread
-                        try {
+                        //try {
                             std::invoke(init, id);
-                        } catch (...) {
-                            // suppress exceptions
-                        }
+                        //} catch (...) {
+                        //    // suppress exceptions
+                        //}
 
                         do {
                             // wait until signaled
@@ -223,8 +223,8 @@ namespace dp {
             enqueue_task(
                 std::move([f = std::forward<Function>(func),
                            ... largs = std::forward<Args>(args)]() mutable -> decltype(auto) {
-                    // suppress exceptions
-                    try {
+                    // // suppress exceptions
+                    //try {
                         if constexpr (std::is_same_v<void,
                                                      std::invoke_result_t<Function&&, Args&&...>>) {
                             std::invoke(f, largs...);
@@ -232,8 +232,8 @@ namespace dp {
                             // the function returns an argument, but can be ignored
                             std::ignore = std::invoke(f, largs...);
                         }
-                    } catch (...) {
-                    }
+                    //} catch (...) {
+                    //}
                 }));
         }
 

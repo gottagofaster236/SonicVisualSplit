@@ -21,7 +21,7 @@ constexpr double MAX_BRIGHTNESS_INCREASE_PART = 0.15;
 
 using VideoCaptureManager::CapturedFrame;
 
-FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings, TimerCallback& callback) :
+FrameAnalyzer::FrameAnalyzer(const AnalysisSettings& settings, Callback& callback) :
     settings(settings), callback(callback), onFrameCapturedListener(*this), 
     templateMatcher(settings, {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", TemplateMatcher::TIME}) {
     VideoCaptureManager::addOnFrameCapturedListener(onFrameCapturedListener);
@@ -105,28 +105,34 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
         return;
     }
 
+    cv::Rect gameRect;
     bool timerStarted;
     {
         std::lock_guard guard(analysisMutex);
         timerStarted = splitIndex != -1;
+        gameRect = this->gameRect;
     }
 
-    if (!timerStarted) {
+    // Re-detect gameRect if there is none, or if timer is reset. Otherwise keep using the same gameRect to avoid slowdown.
+    if (gameRect.empty() || !timerStarted) {
         cv::Rect gameRectOnFade = detectGameRectOnFade(currentFrame, previousFrame);
         if (gameRectOnFade.empty()) return;
-        detectGameRectOnSegaScreen(previousFrame, gameRectOnFade);
+        if (detectGameRectOnSegaScreen(previousFrame, gameRectOnFade)) {
+            if (timerStarted) callback.reset();
+            return;
+        }
     }
 
-    cv::Rect gameRect;
+    cv::UMat currentFrameGameRect;
     {
         std::lock_guard guard(analysisMutex);
         if (this->gameRect.empty() || gameRectFrameSize != previousFrame.frame.size()) return;
         gameRect = this->gameRect;
-        timerStarted = splitIndex != -1;
+        currentFrameGameRect = currentFrame.frame(gameRect);
     }
 
     bool detectedFade = detectFade(currentFrame, previousFrame, gameRect);
-    bool detectedRunFinish = !detectedFade && detectRunFinish(currentFrame.frame(gameRect));
+    bool detectedRunFinish = !detectedFade && detectRunFinish(currentFrameGameRect);
     if (detectedFade || detectedRunFinish) {
         {
             if (!timerStarted) {
@@ -140,8 +146,6 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
             if (timerStarted && !detectedRunFinish && 
                 timeBonusState != TimeBonusState::AFTER_TIME_BONUS && !splitWithoutTimeBonus(splitIndex)) return;
             lastSplitTime = currentFrame.timestamp;
-            splitIndex++;
-            timeBonusState = TimeBonusState::INITIAL;
         }
 
         if (!timerStarted) {
@@ -151,7 +155,8 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
         }
     }
 
-    processTimeBonus(currentFrame.frame(gameRect), currentFrame.timestamp);
+    processTimeBonus(currentFrameGameRect, currentFrame.timestamp);
+    processLevelStart(currentFrameGameRect, currentFrame.timestamp);
 }
 
 static cv::UMat calculateIncreasedBrightnessMask(cv::UMat src1, cv::UMat src2, double threshold = 3.0);
@@ -365,7 +370,9 @@ void FrameAnalyzer::processTimeBonus(const cv::UMat& gameRect, long long timesta
 }
 
 
-static cv::UMat cropGameRectRelative(const cv::UMat& src, int x, int y, int width, int height, bool filterYellowColor);
+static cv::UMat cropGameRectAndResize(const cv::UMat& gameRect, int x, int y, int width, int height, bool filterYellowColor);
+
+static cv::UMat cropGameRect(const cv::UMat& gameRect, int x, int y, int width, int height);
 
 
 bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
@@ -398,9 +405,9 @@ bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
 
 cv::UMat FrameAnalyzer::cropToDigitsRect(const cv::UMat& gameRect) const {
     if (settings.game == Game::Sonic1) {
-        return cropGameRectRelative(gameRect, 382, 230, 102, 30, false);
+        return cropGameRectAndResize(gameRect, 382, 230, 102, 30, false);
     } else {
-        return cropGameRectRelative(gameRect, 412, 222, 104, 30, false);
+        return cropGameRectAndResize(gameRect, 412, 222, 104, 30, false);
     }
 }
 
@@ -408,9 +415,9 @@ cv::UMat FrameAnalyzer::cropToDigitsRect(const cv::UMat& gameRect) const {
 bool FrameAnalyzer::hasTimeBonus(const cv::UMat& gameRect) const {
     cv::UMat timeMatchRect;
     if (settings.game == Game::Sonic1) {
-        timeMatchRect = cropGameRectRelative(gameRect, 158, 230, 70, 30, true);
+        timeMatchRect = cropGameRectAndResize(gameRect, 158, 230, 70, 30, true);
     } else {
-        timeMatchRect = cropGameRectRelative(gameRect, 134, 222, 68, 30, true);
+        timeMatchRect = cropGameRectAndResize(gameRect, 134, 222, 68, 30, true);
     }
     return !templateMatcher.findTemplateLocations(timeMatchRect, {TemplateMatcher::TIME}, false).empty();
 }
@@ -431,17 +438,58 @@ void FrameAnalyzer::pauseForTimeBonus(int timeBonusPoints) {
 }
 
 
-cv::UMat cropGameRectRelative(const cv::UMat& gameRect, int x, int y, int width, int height, bool filterYellowColor) {
+// See cropGameRect
+cv::UMat cropGameRectAndResize(const cv::UMat& gameRect, int x, int y, int width, int height, bool filterYellowColor) {
+    cv::UMat cropped = cropGameRect(gameRect, x, y, width, height);
+    cropped = TemplateMatcher::convertToGray(cropped, filterYellowColor);  // Convert to gray before resizing
+    cv::resize(cropped, cropped, {width, height}, cv::INTER_AREA);
+    return cropped;
+}
+
+
+// Coordinates are on a doubled screenshot of the game without overscan.
+// E.g., take Kega Fusion, File->Save Screenshot, and remove top and bottom overscan: 640x480->640x448 (16 lines from top and bottom)
+cv::UMat cropGameRect(const cv::UMat& gameRect, int x, int y, int width, int height) {
     cv::Rect timeMatchRect = {
         static_cast<int>(std::round(x * gameRect.cols / 640.)),
         static_cast<int>(std::round(y * gameRect.rows / 448.)),
         static_cast<int>(std::round(width * gameRect.cols / 640.)),
         static_cast<int>(std::round(height * gameRect.rows / 448.)),
     };
-    cv::UMat cropped = gameRect(timeMatchRect);
-    cropped = TemplateMatcher::convertToGray(cropped, filterYellowColor);  // Convert to gray before resizing
-    cv::resize(cropped, cropped, {width, height}, cv::INTER_AREA);
-    return cropped;
+    return gameRect(timeMatchRect);
+}
+
+
+void FrameAnalyzer::processLevelStart(const cv::UMat& gameRect, long long timestamp) {
+    cv::UMat croppedRect, previousCroppedRect;
+    bool previousLevelWithoutTimeBonus;
+    {
+        std::lock_guard guard(analysisMutex);
+        bool currentLevelWithoutTimeBonus = splitWithoutTimeBonus(splitIndex);
+        previousLevelWithoutTimeBonus = splitWithoutTimeBonus(splitIndex - 1);
+        if (!currentLevelWithoutTimeBonus && !previousLevelWithoutTimeBonus) return;
+
+        // In Sonic 1, level title is from ~1.27s to 3.36s after fade, Sonic 2: ~1.28s to 2.86s after fade
+        if (!(lastSplitTime + 1800 <= timestamp && timestamp <= lastSplitTime + 2300)) return;
+        if (timestamp - levelStartCroppedTimestamp < WAIT_AFTER_SPLIT_MS) return;
+        if (settings.game == Game::Sonic1) {
+            croppedRect = cropGameRect(gameRect, 340, 184, 142, 56);
+        } else {
+            croppedRect = cropGameRect(gameRect, 410, 112, 153, 32);
+        }
+        previousCroppedRect = levelStartCroppedRect;
+        levelStartCroppedRect = croppedRect;
+        levelStartCroppedTimestamp = timestamp;
+    }
+
+    if (previousLevelWithoutTimeBonus && !croppedRect.empty() && !previousCroppedRect.empty()) {
+        double averageDifference = std::sqrt(
+            cv::norm(croppedRect, previousCroppedRect, cv::NORM_L2SQR) / croppedRect.size().area() / croppedRect.channels());
+        if (averageDifference < 10) {
+            // Looks like it's the same level again. Undo split.
+            callback.undoSplit();
+        }
+    }
 }
 
 

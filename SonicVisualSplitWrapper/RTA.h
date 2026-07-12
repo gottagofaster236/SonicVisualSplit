@@ -14,19 +14,20 @@ public:
     property ErrorReasonEnum ErrorReason;
 };
 
-class TimerCallbackWrapper;
+class CallbackWrapper;
 
 public ref class FrameAnalyzer {
 public:
-    interface class TimerCallback {
+    interface class Callback {
         void StartTimer();
         void Split();
+        void UndoSplit();
         void Reset();
         void PauseTimer();
         void UnpauseTimer();
     };
 
-    FrameAnalyzer(AnalysisSettings^ settings, TimerCallback^ timerCallback);
+    FrameAnalyzer(AnalysisSettings^ settings, Callback^ callback);
 
     ~FrameAnalyzer();
 

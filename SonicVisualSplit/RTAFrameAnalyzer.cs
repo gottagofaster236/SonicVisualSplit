@@ -1,5 +1,4 @@
 ﻿using LiveSplit.Model;
-using LiveSplit.Options;
 using SonicVisualSplitWrapper;
 using System;
 using System.Drawing;
@@ -7,7 +6,7 @@ using static SonicVisualSplit.SonicVisualSplitComponent;
 
 namespace SonicVisualSplit.RTA
 {
-    public class FrameAnalyzer : IDisposable, SonicVisualSplitWrapper.RTA.FrameAnalyzer.TimerCallback
+    public class FrameAnalyzer : IDisposable, SonicVisualSplitWrapper.RTA.FrameAnalyzer.Callback
     {
         private LiveSplitState state;
         private ITimerModel model;
@@ -34,6 +33,7 @@ namespace SonicVisualSplit.RTA
                     nativeFrameAnalyzer?.Dispose();
                     nativeFrameAnalyzer = new SonicVisualSplitWrapper.RTA.FrameAnalyzer(analysisSettings, this);
                 }
+                state.CurrentTimingMethod = LiveSplit.Model.TimingMethod.RealTime;
             }
             else
             {
@@ -102,6 +102,14 @@ namespace SonicVisualSplit.RTA
             RunOnUiThreadAsync(() =>
             {
                 model.Split();
+            });
+        }
+
+        public void UndoSplit()
+        {
+            RunOnUiThreadAsync(() =>
+            {
+                model.UndoSplit();
             });
         }
 

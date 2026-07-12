@@ -7,52 +7,58 @@
 namespace SonicVisualSplitWrapper {
 namespace RTA {
 
-class TimerCallbackWrapper : public SonicVisualSplitBase::RTA::FrameAnalyzer::TimerCallback {
+using namespace System;
+
+class CallbackWrapper : public SonicVisualSplitBase::RTA::FrameAnalyzer::Callback {
 public:
-    TimerCallbackWrapper(FrameAnalyzer^ frameAnalyzer, FrameAnalyzer::TimerCallback^ timerCallback) : 
-        frameAnalyzer(frameAnalyzer), timerCallback(timerCallback) {}
+    CallbackWrapper(FrameAnalyzer^ frameAnalyzer, FrameAnalyzer::Callback^ callback) : 
+        frameAnalyzer(frameAnalyzer), callback(callback) {}
 
     virtual void startTimer() final override {
-        timerCallback->StartTimer();
+        callback->StartTimer();
     }
 
     virtual void split() final override {
-        timerCallback->Split();
+        callback->Split();
+    }
+
+    virtual void undoSplit() final override {
+        callback->UndoSplit();
     }
 
     virtual void reset() final override {
-        timerCallback->Reset();
+        callback->Reset();
     }
 
     virtual void pauseTimer() final override {
-        timerCallback->PauseTimer();
+        callback->PauseTimer();
     }
 
     virtual void unpauseTimer() final override {
-        timerCallback->UnpauseTimer();
+        callback->UnpauseTimer();
     }
 
     virtual void onGameRectUpdated(const cv::Rect& gameRect) final override {
-        frameAnalyzer->GameRect = System::Nullable<System::Drawing::Rectangle>(System::Drawing::Rectangle(gameRect.x, gameRect.y, gameRect.width, gameRect.height));
+        frameAnalyzer->GameRect = Nullable<Drawing::Rectangle>(Drawing::Rectangle(gameRect.x, gameRect.y, gameRect.width, gameRect.height));
     }
 private:
     gcroot<FrameAnalyzer^> frameAnalyzer;
-    gcroot<FrameAnalyzer::TimerCallback^> timerCallback;
+    gcroot<FrameAnalyzer::Callback^> callback;
 };
 
 
-FrameAnalyzer::FrameAnalyzer(AnalysisSettings^ settings, TimerCallback^ timerCallback) : settings(settings) {
-    auto nativeTimerCallback = new TimerCallbackWrapper(this, timerCallback);
-    nativeTimerCallbackPtr = System::IntPtr(nativeTimerCallback);
+FrameAnalyzer::FrameAnalyzer(AnalysisSettings^ settings, Callback^ callback) : settings(settings) {
+    auto nativeTimerCallback = new CallbackWrapper(this, callback);
+    nativeTimerCallbackPtr = IntPtr(nativeTimerCallback);
     auto nativeFrameAnalyzer = new SonicVisualSplitBase::RTA::FrameAnalyzer(
         static_cast<SonicVisualSplitBase::AnalysisSettings>(settings), *nativeTimerCallback);
-    nativeFrameAnalyzerPtr = System::IntPtr(nativeFrameAnalyzer);
+    nativeFrameAnalyzerPtr = IntPtr(nativeFrameAnalyzer);
 }
 
 
 FrameAnalyzer::~FrameAnalyzer() {
     delete static_cast<SonicVisualSplitBase::RTA::FrameAnalyzer*>(nativeFrameAnalyzerPtr.ToPointer());
-    delete static_cast<TimerCallbackWrapper*>(nativeTimerCallbackPtr.ToPointer());
+    delete static_cast<CallbackWrapper*>(nativeTimerCallbackPtr.ToPointer());
 }
 
 

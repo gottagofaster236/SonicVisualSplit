@@ -13,17 +13,18 @@ namespace RTA {
 
 class FrameAnalyzer {
 public:
-    class TimerCallback {
+    class Callback {
     public:
         virtual void startTimer() = 0;
         virtual void split() = 0;
+        virtual void undoSplit() = 0;
         virtual void reset() = 0;
         virtual void pauseTimer() = 0;
         virtual void unpauseTimer() = 0;
         virtual void onGameRectUpdated(const cv::Rect& gameRect) = 0;
     };
 
-    FrameAnalyzer(const AnalysisSettings& settings, TimerCallback& callback);
+    FrameAnalyzer(const AnalysisSettings& settings, Callback& callback);
 
     ~FrameAnalyzer();
 
@@ -43,17 +44,18 @@ private:
     bool isSupportedGame() const;
 
     bool splitWithoutTimeBonus(int splitIndex) const;
-
     void processTimeBonus(const cv::UMat& gameRect, long long timestamp);
     bool getTimeBonusPoints(const cv::UMat& gameRect);
     cv::UMat cropToDigitsRect(const cv::UMat& gameRect) const;
     bool hasTimeBonus(const cv::UMat& gameRect) const;
     void pauseForTimeBonus(int timeBonusPoints);
 
+    void processLevelStart(const cv::UMat& gameRect, long long timestamp);
+
     bool detectRunFinish(const cv::UMat& gameRect) const;
 
     const AnalysisSettings settings;
-    TimerCallback& callback;
+    Callback& callback;
     const TemplateMatcher templateMatcher;
 
     dp::thread_pool<> analysisThreadPool;
@@ -68,8 +70,10 @@ private:
     cv::Size gameRectFrameSize;
     long long gameRectTimestamp = 0;
 
-    long long lastSplitTime = 0;
     int splitIndex = -1;
+    long long lastSplitTime = 0;
+    cv::UMat levelStartCroppedRect;
+    long long levelStartCroppedTimestamp = 0;
 
     enum class TimeBonusState {
         INITIAL, CONFIRM_TIME_BONUS_LABEL, CONFIRM_TIME_BONUS_POINTS, WAIT_FOR_COUNTDOWN_TO_START, PAUSED_FOR_TIME_BONUS, AFTER_TIME_BONUS,

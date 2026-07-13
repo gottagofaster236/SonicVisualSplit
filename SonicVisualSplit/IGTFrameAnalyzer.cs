@@ -63,6 +63,8 @@ namespace SonicVisualSplit.IGT
         private long lastManualResetTime = long.MinValue;
         private bool isPerformingAutomaticReset = false;
 
+        private int splitIndexOnSegmentStart = 0;  // Handle RTA-TB combined with IGT
+
         private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
         private CancellableLoopTask frameAnalysisTask;
         private static readonly TimeSpan FRAME_ANALYSIS_PERIOD = TimeSpan.FromMilliseconds(200);
@@ -115,7 +117,7 @@ namespace SonicVisualSplit.IGT
                     visualize = resultConsumers.Any(resultConsumer => resultConsumer.VisualizeAnalysisResult);
                 }
 
-                bool checkForScoreScreen = (lastFrameTime >= lastScoreScreenCheckFrameTime + 1000);
+                bool checkForScoreScreen = (lastFrameTime >= lastScoreScreenCheckFrameTime + 1000) && settings.TimingMethod == TimingMethod.IGT;
                 if (checkForScoreScreen)
                 {
                     lastScoreScreenCheckFrameTime = lastFrameTime;
@@ -292,6 +294,7 @@ namespace SonicVisualSplit.IGT
         {
             gameTimeOnSegmentStart = gameTime;
             firstFrameTimeOfSegment = result.FrameTime;
+            splitIndexOnSegmentStart = currentSplitIndex;
             needToConfirmFirstFrameOfSegment = true;
             previousResult = result;
 
@@ -338,7 +341,8 @@ namespace SonicVisualSplit.IGT
 
         private void HandleFirstFrameOfTransition(AnalysisResult result)
         {
-            bool isLastSplit = currentSplitIndex == state.Run.Count - 1;
+            bool isLastSplit = currentSplitIndex == state.Run.Count - 1 ||
+                (settings.TimingMethod != TimingMethod.IGT && currentSplitIndex == state.Run.Count);
 
             // In Sonic CD the timer stops before the ending transition, no need to update the time.
             if (result.IsBlackScreen || (result.IsWhiteScreen && isLastSplit && settings.Game != Game.SonicCD))
@@ -347,10 +351,12 @@ namespace SonicVisualSplit.IGT
                  * We find the last frame before the transition to find out the time. */
                 frameBeforeTransition =
                     FindFirstRecognizedFrame(after: false, result.FrameTime, fallback: previousResult);
-                UpdateGameTime(frameBeforeTransition);
+                UpdateGameTime(frameBeforeTransition, updateSplitOnRtaTb: true);
             }
             else
                 frameBeforeTransition = previousResult;
+
+            if (settings.TimingMethod != TimingMethod.IGT) return;
 
             if (isLastSplit && (result.IsWhiteScreen || settings.Game == Game.Sonic1))
             {
@@ -374,30 +380,41 @@ namespace SonicVisualSplit.IGT
             }
         }
 
-        private void UpdateGameTime(AnalysisResult result)
+        private void UpdateGameTime(AnalysisResult result, bool updateSplitOnRtaTb = false)
         {
             gameTime = (result.TimeInMilliseconds - ingameTimerOnSegmentStart) + gameTimeOnSegmentStart;
-            UpdateGameTime(gameTime);
+            UpdateGameTime(gameTime, updateSplitOnRtaTb);
         }
 
-        private void UpdateGameTime(int gameTime)
+        private void UpdateGameTime(int gameTime, bool updateSplitOnRtaTb = false)
         {
+            int splitIndexOnSegmentStart = this.splitIndexOnSegmentStart;
             RunOnUiThreadAsync(() => {
-                if (settings.TimingMethod != TimingMethod.IGT) return;  // TODO: update game time with TimingMethod.COMBINED
                 if (ShouldWaitAfterReset(VideoCaptureManager.GetCurrentTimeInMilliseconds()))
                 {
                     return;
                 }
                 // Make sure the run started and hasn't finished
-                if (currentSplitIndex == -1)
+                if (settings.TimingMethod == TimingMethod.IGT)
                 {
-                    model.Start();
+                    if (currentSplitIndex == -1)
+                    {
+                        model.Start();
+                    }
+                    else if (currentSplitIndex == state.Run.Count)
+                    {
+                        model.UndoSplit();
+                    }
                 }
-                else if (currentSplitIndex == state.Run.Count)
+                TimeSpan gameTimeSpan = TimeSpan.FromMilliseconds(gameTime);
+                state.SetGameTime(gameTimeSpan);
+                if (updateSplitOnRtaTb && settings.TimingMethod != TimingMethod.IGT &&
+                    splitIndexOnSegmentStart != state.CurrentSplitIndex && splitIndexOnSegmentStart < state.Run.Count)
                 {
-                    model.UndoSplit();
+                    Time splitTime = state.Run[splitIndexOnSegmentStart].SplitTime;  // structs are returned by value in C#
+                    splitTime.GameTime = gameTimeSpan;
+                    state.Run[splitIndexOnSegmentStart].SplitTime = splitTime;
                 }
-                state.SetGameTime(TimeSpan.FromMilliseconds(gameTime));
             });
         }
 
@@ -684,6 +701,7 @@ namespace SonicVisualSplit.IGT
                     needToConfirmFirstFrameOfSegment = false;
                     ingameTimerOnLastScoreCheck = -1;
                     frameBeforeTransition = null;
+                    splitIndexOnSegmentStart = 0;
                 }
                 finally
                 {
@@ -694,12 +712,13 @@ namespace SonicVisualSplit.IGT
 
         private void Split()
         {
+            if (settings.TimingMethod != TimingMethod.IGT) return;
             int gameTimeCopy = gameTime;
 
             RunOnUiThreadAsync(() =>
             {
                 UpdateGameTime(gameTimeCopy);
-                model.Split();
+                    model.Split();
             });
         }
 

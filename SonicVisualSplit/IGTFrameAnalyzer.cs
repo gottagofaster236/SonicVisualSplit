@@ -73,11 +73,11 @@ namespace SonicVisualSplit.IGT
 
         private LiveSplitState state;
         private ITimerModel model;
-        private volatile int currentSplitIndex;
+        private volatile int currentSplitIndex = -1;
         private SonicVisualSplitSettings settings;
         public delegate Rectangle? GetGameRect();
         private GetGameRect getGameRect;
-    
+
         public FrameAnalyzer(LiveSplitState state, SonicVisualSplitSettings settings, GetGameRect getGameRect)
         {
             this.state = state;
@@ -766,7 +766,7 @@ namespace SonicVisualSplit.IGT
 
             foreach (var resultConsumer in resultConsumersCopy)
             {
-                resultConsumer.OnFrameAnalyzed(result);
+                resultConsumer.OnAnalysisResult(result);
             }
         }
 
@@ -787,7 +787,7 @@ namespace SonicVisualSplit.IGT
         {
             var emptyResult = new AnalysisResult();
             emptyResult.ErrorReason = ErrorReasonEnum.VIDEO_DISCONNECTED;
-            resultConsumer.OnFrameAnalyzed(emptyResult);
+            resultConsumer.OnAnalysisResult(emptyResult);
         }
 
         public void RemoveResultConsumer(IResultConsumer resultConsumer)
@@ -801,7 +801,7 @@ namespace SonicVisualSplit.IGT
         public interface IResultConsumer
         {
             // Callback to do something with the analysis result.
-            void OnFrameAnalyzed(AnalysisResult result);
+            void OnAnalysisResult(AnalysisResult result);
 
             bool VisualizeAnalysisResult { get; }
         }

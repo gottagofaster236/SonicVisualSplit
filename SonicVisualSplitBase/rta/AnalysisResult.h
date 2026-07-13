@@ -7,13 +7,10 @@
 namespace SonicVisualSplitBase {
 namespace RTA {
 
-enum class ErrorReasonEnum {
-    VIDEO_DISCONNECTED, NO_GAME_RECT, UNSUPPORTED_GAME, NO_ERROR,
-};
-
+// TODO: rework this for RTA-only case
 struct AnalysisResult {
-    cv::Mat visualizedFrame;
-    ErrorReasonEnum errorReason = ErrorReasonEnum::NO_ERROR;
+    long long frameTime = 0;
+    int timeBonusPoints = 0;
 };
 
 }  // namespace RTA

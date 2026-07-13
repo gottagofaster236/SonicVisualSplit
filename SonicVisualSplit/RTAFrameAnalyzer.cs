@@ -1,6 +1,8 @@
 ﻿using LiveSplit.Model;
 using SonicVisualSplitWrapper;
+using SonicVisualSplitWrapper.RTA;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using static SonicVisualSplit.SonicVisualSplitComponent;
 
@@ -11,6 +13,7 @@ namespace SonicVisualSplit.RTA
         private LiveSplitState state;
         private ITimerModel model;
         private SonicVisualSplitSettings settings;
+        private ISet<IResultConsumer> resultConsumers = new HashSet<IResultConsumer>();
 
         private SonicVisualSplitWrapper.RTA.FrameAnalyzer nativeFrameAnalyzer;
 
@@ -18,6 +21,7 @@ namespace SonicVisualSplit.RTA
         {
             model = new TimerModel() { CurrentState = state };
             this.settings = settings;
+            settings.RTAFrameAnalyzer = this;
             settings.SettingsChanged += OnSettingsChanged;
             this.state = state;
             StartObservingCurrentSplitIndex();
@@ -142,5 +146,50 @@ namespace SonicVisualSplit.RTA
                 }
             });
         }
+
+        public void OnAnalysisResult(AnalysisResult result)
+        {
+            /* Copy the result consumers, so that they can
+             * remove themselves from the list during iteration. */
+            List<IResultConsumer> resultConsumersCopy;
+            lock (resultConsumers)
+            {
+                resultConsumersCopy = new List<IResultConsumer>(resultConsumers);
+            }
+
+            foreach (var resultConsumer in resultConsumersCopy)
+            {
+                resultConsumer.OnAnalysisResult(result);
+            }
+        }
+
+        public void AddResultConsumer(IResultConsumer resultConsumer)
+        {
+            lock (resultConsumers)
+            {
+                if (resultConsumers.Contains(resultConsumer))
+                {
+                    return;
+                }
+                resultConsumers.Add(resultConsumer);
+            }
+        }
+
+        public void RemoveResultConsumer(IResultConsumer resultConsumer)
+        {
+            lock (resultConsumers)
+            {
+                resultConsumers.Remove(resultConsumer);
+            }
+        }
+
+        // TODO: rework for RTA-only case
+        public interface IResultConsumer
+        {
+            void OnAnalysisResult(AnalysisResult result);
+        }
+
+        // TODO: properly multiplex two sources of result instead of this
+        public const int RTA_ANALYSIS_RESULT_TIMEOUT = 5000;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using LiveSplit.UI;
 using SonicVisualSplitWrapper;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -18,7 +19,7 @@ namespace SonicVisualSplit
         COMBINED,
     }
 
-    public partial class SonicVisualSplitSettings : UserControl, IGT.FrameAnalyzer.IResultConsumer
+    public partial class SonicVisualSplitSettings : UserControl, IGT.FrameAnalyzer.IResultConsumer, RTA.FrameAnalyzer.IResultConsumer
     {
         public string VideoSource { get; private set; }
         public bool RGB { get; private set; }
@@ -35,7 +36,9 @@ namespace SonicVisualSplit
         public event EventHandler SettingsChanged;
 
         public IGT.FrameAnalyzer IGTFrameAnalyzer { get; set; }
+        public RTA.FrameAnalyzer RTAFrameAnalyzer { get; set; }
         public bool VisualizeAnalysisResult => true;
+        private long rtaAnalysisResultFrameTime = 0;
 
         public VideoSourcesManager VideoSourcesManager { get; set; }
 
@@ -50,17 +53,41 @@ namespace SonicVisualSplit
             Stretched = false;
             Game = Game.Sonic1;
             AutoResetEnabled = true;
-            TimingMethod = TimingMethod.RTA_TB;
+            TimingMethod = TimingMethod.COMBINED;
 
             gamesComboBox.Items.AddRange(
                 ((Game[])Enum.GetValues(typeof(Game)))
                 .Select(Game => ToSettingsString(Game)).ToArray());
             gamesComboBox.SelectedIndex = 0;
 
-            timingMethodComboBox.Items.AddRange(
-                ((TimingMethod[])Enum.GetValues(typeof(TimingMethod)))
-                .Select(TimingMethod => ToSettingsString(TimingMethod)).ToArray());
-            timingMethodComboBox.SelectedIndex = 0;
+            UpdateAllowedTimingMethods();
+        }
+
+        private void UpdateAllowedTimingMethods()
+        {
+            TimingMethod[] allowedTimingMethods;
+            switch (Game)
+            {
+                case Game.Sonic1:
+                case Game.Sonic2:
+                    allowedTimingMethods = new TimingMethod[]{TimingMethod.COMBINED, TimingMethod.IGT};
+                    break;
+                case Game.SonicCD:
+                    allowedTimingMethods = new TimingMethod[]{TimingMethod.IGT};
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            timingMethodComboBox.Items.Clear();
+            timingMethodComboBox.Items.AddRange(allowedTimingMethods.Select(TimingMethod => ToSettingsString(TimingMethod)).ToArray());
+            if (!allowedTimingMethods.Contains(TimingMethod)) {
+                TimingMethod = allowedTimingMethods[0];
+                timingMethodComboBox.SelectedIndex = 0;
+            } 
+            else
+            {
+                timingMethodComboBox.SelectedIndex = timingMethodComboBox.FindStringExact(ToSettingsString(TimingMethod));
+            }
         }
 
         public LayoutMode Mode { get; internal set; }
@@ -152,7 +179,7 @@ namespace SonicVisualSplit
             {
                 TimingMethod = TimingMethod.IGT;  // Keep the same value from before a timing method setting was added
             }
-            timingMethodComboBox.SelectedIndex = (int) TimingMethod;
+            UpdateAllowedTimingMethods();
 
             AutoResetEnabled = SettingsHelper.ParseBool(settings["AutoResetEnabled"], true);
             autoResetCheckbox.Checked = AutoResetEnabled;
@@ -196,12 +223,15 @@ namespace SonicVisualSplit
         private void OnGameChanged(object sender, EventArgs e)
         {
             Game = (Game)gamesComboBox.SelectedIndex;
+            UpdateAllowedTimingMethods();
             OnSettingsChanged();
         }
 
         private void OnTimingMethodChanged(object sender, EventArgs e)
         {
-            TimingMethod = (TimingMethod)timingMethodComboBox.SelectedIndex;
+            Dictionary<string, TimingMethod> timingMethodMapping = ((TimingMethod[])Enum.GetValues(typeof(TimingMethod)))
+                .ToDictionary(TimingMethod => ToSettingsString(TimingMethod));
+            TimingMethod = timingMethodMapping[(string) timingMethodComboBox.SelectedItem];
             OnSettingsChanged();
         }
 
@@ -212,7 +242,7 @@ namespace SonicVisualSplit
         }
 
         // Shows the preview of digits recognition results.
-        public void OnFrameAnalyzed(SonicVisualSplitWrapper.IGT.AnalysisResult result)
+        public void OnAnalysisResult(SonicVisualSplitWrapper.IGT.AnalysisResult result)
         {
             RunOnUiThreadAsync(() =>
             {
@@ -224,6 +254,7 @@ namespace SonicVisualSplit
                 {
                     return;
                 }
+                if (result.FrameTime - rtaAnalysisResultFrameTime < RTA.FrameAnalyzer.RTA_ANALYSIS_RESULT_TIMEOUT) return;
                 gameCapturePreview.Image = result.VisualizedFrame;
                 string resultText = null;
                 LinkArea linkArea = new LinkArea(0, 0);
@@ -237,6 +268,10 @@ namespace SonicVisualSplit
                 else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_TIME_ON_SCREEN)
                 {
                     resultText = "Can't recognize the time.";
+                }
+                else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_GAME_RECT)
+                {
+                    resultText = "Reset game to the SEGA screen for initialization";
                 }
                 else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_ERROR)
                 {
@@ -260,16 +295,42 @@ namespace SonicVisualSplit
                 else
                     textColor = Color.Black;
 
-                float fontSize = resultText.Contains("\n") ? 8.25F : 11.25F;
-                Font font = new Font("Segoe UI", fontSize, FontStyle.Regular, GraphicsUnit.Point, 0);
-
                 if (recognitionResultsLabel.Text != resultText)
                 {
                     // Frequent updates break the LinkLabel. So we check if we actually have to update.
                     recognitionResultsLabel.Text = resultText;
                     recognitionResultsLabel.LinkArea = linkArea;
                     recognitionResultsLabel.ForeColor = textColor;
-                    recognitionResultsLabel.Font = font;
+                    recognitionResultsLabel.Font = GetFont(multiline: resultText.Contains("\n"));
+                }
+            });
+        }
+
+        private Font GetFont(bool multiline)
+        {
+            float fontSize = multiline ? 8.25F : 11.25F;
+            return new Font("Segoe UI", fontSize, FontStyle.Regular, GraphicsUnit.Point, 0);
+        }
+
+        public void OnAnalysisResult(SonicVisualSplitWrapper.RTA.AnalysisResult result)
+        {
+            RunOnUiThreadAsync(() =>
+            {
+                if (!UpdateFrameAnalyzerSubscription())
+                {
+                    return;
+                }
+                if (IsPracticeMode)
+                {
+                    return;
+                }
+                rtaAnalysisResultFrameTime = result.FrameTime;
+                if (result.TimeBonusPoints != 0)
+                {
+                    recognitionResultsLabel.Text = $"{result.TimeBonusPoints} Time Bonus";
+                    recognitionResultsLabel.LinkArea = new LinkArea(0, 0);
+                    recognitionResultsLabel.ForeColor = Color.Green;
+                    recognitionResultsLabel.Font = GetFont(multiline: false);
                 }
             });
         }
@@ -277,6 +338,7 @@ namespace SonicVisualSplit
         private void OnDisposed(object sender, EventArgs e)
         {
             IGTFrameAnalyzer.RemoveResultConsumer(this);
+            RTAFrameAnalyzer.RemoveResultConsumer(this);
         }
 
         private void OnVisibleChanged(object sender, EventArgs e)
@@ -289,11 +351,13 @@ namespace SonicVisualSplit
             if (Visible)
             {
                 IGTFrameAnalyzer.AddResultConsumer(this);
+                RTAFrameAnalyzer.AddResultConsumer(this);
                 return true;
             }
             else
             {
                 IGTFrameAnalyzer.RemoveResultConsumer(this);
+                RTAFrameAnalyzer.RemoveResultConsumer(this);
                 return false;
             }
         }

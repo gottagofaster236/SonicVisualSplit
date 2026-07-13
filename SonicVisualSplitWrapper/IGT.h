@@ -6,7 +6,7 @@ namespace SonicVisualSplitWrapper {
 namespace IGT {
 
 public enum class ErrorReasonEnum {
-    VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_ERROR
+    VIDEO_DISCONNECTED, NO_TIME_ON_SCREEN, NO_GAME_RECT, NO_ERROR
 };
 
 public ref class AnalysisResult {

@@ -13,7 +13,7 @@ using System.Xml;
 
 namespace SonicVisualSplit
 {
-    class SonicVisualSplitComponent : IComponent, IGT.FrameAnalyzer.IResultConsumer
+    class SonicVisualSplitComponent : IComponent, IGT.FrameAnalyzer.IResultConsumer, RTA.FrameAnalyzer.IResultConsumer
     {
         private StyledInfoTextComponent internalComponent;
         private LiveSplitState state;
@@ -21,6 +21,7 @@ namespace SonicVisualSplit
         private IGT.FrameAnalyzer igtFrameAnalyzer;
         private RTA.FrameAnalyzer rtaFrameAnalyzer;
         private VideoSourcesManager videoSourcesManager;
+        private long rtaAnalysisResultFrameTime = 0;
 
         string IComponent.ComponentName => "SonicVisualSplit";
 
@@ -43,6 +44,7 @@ namespace SonicVisualSplit
             igtFrameAnalyzer = new IGT.FrameAnalyzer(state, settings, () => rtaFrameAnalyzer?.GameRect);
             igtFrameAnalyzer.AddResultConsumer(this);
             rtaFrameAnalyzer = new RTA.FrameAnalyzer(state, settings);
+            rtaFrameAnalyzer.AddResultConsumer(this);
             settings.SettingsChanged += OnSettingsChanged;
 
             videoSourcesManager = new VideoSourcesManager(settings);
@@ -70,7 +72,7 @@ namespace SonicVisualSplit
 
         public bool VisualizeAnalysisResult => false;
 
-        public void OnFrameAnalyzed(SonicVisualSplitWrapper.IGT.AnalysisResult result)
+        public void OnAnalysisResult(SonicVisualSplitWrapper.IGT.AnalysisResult result)
         {
             RunOnUiThreadAsync(() =>
             {
@@ -78,6 +80,7 @@ namespace SonicVisualSplit
                 {
                     return;
                 }
+                if (result.FrameTime - rtaAnalysisResultFrameTime < RTA.FrameAnalyzer.RTA_ANALYSIS_RESULT_TIMEOUT) return;
                 if (result.RecognizedTime)
                 {
                     internalComponent.IsTime = true;
@@ -90,9 +93,36 @@ namespace SonicVisualSplit
                     {
                         internalComponent.InformationValue = "Video Disconnected";
                     }
+                    else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_GAME_RECT)
+                    {
+                        internalComponent.InformationValue = "Reset to SEGA screen";
+                    }
                     else
                     {
                         internalComponent.InformationValue = "-";
+                    }
+                }
+            });
+        }
+
+        public void OnAnalysisResult(SonicVisualSplitWrapper.RTA.AnalysisResult result)
+        {
+            RunOnUiThreadAsync(() =>
+            {
+                if (settings.IsPracticeMode)
+                {
+                    return;
+                }
+                rtaAnalysisResultFrameTime = result.FrameTime;
+                if (result.TimeBonusPoints != 0)
+                {
+                    internalComponent.IsTime = false;
+                    if (result.TimeBonusPoints % 1000 == 0)
+                    {
+                        internalComponent.InformationValue = $"{result.TimeBonusPoints / 1000}K Time Bonus";
+                    } else
+                    {
+                        internalComponent.InformationValue = $"{result.TimeBonusPoints} Time Bonus";
                     }
                 }
             });

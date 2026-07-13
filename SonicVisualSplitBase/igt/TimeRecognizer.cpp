@@ -133,11 +133,6 @@ std::chrono::steady_clock::duration TimeRecognizer::getTimeSinceDigitsLocationLa
 }
 
 
-void TimeRecognizer::reportCurrentSplitIndex(int currentSplitIndex) {
-    this->currentSplitIndex = currentSplitIndex;
-}
-
-
 std::vector<TemplateMatcher::Match> TimeRecognizer::findLabelsAndUpdateDigitsRect(const cv::UMat& frame, bool croppedToGameRect) {
     // Template matching for TIME and SCORE is done on the grayscale frame where yellow is white (it's more accurate this way).
     cv::UMat frameWithYellowFilter = TemplateMatcher::convertToGray(frame, true);

@@ -35,40 +35,6 @@ FrameAnalyzer::~FrameAnalyzer() {
 }
 
 
-AnalysisResult FrameAnalyzer::getLastAnalysisResult() {
-    AnalysisResult result;
-
-    CapturedFrame currentFrame;
-    {
-        std::lock_guard guard(frameMutex);
-        currentFrame = this->currentFrame;
-    }
-    if (currentFrame.frame.empty() || VideoCaptureManager::getCurrentTimeInMilliseconds() - currentFrame.timestamp > 5000) {
-        result.errorReason = ErrorReasonEnum::VIDEO_DISCONNECTED;
-    }
-
-    cv::Rect gameRect;
-    {
-        std::lock_guard guard(analysisMutex);
-        gameRect = this->gameRect;
-    }
-
-    currentFrame.frame.copyTo(result.visualizedFrame);
-    if (!gameRect.empty()) {
-        int lineThickness = 1 + result.visualizedFrame.rows / 500;
-        cv::rectangle(result.visualizedFrame, gameRect, cv::Scalar(255, 0, 255), lineThickness);
-    } else if (result.errorReason == ErrorReasonEnum::NO_ERROR) {
-        result.errorReason = ErrorReasonEnum::NO_GAME_RECT;
-    }
-
-    if (!isSupportedGame()) {
-        result.errorReason = ErrorReasonEnum::UNSUPPORTED_GAME;
-    }
-
-    return result;
-}
-
-
 bool FrameAnalyzer::isSupportedGame() const {
     return settings.game == Game::Sonic1 || settings.game == Game::Sonic2;
 }
@@ -118,7 +84,7 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
         cv::Rect gameRectOnFade = detectGameRectOnFade(currentFrame, previousFrame);
         if (gameRectOnFade.empty()) return;
         if (detectGameRectOnSegaScreen(previousFrame, gameRectOnFade)) {
-            if (timerStarted) callback.reset();
+            if (timerStarted && settings.autoResetEnabled) callback.reset();
             return;
         }
     }
@@ -325,20 +291,21 @@ void FrameAnalyzer::processTimeBonus(const cv::UMat& gameRect, long long timesta
             lastTimeBonusString = timeBonusString;
         }
         bool foundTimeBonusPoints = getTimeBonusPoints(gameRect);
-        bool timeBonusStringChanged;
+        int timeBonusPoints = 0;
         {
             std::lock_guard guard(analysisMutex);
-            timeBonusStringChanged = timeBonusString != lastTimeBonusString;
-        }
-        {
-            std::lock_guard guard(analysisMutex);
+            bool timeBonusStringChanged = timeBonusString != lastTimeBonusString;
             if (!foundTimeBonusPoints || (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS && timeBonusStringChanged)) {
                 this->timeBonusState = TimeBonusState::INITIAL;
             } else if (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_LABEL) {
                 this->timeBonusState = TimeBonusState::CONFIRM_TIME_BONUS_POINTS;
             } else if (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS) {
                 this->timeBonusState = TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START;
+                timeBonusPoints = this->timeBonusPoints;
             }
+        }
+        if (timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS && timeBonusPoints != 0) {
+            callback.onAnalysisResult(AnalysisResult(timestamp, timeBonusPoints));
         }
         break;
     }

@@ -22,13 +22,12 @@ public:
         virtual void pauseTimer() = 0;
         virtual void unpauseTimer() = 0;
         virtual void onGameRectUpdated(const cv::Rect& gameRect) = 0;
+        virtual void onAnalysisResult(const AnalysisResult& result) = 0;
     };
 
     FrameAnalyzer(const AnalysisSettings& settings, Callback& callback);
 
     ~FrameAnalyzer();
-
-    AnalysisResult getLastAnalysisResult();
 
     void reportSplitIndex(int splitIndex);
 

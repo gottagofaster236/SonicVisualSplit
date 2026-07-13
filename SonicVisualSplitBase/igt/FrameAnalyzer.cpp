@@ -36,8 +36,10 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
 
     cv::UMat frame;
     if (gameRect.has_value()) {
-        if (gameRect->empty() || gameRect->x + gameRect->width > originalFrame.cols || gameRect->y + gameRect->height > originalFrame.rows) {
-            result.errorReason = ErrorReasonEnum::NO_TIME_ON_SCREEN;
+        bool emptyGameRect = gameRect->empty() || gameRect->x + gameRect->width > originalFrame.cols || gameRect->y + gameRect->height > originalFrame.rows;
+        bool gameNotStarted = timeRecognizer.currentSplitIndex == -1;
+        if (emptyGameRect || gameNotStarted) {
+            result.errorReason = emptyGameRect ? ErrorReasonEnum::NO_GAME_RECT : ErrorReasonEnum::NO_TIME_ON_SCREEN;
             if (visualize)
                 visualizeResult({}, originalFrame, {});
             return result;
@@ -65,7 +67,7 @@ void FrameAnalyzer::resetDigitsLocation() {
 
 
 void FrameAnalyzer::reportCurrentSplitIndex(int currentSplitIndex) {
-    timeRecognizer.reportCurrentSplitIndex(currentSplitIndex);
+    timeRecognizer.currentSplitIndex = currentSplitIndex;
 }
 
 
@@ -258,7 +260,7 @@ void FrameAnalyzer::visualizeResult(
         cv::rectangle(result.visualizedFrame, match.location, cv::Scalar(0, 0, 255), lineThickness);
     }
     if (gameRect.has_value() && !gameRect->empty()) {
-        cv::rectangle(result.visualizedFrame, *gameRect, cv::Scalar(255, 0, 255), lineThickness);
+        cv::rectangle(result.visualizedFrame, *gameRect, cv::Scalar(255, 0, 255), lineThickness * 2);
     }
 }
 

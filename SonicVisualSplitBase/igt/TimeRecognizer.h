@@ -55,9 +55,8 @@ public:
 
     std::chrono::steady_clock::duration getTimeSinceDigitsLocationLastUpdated() const;
 
-    /* Reports the current LiveSplit split index.
-     * Should be up-to-date upon calling recognizeTime(). */
-    void reportCurrentSplitIndex(int currentSplitIndex);
+    // The split index that LiveSplit is currently at.
+    int currentSplitIndex = -1;
 
 private:
     std::vector<TemplateMatcher::Match> findLabelsAndUpdateDigitsRect(const cv::UMat& frame, bool croppedToGameRect);
@@ -106,9 +105,6 @@ private:
 
     // Flag for resetDigitsLocationAsync().
     std::atomic<bool> shouldResetDigitsLocation{false};
-
-    // The split index that LiveSplit is currently at.
-    int currentSplitIndex = -1;
 
     class OnSourceChangedListenerImpl : public VideoCaptureManager::OnSourceChangedListener {
     public:

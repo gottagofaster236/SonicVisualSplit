@@ -41,6 +41,13 @@ public:
     virtual void onGameRectUpdated(const cv::Rect& gameRect) final override {
         frameAnalyzer->GameRect = Nullable<Drawing::Rectangle>(Drawing::Rectangle(gameRect.x, gameRect.y, gameRect.width, gameRect.height));
     }
+
+    virtual void onAnalysisResult(const SonicVisualSplitBase::RTA::AnalysisResult& result) final override {
+        AnalysisResult^ resultConverted = gcnew AnalysisResult();
+        resultConverted->FrameTime = result.frameTime;
+        resultConverted->TimeBonusPoints = result.timeBonusPoints;
+        callback->OnAnalysisResult(resultConverted);
+    }
 private:
     gcroot<FrameAnalyzer^> frameAnalyzer;
     gcroot<FrameAnalyzer::Callback^> callback;
@@ -61,15 +68,6 @@ FrameAnalyzer::~FrameAnalyzer() {
     delete static_cast<CallbackWrapper*>(nativeTimerCallbackPtr.ToPointer());
 }
 
-
-AnalysisResult^ FrameAnalyzer::GetLastAnalysisResult() {
-    auto nativeFrameAnalyzer = static_cast<SonicVisualSplitBase::RTA::FrameAnalyzer*>(nativeFrameAnalyzerPtr.ToPointer());
-    SonicVisualSplitBase::RTA::AnalysisResult result = nativeFrameAnalyzer->getLastAnalysisResult();
-    AnalysisResult^ resultConverted = gcnew AnalysisResult();
-    resultConverted->ErrorReason = static_cast<ErrorReasonEnum>(result.errorReason);
-    resultConverted->VisualizedFrame = toBitmap(result.visualizedFrame);
-    return resultConverted;
-}
 
 void FrameAnalyzer::ReportSplitIndex(int splitIndex) {
     auto nativeFrameAnalyzer = static_cast<SonicVisualSplitBase::RTA::FrameAnalyzer*>(nativeFrameAnalyzerPtr.ToPointer());

@@ -16,7 +16,7 @@ namespace RTA {
 // Avoid several consecutive splits at once
 constexpr long long WAIT_AFTER_SPLIT_MS = 3000;
 constexpr long long TIME_BONUS_CHECK_PERIOD_MS = 300;
-constexpr double MIN_BRIGHTNESS_DECREASE_PART = 0.27;
+constexpr double MIN_BRIGHTNESS_DECREASE_PART = 0.25;
 constexpr double MIN_BRIGHTNESS_DECREASE_PART_WITHOUT_TIME_BONUS = 0.6;
 constexpr double MIN_BRIGHTNESS_DECREASE_PART_SEGA = 0.6;
 constexpr double MAX_BRIGHTNESS_INCREASE_PART = 0.15;
@@ -250,10 +250,12 @@ bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previous
     cv::UMat currentScreen = currentFrame.frame(gameRect);
     cv::UMat previousScreen = previousFrame.frame(gameRect);
     cv::UMat decreasedBrightnessMask = calculateIncreasedBrightnessMask(previousScreen, currentScreen);
-    if (maskNonZeroPart(decreasedBrightnessMask) <
+    double decreasedBrightness = maskNonZeroPart(decreasedBrightnessMask);
+    if (decreasedBrightness <
         (splitWithoutTimeBonus ? MIN_BRIGHTNESS_DECREASE_PART_WITHOUT_TIME_BONUS : MIN_BRIGHTNESS_DECREASE_PART)) return false;
     cv::UMat increasedBrightnessMask = calculateIncreasedBrightnessMask(currentScreen, previousScreen);
-    return maskNonZeroPart(increasedBrightnessMask) < MAX_BRIGHTNESS_INCREASE_PART;
+    double increasedBrightness = maskNonZeroPart(increasedBrightnessMask);
+    return increasedBrightness < MAX_BRIGHTNESS_INCREASE_PART && increasedBrightness < decreasedBrightness / 3.0;
 }
 
 bool isTitleScreen(const cv::UMat& gameScreen) {

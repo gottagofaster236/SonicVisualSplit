@@ -21,9 +21,9 @@ public:
         bool operator==(const Match& other) const;
     };
 
-    // Note: this already calls convertToGray and sortAndRemoveOverlappingMatches
+    // Note: this already calls convertToGray,  and sortAndRemoveOverlappingMatches
     std::vector<Match> findTemplateLocations(
-        const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord, int splitIndex = -1) const;
+        const cv::UMat& src, const std::vector<std::string>& templateNames, bool matchDigits, int splitIndex = -1) const;
 
     double getNewSimilarity(const cv::UMat& src, const Match& match, int splitIndex = -1) const;
 
@@ -62,6 +62,11 @@ private:
     bool shouldFilterYellowColor(const std::string& templateName) const;
 
     cv::UMat getAlphaMask(const cv::UMat& image) const;
+
+    /* Increases the contrast for an image. Returns an empty image on error.
+     * Needed in order to recognize digits better on a frame before a transition
+     * (as the frames before a transition are either too dark or too bright). */
+    cv::UMat applyColorCorrection(const cv::UMat& src, int currentSplitIndex) const;
 
     const AnalysisSettings settings;
     std::map<std::string, Template> templates;

@@ -21,7 +21,7 @@ TemplateMatcher::~TemplateMatcher() = default;
 
 
 std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
-    const cv::UMat& src, const std::vector<std::string>& templateNames, bool allMatchesHaveSameYCoord, int splitIndex) const {
+    const cv::UMat& src, const std::vector<std::string>& templateNames, bool matchDigits, int splitIndex) const {
     std::vector<Match> matches;
     cv::UMat graySrc, graySrcFilteredYellowColor;
     for (const std::string& templateName : templateNames) {
@@ -29,15 +29,19 @@ std::vector<TemplateMatcher::Match> TemplateMatcher::findTemplateLocations(
         cv::UMat& correctSrc = filterYellowColor ? graySrcFilteredYellowColor : graySrc;
         if (correctSrc.empty()) {
             correctSrc = convertToGray(src, filterYellowColor);
+            if (!filterYellowColor && matchDigits) {
+                correctSrc = applyColorCorrection(correctSrc, splitIndex);
+                if (correctSrc.empty()) return {};
+            }
         }
-        std::vector<Match> result = findTemplateLocations(correctSrc, templateName, allMatchesHaveSameYCoord, splitIndex);
+        std::vector<Match> result = findTemplateLocations(correctSrc, templateName, matchDigits, splitIndex);
         matches.insert(matches.end(), result.begin(), result.end());
     }
 
-    if (allMatchesHaveSameYCoord) {
+    if (matchDigits) {
         removeMatchesWithIncorrectYCoord(matches);
     }
-    sortAndRemoveOverlappingMatches(matches, allMatchesHaveSameYCoord);
+    sortAndRemoveOverlappingMatches(matches, matchDigits);
     return matches;
 }
 
@@ -232,6 +236,74 @@ cv::UMat TemplateMatcher::getAlphaMask(const cv::UMat& image) const {
 
     return mask;
 }
+
+
+cv::UMat TemplateMatcher::applyColorCorrection(const cv::UMat& src, int currentSplitIndex) const {
+    cv::UMat img = src;
+    if (img.empty())
+        return {};
+    img = TemplateMatcher::convertToGray(img, false);
+
+    std::vector<uint8_t> pixels;
+    cv::Mat imgMat = img.getMat(cv::ACCESS_READ);
+    for (int y = 0; y < img.rows; y += 2) {
+        for (int x = 0; x < img.cols; x += 2) {
+            pixels.push_back((uint8_t) imgMat.at<float>(y, x));
+        }
+    }
+    std::ranges::sort(pixels);
+
+    const float darkPosition = 0.25f, brightPosition = 0.85f, veryBrightPosition = 0.98f;
+    uint8_t minBrightness = pixels[static_cast<size_t>(pixels.size() * darkPosition)];
+    uint8_t maxBrightness = pixels[static_cast<size_t>(pixels.size() * brightPosition)];
+    uint8_t whiteColor = pixels[static_cast<size_t>(pixels.size() * veryBrightPosition)];
+
+    if (whiteColor < 175) {
+        // The image is too dark. In Sonic games transitions to black are happening after the timer has stopped anyways.
+        return {};
+    }
+
+    // We only need to recognize time before transition to white on Sonic 2's Death Egg.
+    bool recognizeWhiteTransition = (settings.game == Game::Sonic2 && currentSplitIndex == 19);
+
+    if (!recognizeWhiteTransition) {
+        uint8_t maxAcceptableBrightness;
+        if (settings.game == Game::Sonic2) {
+            // Sonic 2's Chemical Plant is white enough, so we accept any brightness.
+            maxAcceptableBrightness = 255;
+        } else if (settings.game == Game::SonicCD && currentSplitIndex == 20) {
+            // In the ending of Sonic CD the screen goes white, and we don't wanna try to recognize that.
+            maxAcceptableBrightness = 90;
+        } else {
+            maxAcceptableBrightness = 180;
+        }
+
+        if (minBrightness > maxAcceptableBrightness)
+            return {};
+        minBrightness = std::min(minBrightness, (uint8_t) 50);
+    }
+    maxBrightness = std::max(maxBrightness, (uint8_t) 210);
+
+    uint8_t difference = maxBrightness - minBrightness;
+    const uint8_t MIN_DIFFERENCE = 4;
+
+    if (difference < MIN_DIFFERENCE) {
+        // This is an almost single-color image, there's no point in increasing the contrast.
+        return {};
+    }
+
+    // Making the minimum brightness equal to 0 and the maximum brightness equal to newMaxBrighteness.
+    const uint8_t newMaxBrightness = 230;  // The maximum brightness for digits.
+    cv::subtract(img, cv::Scalar((float) minBrightness), img);
+    cv::multiply(img, cv::Scalar((float) newMaxBrightness / difference), img);
+
+    // Making sure all pixels are within the range of 0 to newMaxBrightness
+    cv::threshold(img, img, 0, 0, cv::THRESH_TOZERO);
+    cv::threshold(img, img, newMaxBrightness, 0, cv::THRESH_TRUNC);
+
+    return img;
+}
+
 
 bool TemplateMatcher::Match::operator==(const Match& other) const = default;
 

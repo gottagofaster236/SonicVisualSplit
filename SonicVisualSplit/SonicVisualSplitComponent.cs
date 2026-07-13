@@ -114,10 +114,10 @@ namespace SonicVisualSplit
                     return;
                 }
                 rtaAnalysisResultFrameTime = result.FrameTime;
-                if (result.TimeBonusPoints != 0)
+                if (result.TimeBonusPoints != -1)
                 {
                     internalComponent.IsTime = false;
-                    if (result.TimeBonusPoints % 1000 == 0)
+                    if (result.TimeBonusPoints > 0 && result.TimeBonusPoints % 1000 == 0)
                     {
                         internalComponent.InformationValue = $"{result.TimeBonusPoints / 1000}K Time Bonus";
                     } else

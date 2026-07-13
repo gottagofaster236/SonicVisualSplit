@@ -51,7 +51,7 @@ AnalysisResult FrameAnalyzer::analyzeFrame(long long frameTime, bool checkForSco
     }
 
     std::vector<TemplateMatcher::Match> allMatches;
-    if (!checkIfFrameIsSingleColor(frame)) {
+    if (!checkIfFrameIsSingleColor(frame, gameRect.has_value())) {
         allMatches = timeRecognizer.recognizeTime(frame, checkForScoreScreen, gameRect.has_value(), result);
     }
 
@@ -178,9 +178,9 @@ cv::UMat FrameAnalyzer::matchResetTemplates(cv::UMat image, cv::UMat templ) {
 }
 
 
-bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
+bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame, bool hasGameRect) {
     // Checking a rectangle near the digits rectangle.
-    if (timeRecognizer.getTimeSinceDigitsLocationLastUpdated() > std::chrono::seconds(10)) {
+    if (!hasGameRect && timeRecognizer.getTimeSinceDigitsLocationLastUpdated() > std::chrono::seconds(10)) {
         // The rectangle is outdated now.
         return false;
     }
@@ -214,11 +214,10 @@ bool FrameAnalyzer::checkIfFrameIsSingleColor(cv::UMat frame) {
         /* Sonic 2 has a transition where it shows the act name in front of a red/blue background.
          * We just check that there's no white on the screen. */
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
-        double maxBrightness;
-        cv::minMaxLoc(frame, nullptr, &maxBrightness);
-        if (maxBrightness < 120) {
+        cv::UMat brightMask;
+        cv::inRange(frame, cv::Scalar(120), cv::Scalar(255), brightMask);
+        if (cv::mean(brightMask)[0] < 10) {
             result.isBlackScreen = true;
-            return true;
         }
     }
 

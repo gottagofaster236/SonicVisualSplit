@@ -48,7 +48,7 @@ private:
 
     static cv::UMat matchResetTemplates(cv::UMat image, cv::UMat templ);
 
-    bool checkIfFrameIsSingleColor(cv::UMat frame);
+    bool checkIfFrameIsSingleColor(cv::UMat frame, bool hasGameRect);
 
     bool checkIfImageIsSingleColor(cv::UMat img, cv::Scalar color, double maxAvgDifference);
 

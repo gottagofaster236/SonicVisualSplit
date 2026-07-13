@@ -82,6 +82,7 @@ private:
     int timeBonusPoints = 0;
     std::string timeBonusString;
     TemplateMatcher::Match digitMatchToObserve;
+    bool timeBonusDetected = false;
 
     mutable std::mutex analysisMutex;
 

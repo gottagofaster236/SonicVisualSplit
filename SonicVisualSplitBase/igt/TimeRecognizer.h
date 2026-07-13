@@ -82,11 +82,6 @@ private:
     // Crops the frame to the region of interest where the digits are located.
     cv::UMat cropToDigitsRect(const cv::UMat& frame) const;
 
-    /* Increases the contrast for an image. Returns an empty image on error.
-     * Needed in order to recognize digits better on a frame before a transition
-     * (as the frames before a transition are either too dark or too bright). */
-    cv::UMat applyColorCorrection(cv::UMat img) const;
-
     bool timeIncludesMilliseconds() const;
 
     static cv::Rect scaleAndRound(cv::Rect src, double scale);

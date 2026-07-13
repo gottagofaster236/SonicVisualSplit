@@ -121,9 +121,10 @@ namespace SonicVisualSplit.IGT
                 if (checkForScoreScreen)
                 {
                     lastScoreScreenCheckFrameTime = lastFrameTime;
-                }
 
-                if (unsuccessfulStreak >= 3 || (previousResult != null && previousResult.IsBlackScreen))
+                }
+                if (unsuccessfulStreak >= (settings.TimingMethod == TimingMethod.IGT ? 3 : 10) ||
+                    (previousResult != null && previousResult.IsBlackScreen && settings.TimingMethod == TimingMethod.IGT))
                 {
                     nativeFrameAnalyzer.ResetDigitsLocation();
                 }

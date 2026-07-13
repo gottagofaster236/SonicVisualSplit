@@ -325,7 +325,7 @@ namespace SonicVisualSplit
                     return;
                 }
                 rtaAnalysisResultFrameTime = result.FrameTime;
-                if (result.TimeBonusPoints != 0)
+                if (result.TimeBonusPoints != -1)
                 {
                     recognitionResultsLabel.Text = $"{result.TimeBonusPoints} Time Bonus";
                     recognitionResultsLabel.LinkArea = new LinkArea(0, 0);

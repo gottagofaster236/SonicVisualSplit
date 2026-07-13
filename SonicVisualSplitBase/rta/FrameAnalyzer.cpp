@@ -15,8 +15,10 @@ namespace RTA {
 
 // Avoid several consecutive splits at once
 constexpr long long WAIT_AFTER_SPLIT_MS = 3000;
-constexpr long long TIME_BONUS_CHECK_PERIOD_MS = 500;
-constexpr double MIN_BRIGHTNESS_DECREASE_PART = 0.6;
+constexpr long long TIME_BONUS_CHECK_PERIOD_MS = 300;
+constexpr double MIN_BRIGHTNESS_DECREASE_PART = 0.27;
+constexpr double MIN_BRIGHTNESS_DECREASE_PART_WITHOUT_TIME_BONUS = 0.6;
+constexpr double MIN_BRIGHTNESS_DECREASE_PART_SEGA = 0.6;
 constexpr double MAX_BRIGHTNESS_INCREASE_PART = 0.15;
 
 using VideoCaptureManager::CapturedFrame;
@@ -58,10 +60,11 @@ void FrameAnalyzer::reportSplitIndex(int splitIndex) {
     if (this->splitIndex == splitIndex) return;
     this->splitIndex = splitIndex;
     timeBonusState = TimeBonusState::INITIAL;
+    timeBonusDetected = false;
 }
 
 
-static bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame, const cv::Rect& gameRect);
+static bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame, const cv::Rect& gameRect, bool splitWithoutTimeBonus);
 static bool isTitleScreen(const cv::UMat& gameScreen);
 
 
@@ -90,14 +93,16 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
     }
 
     cv::UMat currentFrameGameRect;
+    int splitIndex;
     {
         std::lock_guard guard(analysisMutex);
         if (this->gameRect.empty() || gameRectFrameSize != previousFrame.frame.size()) return;
         gameRect = this->gameRect;
         currentFrameGameRect = currentFrame.frame(gameRect);
+        splitIndex = this->splitIndex;
     }
 
-    bool detectedFade = detectFade(currentFrame, previousFrame, gameRect);
+    bool detectedFade = detectFade(currentFrame, previousFrame, gameRect, splitWithoutTimeBonus(splitIndex));
     bool detectedRunFinish = !detectedFade && detectRunFinish(currentFrameGameRect);
     if (detectedFade || detectedRunFinish) {
         {
@@ -109,8 +114,7 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
             }
             std::lock_guard guard(analysisMutex);
             if (currentFrame.timestamp - lastSplitTime < WAIT_AFTER_SPLIT_MS) return;
-            if (timerStarted && !detectedRunFinish && 
-                timeBonusState != TimeBonusState::AFTER_TIME_BONUS && !splitWithoutTimeBonus(splitIndex)) return;
+            if (timerStarted && !detectedRunFinish && !timeBonusDetected && !splitWithoutTimeBonus(splitIndex)) return;
             lastSplitTime = currentFrame.timestamp;
         }
 
@@ -151,7 +155,7 @@ cv::Rect FrameAnalyzer::detectGameRectOnFade(const CapturedFrame& currentFrame, 
     if (!verifyGameRectAspectRatio(gameRect)) return {};
     if (gameRect.height < currentFrame.frame.rows / 2) return {};
 
-    if (maskNonZeroPart(decreasedBrightnessMask(gameRect)) < MIN_BRIGHTNESS_DECREASE_PART) return {};
+    if (maskNonZeroPart(decreasedBrightnessMask(gameRect)) < MIN_BRIGHTNESS_DECREASE_PART_SEGA) return {};
     cv::UMat gameRectBrightnessIncrease =
         calculateIncreasedBrightnessMask(currentFrame.frame(gameRect), previousFrame.frame(gameRect));
     if (maskNonZeroPart(gameRectBrightnessIncrease) > MAX_BRIGHTNESS_INCREASE_PART) return {};
@@ -195,7 +199,7 @@ bool FrameAnalyzer::detectGameRectOnSegaScreen(const VideoCaptureManager::Captur
         cv::inRange(oldGameScreen, cv::Scalar(180, 0, 0), cv::Scalar(255, 30, 30), blueColorMask);
         break;
     default:
-        cv::inRange(oldGameScreen, cv::Scalar(170, 60, 0), cv::Scalar(255, 130, 30), blueColorMask);
+        cv::inRange(oldGameScreen, cv::Scalar(170, 60, 0), cv::Scalar(255, 150, 30), blueColorMask);
         break;
     }
     if (maskNonZeroPart(blueColorMask) < 0.04) return false;
@@ -242,11 +246,12 @@ bool FrameAnalyzer::verifyGameRectAspectRatio(const cv::Rect& gameRect) const {
 }
 
 
-bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame, const cv::Rect& gameRect) {
+bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame, const cv::Rect& gameRect, bool splitWithoutTimeBonus) {
     cv::UMat currentScreen = currentFrame.frame(gameRect);
     cv::UMat previousScreen = previousFrame.frame(gameRect);
     cv::UMat decreasedBrightnessMask = calculateIncreasedBrightnessMask(previousScreen, currentScreen);
-    if (maskNonZeroPart(decreasedBrightnessMask) < MIN_BRIGHTNESS_DECREASE_PART) return false;
+    if (maskNonZeroPart(decreasedBrightnessMask) <
+        (splitWithoutTimeBonus ? MIN_BRIGHTNESS_DECREASE_PART_WITHOUT_TIME_BONUS : MIN_BRIGHTNESS_DECREASE_PART)) return false;
     cv::UMat increasedBrightnessMask = calculateIncreasedBrightnessMask(currentScreen, previousScreen);
     return maskNonZeroPart(increasedBrightnessMask) < MAX_BRIGHTNESS_INCREASE_PART;
 }
@@ -302,9 +307,10 @@ void FrameAnalyzer::processTimeBonus(const cv::UMat& gameRect, long long timesta
             } else if (this->timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS) {
                 this->timeBonusState = TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START;
                 timeBonusPoints = this->timeBonusPoints;
+                this->timeBonusDetected = true;
             }
         }
-        if (timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS && timeBonusPoints != 0) {
+        if (timeBonusState == TimeBonusState::CONFIRM_TIME_BONUS_POINTS) {
             callback.onAnalysisResult(AnalysisResult(timestamp, timeBonusPoints));
         }
         break;
@@ -312,21 +318,30 @@ void FrameAnalyzer::processTimeBonus(const cv::UMat& gameRect, long long timesta
     case TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START:
     {
         TemplateMatcher::Match digitMatchToObserve;
+        bool fallbackNoCountdown;
         {
             std::lock_guard guard(analysisMutex);
+            fallbackNoCountdown = timestamp - lastTimeBonusCheckTime > 3000;
             digitMatchToObserve = this->digitMatchToObserve;
         }
-        if (templateMatcher.getNewSimilarity(cropToDigitsRect(gameRect), digitMatchToObserve) < 1.1 * digitMatchToObserve.similarity) {
+        if (fallbackNoCountdown ||
+            templateMatcher.getNewSimilarity(cropToDigitsRect(gameRect), digitMatchToObserve) < 1.5 * digitMatchToObserve.similarity - 1000) {
             {
                 std::lock_guard guard(analysisMutex);
                 if (this->timeBonusState != TimeBonusState::WAIT_FOR_COUNTDOWN_TO_START) break;
                 this->timeBonusState = TimeBonusState::PAUSED_FOR_TIME_BONUS;
+                timeBonusPoints = this->timeBonusPoints;
             }
             pauseForTimeBonus(timeBonusPoints);
             {
                 std::lock_guard guard(analysisMutex);
                 if (this->timeBonusState == TimeBonusState::PAUSED_FOR_TIME_BONUS) {
-                    this->timeBonusState = TimeBonusState::AFTER_TIME_BONUS;
+                    if (this->timeBonusPoints != 0) {
+                        this->timeBonusState = TimeBonusState::AFTER_TIME_BONUS;
+                    } else {
+                        // 0 points can be detected erroneously unfortunately
+                        this->timeBonusState = TimeBonusState::INITIAL;
+                    }
                 }
             }
         }
@@ -359,10 +374,13 @@ bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
     const std::vector<std::string> allowedTimeBonuses = {"100000", "50000", "10000", "5000", "4000", "3000", "2000", "1000", "500", "0"};
     for (const std::string& possibleTimeBonus : allowedTimeBonuses) {
         if (timeBonusString.ends_with(possibleTimeBonus)) {
+            TemplateMatcher::Match digitMatchToObserve = matches[timeBonusString.size() - possibleTimeBonus.size()];
+            // Because color correction depends on the whole rect, it's different from getNewSimilarity.
+            digitMatchToObserve.similarity = templateMatcher.getNewSimilarity(digitsRect, digitMatchToObserve);
             std::lock_guard guard(analysisMutex);
             this->timeBonusPoints = std::stoi(possibleTimeBonus);
             this->timeBonusString = timeBonusString;
-            this->digitMatchToObserve = matches[timeBonusString.size() - possibleTimeBonus.size()];
+            this->digitMatchToObserve = digitMatchToObserve;
             return true;
         }
     }
@@ -391,8 +409,9 @@ bool FrameAnalyzer::hasTimeBonus(const cv::UMat& gameRect) const {
 
 
 void FrameAnalyzer::pauseForTimeBonus(int timeBonusPoints) {
+    if (timeBonusPoints == 0) return;
     int framesToPause = timeBonusPoints / 100;
-    if (settings.game == Game::Sonic2 && timeBonusPoints >= 1000) {
+    if (settings.game == Game::Sonic2 && timeBonusPoints >= 10000) {
         // Add frames for continue
         framesToPause += 120;
     }

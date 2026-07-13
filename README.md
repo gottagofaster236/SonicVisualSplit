@@ -1,7 +1,7 @@
 # SonicVisualSplit
 An auto-splitter for classic Sonic games on Sega Genesis, which works from visual input.
 
-Splits Sonic 1, 2, and CD using IGT *(in-game time)*.
+Splits Sonic 1, 2, and CD using RTA-TBC or IGT.
 
 ## Component in action
 ![Component in action](https://user-images.githubusercontent.com/55288842/112757626-355c5300-8ff3-11eb-9f74-655326b7385b.png)
@@ -55,6 +55,11 @@ and change the aspect ratio if for some reason your capture card stretches the i
 - The settings are saved with layout.
 So, click "yes" when LiveSplit will ask you whether you want to save the layout settings at exit.
 
+## Timing methods
+
+If you are running with RTA-TB, then you have to add two timers to your LiveSplit layout, much like with the manual RTA-TB plugin.
+One timer has to use Real Time (RTA-TB), and the other Game Time (IGT). 
+
 ## Practice mode
 The component currently cannot tell whether you just want to practice or start an actual run.
 For that in SVS there's *practice mode*. It temporarily disables the component, so that you can practice the game without the timer running.
@@ -63,27 +68,27 @@ To toggle the practice mode, press <kbd>Ctrl</kbd> + <kbd>P</kbd> (make sure Liv
 Alternatively, you can right-click LiveSplit, select "Control", and click "Toggle practice mode" in the bottom.
 
 ## Known limitations
-- If you die on *Scrap Brain 3* in Sonic 1, or Sonic 2's *Sky Chase* and *Wing Fortress*, you'll have to _undo the split_ manually. The actual time will be correct regardless.
 - In Sonic 2, when you hit the boss, the timer is flashing and SVS fails to recognize that.
 This is fine, it'll recover soon after.
 - You must have one split per each act, and the splits should start from the first act. In particular, SVS is (probably) not usable for multi-game runs.
-
+- Sometimes the pause for time bonus can be triggered early, e.g. if you move the screen by looking up and down. 
+  Since the length of the pause is the same regardless of when it starts, it doesn't actually affect the time you get.
+  
 ## Troubleshooting
-- If the component doesn't reset automatically, it's most likely due to colors on your capture being slightly off. Open up an emulator and see if you can adjust the brightness to the same level.
-
-  Another reason may be that your game aspect ratio is incorrect, make sure the it's either exactly 4:3 or exactly 16:9 in your streaming software.
-
+- If SVS prompts you to reset to SEGA screen repeatedly, check that you set the correct game. 
+  Also, check if your capture video is too dark. If that's the case, adjust it via a filter in your streaming software.
 - If the component fails to read the digits too often,
-check your settings.
-Make sure you selected the correct video mode and the correct game.
-Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB. Make sure the aspect ratio of the game is either exactly 4:3 or exactly 16:9 in your streaming software.<br>
-Note that occasional incorrectly recognized frames are fine, thanks to error detection.
+  check your settings.
+  Make sure you selected the correct video mode and the correct game.
+  Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB. Make sure the aspect ratio of the game is either exactly 4:3 or exactly 16:9 in your streaming software.<br>
+  Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
-make sure the camera stream isn't used by another program.
+  make sure the camera stream isn't used by another program.
+- If you changed your stream layout and moved or resized the game, then reset LiveSplit, and then reset the game.
 - If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).
 - If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
-If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
-at the point where SVS fails would be appreciated.
+  If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
+  at the point where SVS fails would be appreciated.
 
 ## Questions / Suggestions
 If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions). You can also message me [on Discord](https://discordapp.com/users/gottagofaster#3355).

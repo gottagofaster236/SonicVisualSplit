@@ -285,4 +285,30 @@
 			<change>Performance improvements.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.3.0">
+		<files>
+			<file path="Components/SVS Templates.zip" status="changed"/>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplit.dll.config" status="removed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+			<file path="Components/jpeg62.dll" status="changed"/>
+			<file path="Components/liblzma.dll" status="changed"/>
+			<file path="Components/libpng16.dll" status="changed"/>
+			<file path="Components/libsharpyuv.dll" status="changed"/>
+			<file path="Components/libwebp.dll" status="changed"/>
+			<file path="Components/libwebpdecoder.dll" status="changed"/>
+			<file path="Components/libwebpdemux.dll" status="added"/>
+			<file path="Components/libwebpmux.dll" status="added"/>
+			<file path="Components/opencv_core4.dll" status="changed"/>
+			<file path="Components/opencv_imgcodecs4.dll" status="changed"/>
+			<file path="Components/opencv_imgproc4.dll" status="changed"/>
+			<file path="Components/opencv_videoio4.dll" status="added"/>
+			<file path="Components/tiff.dll" status="changed"/>
+			<file path="Components/zlib1.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Experimental RTA-TB support for Sonic 1 and Sonic 2.</change>
+		</changelog>
+	</update>
 </updates>

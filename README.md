@@ -4,7 +4,7 @@ An auto-splitter for classic Sonic games on Sega Genesis, which works from visua
 Splits Sonic 1, 2, and CD using RTA-TBC or IGT.
 
 ## Component in action
-![Component in action](https://user-images.githubusercontent.com/55288842/112757626-355c5300-8ff3-11eb-9f74-655326b7385b.png)
+![Component in action](readme_images/demo.png)
 
 ## System requirements
 Required OS version is **Windows 10/11 64-bit** (May 2019 update or newer).
@@ -24,7 +24,7 @@ and find SonicVisualSplit under the "Control" category.
 ## Setting up video capture
 *Settings page screenshot:*
 
-![Settings page](https://user-images.githubusercontent.com/55288842/135631892-c7b4b861-8318-428a-8927-f723d6daeddd.png)
+![Settings page](readme_images/settings.png)
 
 - To open SonicVisualSplit settings, right-click LiveSplit, click "Edit layout...", click "Layout Settings" at the bottom. Select "SonicVisualSplit" in the top navigation bar.
 
@@ -84,7 +84,8 @@ This is fine, it'll recover soon after.
   Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
   make sure the camera stream isn't used by another program.
-- If you changed your stream layout and moved or resized the game, then reset LiveSplit, and then reset the game.
+- If you changed your stream layout and moved or resized the game, then reset the game, and reset LiveSplit as soon as you see the SEGA screen.
+  You may have to try several times if LiveSplit starts itself up again.
 - If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).
 - If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
   If it's an issue with time recognizing incorrectly, a video or a screenshot of the game

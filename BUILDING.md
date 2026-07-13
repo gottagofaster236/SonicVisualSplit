@@ -11,8 +11,9 @@ Press `Ctrl+S` to save the changes.
 
    ![Start external program illustration](https://user-images.githubusercontent.com/55288842/111886772-65976680-89e1-11eb-9a7c-e9af55dd3b94.png)
 7. Now you're good to go. When you'll click the "Start" button, the build script will copy the build results to `C:/Program Files/LiveSplit/Components`, and LiveSplit will start automatically. If you haven't already, you'll have to follow the steps from [README.md](README.md).
-8. To build a new release of SonicVisualSplit, for now you can just copy the needed files from `%USERPROFILE%/source/repos/gottagofaster236/SonicVisualSplit/SonicVisualSplit/bin/x64/Release`
-and wrap them in a zip archive.
+8. To build a new release of SonicVisualSplit, for now you have to copy the needed files from `%USERPROFILE%/source/repos/gottagofaster236/SonicVisualSplit/SonicVisualSplit/x64/Release`,
+   `%USERPROFILE%/source/repos/gottagofaster236/SonicVisualSplit/SonicVisualSplit/obj/x64/Release` and
+   `%USERPROFILE%/source/repos/gottagofaster236/SonicVisualSplit/SVS Templates` and wrap them in a zip archive.
 
 # Testing
 As of now, testing has been done manually. You can download the test videos from [here](https://drive.google.com/drive/folders/111SibOuORifU7C0-G2OWzS94zCTtKkaV?usp=sharing)

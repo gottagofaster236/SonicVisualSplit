@@ -55,7 +55,11 @@ and change the aspect ratio if for some reason your capture card stretches the i
 - The settings are saved with layout.
 So, click "yes" when LiveSplit will ask you whether you want to save the layout settings at exit.
 
-## Timing methods
+## RTA-TB
+
+If you're converting from manual RTA-TB: the component splits on fadeout, like emulator autosplitter.
+This is in contrast to manual RTA-TB, where you usually split when the time bonus starts ticking down.
+You can take your PB, add it as a video source to OBS, and play it back with LiveSplit running to get proper splits.
 
 If you are running with RTA-TB, then you have to add two timers to your LiveSplit layout, much like with the manual RTA-TB plugin.
 One timer has to use Real Time (RTA-TB), and the other Game Time (IGT). 

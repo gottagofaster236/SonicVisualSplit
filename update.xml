@@ -321,4 +321,14 @@
 			<change>RTA-TB: fix spurious splits.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.3.2">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>RTA-TB: split on fade end for Sonic 1 Final Zone, not on fade begin.</change>
+		</changelog>
+	</update>
 </updates>

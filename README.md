@@ -31,19 +31,16 @@ and find SonicVisualSplit under the "Control" category.
 - If you **don't need to record/stream your runs**, you can just select the your capture card from the video sources dropdown list
 (provided that your video capture cards is detected as a webcam on your computer).
 
-- If you **do want to share your runs**, then you'll have use OBS Studio
-(or alternative streaming software, such as Streamlabs).
-This is due to Windows not allowing two applications to use a webcam simultaneously.
-You'll have to use one of the two methods to set everything up.
-
-   - If you're using OBS, click "Start Virtual Camera" in the bottom right before using SonicVisualSplit. Then select it in the video sources dropdown list in SonicVisualSplit settings.
+- If you **do want to share your runs**, then you'll have use OBS Studio (or alternative streaming software, such as Streamlabs).
+  This is due to Windows not allowing two applications to use a webcam simultaneously.
+  If you're using OBS, click "Start Virtual Camera" in the bottom right before using SonicVisualSplit. Then select it in the video sources dropdown list in SonicVisualSplit settings.
      
-     For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
+  For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      
-     Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
+  Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
  
-    In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
-    that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
+  In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
+  that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.
 - Make sure your capture card outputs an acceptable picture.
    - If your capture card outputs an image that's too dark, you'll have to apply a color correction filter in your streaming software.
      Try increasing gamma/brightness.

@@ -42,7 +42,7 @@ private:
     
     bool isSupportedGame() const;
 
-    bool splitWithoutTimeBonus(int splitIndex) const;
+    bool splitWithoutTimeBonus(int splitIndex, bool includeGameEnding) const;
     void processTimeBonus(const cv::UMat& gameRect, long long timestamp);
     bool getTimeBonusPoints(const cv::UMat& gameRect);
     cv::UMat cropToDigitsRect(const cv::UMat& gameRect) const;
@@ -51,7 +51,7 @@ private:
 
     void processLevelStart(const cv::UMat& gameRect, long long timestamp);
 
-    bool detectRunFinish(const cv::UMat& gameRect) const;
+    bool detectRunFinish(const cv::UMat& gameRect, long long timestamp) const;
 
     const AnalysisSettings settings;
     Callback& callback;

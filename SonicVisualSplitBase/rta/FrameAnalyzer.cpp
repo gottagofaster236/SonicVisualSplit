@@ -41,15 +41,16 @@ bool FrameAnalyzer::isSupportedGame() const {
     return settings.game == Game::Sonic1 || settings.game == Game::Sonic2;
 }
 
-bool FrameAnalyzer::splitWithoutTimeBonus(int splitIndex) const {
-    if (settings.game == Game::Sonic1 && (splitIndex == 17 || splitIndex == 18))
+// includeGameEnding - configurable because it's handled by detectRunFinish normally
+bool FrameAnalyzer::splitWithoutTimeBonus(int splitIndex, bool includeGameEnding) const {
+    if (settings.game == Game::Sonic1)
     {
-        // Sonic 1's Scrap Brain 3 doesn't have the proper transition. Also, Final Zone just fades to black normally.
-        return true;
-    } else if (settings.game == Game::Sonic2 && (splitIndex == 17 || splitIndex == 18))
+        // Sonic 1's Scrap Brain 3 doesn't have the proper transition, neither does Final Zone.
+        return splitIndex == 17 || (includeGameEnding && splitIndex == 18);
+    } else if (settings.game == Game::Sonic2)
     {
-        // Same for Sonic 2's Sky Chase and Wing Fortress.
-        return true;
+        // Same for Sonic 2's Sky Chase and Wing Fortress. Death Egg fades to white so we ignore it here.
+        return splitIndex == 17 || splitIndex == 18;
     }
     return false;
 }
@@ -102,8 +103,8 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
         splitIndex = this->splitIndex;
     }
 
-    bool detectedFade = detectFade(currentFrame, previousFrame, gameRect, splitWithoutTimeBonus(splitIndex));
-    bool detectedRunFinish = !detectedFade && detectRunFinish(currentFrameGameRect);
+    bool detectedFade = detectFade(currentFrame, previousFrame, gameRect, splitWithoutTimeBonus(splitIndex, false));
+    bool detectedRunFinish = !detectedFade && detectRunFinish(currentFrameGameRect, currentFrame.timestamp);
     if (detectedFade || detectedRunFinish) {
         {
             if (!timerStarted) {
@@ -114,7 +115,7 @@ void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const Captur
             }
             std::lock_guard guard(analysisMutex);
             if (currentFrame.timestamp - lastSplitTime < WAIT_AFTER_SPLIT_MS) return;
-            if (timerStarted && !detectedRunFinish && !timeBonusDetected && !splitWithoutTimeBonus(splitIndex)) return;
+            if (timerStarted && !detectedRunFinish && !timeBonusDetected && !splitWithoutTimeBonus(splitIndex, false)) return;
             lastSplitTime = currentFrame.timestamp;
         }
 
@@ -453,8 +454,8 @@ void FrameAnalyzer::processLevelStart(const cv::UMat& gameRect, long long timest
     bool previousLevelWithoutTimeBonus;
     {
         std::lock_guard guard(analysisMutex);
-        bool currentLevelWithoutTimeBonus = splitWithoutTimeBonus(splitIndex);
-        previousLevelWithoutTimeBonus = splitWithoutTimeBonus(splitIndex - 1);
+        bool currentLevelWithoutTimeBonus = splitWithoutTimeBonus(splitIndex, true);
+        previousLevelWithoutTimeBonus = splitWithoutTimeBonus(splitIndex - 1, true);
         if (!currentLevelWithoutTimeBonus && !previousLevelWithoutTimeBonus) return;
 
         // In Sonic 1, level title is from ~1.27s to 3.36s after fade, Sonic 2: ~1.28s to 2.86s after fade
@@ -481,16 +482,25 @@ void FrameAnalyzer::processLevelStart(const cv::UMat& gameRect, long long timest
 }
 
 
-bool FrameAnalyzer::detectRunFinish(const cv::UMat& gameRect) const {
-    if (settings.game != Game::Sonic2) return false;  // Sonic 1 has a usual fade, no need for special detection.
+bool FrameAnalyzer::detectRunFinish(const cv::UMat& gameRect, long long timestamp) const {
+    int lastSplitIndex;
+    if (settings.game == Game::Sonic1) {
+        lastSplitIndex = 18;  // Final Zone
+    } else {
+        lastSplitIndex = 19;  // Death Egg Zone
+    }
     {
         std::lock_guard lock(analysisMutex);
-        // Death Egg Zone
-        if (splitIndex != 19) return false;
+        if (splitIndex != lastSplitIndex) return false;
+        if (timestamp - lastSplitTime < 10000) return false;
     }
-    cv::UMat whiteColorMask;
-    cv::inRange(gameRect, cv::Scalar(180, 180, 180), cv::Scalar(255, 255, 255), whiteColorMask);
-    return maskNonZeroPart(whiteColorMask) > 0.7;
+    cv::UMat mask;
+    if (settings.game == Game::Sonic1) {
+        cv::inRange(gameRect, cv::Scalar(0, 0, 0), cv::Scalar(30, 30, 30), mask);  // Fade to black
+    } else {
+        cv::inRange(gameRect, cv::Scalar(180, 180, 180), cv::Scalar(255, 255, 255), mask);  // Fade to white
+    }
+    return maskNonZeroPart(mask) > 0.95;
 }
 
 

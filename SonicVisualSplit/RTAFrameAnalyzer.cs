@@ -32,7 +32,7 @@ namespace SonicVisualSplit.RTA
             AnalysisSettings analysisSettings = settings.GetAnalysisSettings();
             if (!settings.IsPracticeMode && settings.TimingMethod != TimingMethod.IGT)
             {
-                if (analysisSettings != nativeFrameAnalyzer?.Settings)
+                if (!analysisSettings.Equals(nativeFrameAnalyzer?.Settings))
                 {
                     nativeFrameAnalyzer?.Dispose();
                     nativeFrameAnalyzer = new SonicVisualSplitWrapper.RTA.FrameAnalyzer(analysisSettings, this);
@@ -50,6 +50,7 @@ namespace SonicVisualSplit.RTA
         {
             StopObservingCurrentSplitIndex();
             nativeFrameAnalyzer?.Dispose();
+            settings.SettingsChanged -= OnSettingsChanged;
         }
 
         public Rectangle? GameRect

@@ -604,7 +604,15 @@ namespace SonicVisualSplit.IGT
         {
             frameAnalysisTask.Stop();
 
-            nativeFrameAnalyzer?.FrameStorage.DeleteAllSavedFrames();
+            nativeFrameAnalyzerLock.AcquireReaderLock(Timeout.Infinite);
+            try
+            {
+                nativeFrameAnalyzer?.FrameStorage.DeleteAllSavedFrames();
+            }
+            finally
+            {
+                nativeFrameAnalyzerLock.ReleaseReaderLock();
+            }
 
             state.OnReset -= OnReset;
             OnReset();
@@ -624,7 +632,8 @@ namespace SonicVisualSplit.IGT
             StopAnalyzingFrames();
             resetCheckTask.Stop();
             StopObservingCurrentSplitIndex();
-            nativeFrameAnalyzer?.Dispose();
+            DisposeNativeFrameAnalyzer();
+            settings.SettingsChanged -= OnSettingsChanged;
         }
 
         private void OnSettingsChanged(object sender, EventArgs e)
@@ -637,8 +646,7 @@ namespace SonicVisualSplit.IGT
             {
                 StopAnalyzingFrames();
                 resetCheckTask.Stop();
-                nativeFrameAnalyzer.Dispose();
-                nativeFrameAnalyzer = null;
+                DisposeNativeFrameAnalyzer();
             }
             
             if (settings.AutoResetEnabled && !settings.IsPracticeMode && settings.TimingMethod == TimingMethod.IGT)
@@ -658,7 +666,7 @@ namespace SonicVisualSplit.IGT
             {
                 bool wasAnalyzingFrames = (nativeFrameAnalyzer != null);
                 AnalysisSettings analysisSettings = settings.GetAnalysisSettings();
-                if (analysisSettings != nativeFrameAnalyzer?.Settings)
+                if (!analysisSettings.Equals(nativeFrameAnalyzer?.Settings))
                 {
                     nativeFrameAnalyzer?.Dispose();
                     nativeFrameAnalyzer = new SonicVisualSplitWrapper.IGT.FrameAnalyzer(analysisSettings);
@@ -669,6 +677,20 @@ namespace SonicVisualSplit.IGT
                 {
                     StartAnalyzingFrames();
                 }
+            }
+            finally
+            {
+                nativeFrameAnalyzerLock.ReleaseWriterLock();
+            }
+        }
+
+        private void DisposeNativeFrameAnalyzer()
+        {
+            nativeFrameAnalyzerLock.AcquireWriterLock(Timeout.Infinite);
+            try
+            {
+                nativeFrameAnalyzer?.Dispose();
+                nativeFrameAnalyzer = null;
             }
             finally
             {

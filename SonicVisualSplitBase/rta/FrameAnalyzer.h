@@ -39,6 +39,8 @@ private:
     bool detectGameRectOnSegaScreen(const VideoCaptureManager::CapturedFrame& frame, const cv::Rect& gameRectOnFade);
 
     bool verifyGameRectAspectRatio(const cv::Rect& gameRect) const;
+
+    bool isTitleScreen(const cv::UMat& gameScreen);
     
     bool isSupportedGame() const;
 

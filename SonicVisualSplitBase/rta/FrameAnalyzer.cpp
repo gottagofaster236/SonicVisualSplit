@@ -66,8 +66,6 @@ void FrameAnalyzer::reportSplitIndex(int splitIndex) {
 
 
 static bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame, const cv::Rect& gameRect, bool splitWithoutTimeBonus);
-static bool isTitleScreen(const cv::UMat& gameScreen);
-
 
 void FrameAnalyzer::analyzeFrame(const CapturedFrame& currentFrame, const CapturedFrame& previousFrame) {
     if (!isSupportedGame()) return;
@@ -259,11 +257,18 @@ bool detectFade(const CapturedFrame& currentFrame, const CapturedFrame& previous
     return increasedBrightness < MAX_BRIGHTNESS_INCREASE_PART && increasedBrightness < decreasedBrightness / 3.0;
 }
 
-bool isTitleScreen(const cv::UMat& gameScreen) {
+bool FrameAnalyzer::isTitleScreen(const cv::UMat& gameScreen) {
     // Both Sonic 1 and 2 have red backgrounds behind letters on the title screen.
     cv::UMat redColorMask;
     cv::inRange(gameScreen, cv::Scalar(0, 0, 80), cv::Scalar(30, 30, 240), redColorMask);
-    return maskNonZeroPart(redColorMask) > 0.015;
+    if (maskNonZeroPart(redColorMask) < 0.015) return false;
+    if (settings.game == Game::Sonic2) {
+        // Prevent starting on title screen fading from white to blue if you don't skip it with start
+        cv::UMat blueColorMask;
+        cv::inRange(gameScreen, cv::Scalar(170, 0, 0), cv::Scalar(255, 70, 30), blueColorMask);  // 0.48
+        if (maskNonZeroPart(blueColorMask) < 0.25) return false;
+    }
+    return true;
 }
 
 

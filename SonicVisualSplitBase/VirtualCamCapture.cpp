@@ -20,6 +20,16 @@ cv::UMat VirtualCamCapture::captureFrameImpl() {
     if (!videoCapture.isOpened())
         return {};
     videoCapture >> frame;
+
+    if (frame.empty()) return {};
+    double maxVal = 0;
+    cv::minMaxLoc(frame.reshape(1), nullptr, &maxVal);
+    if (maxVal == 0) {
+        // Sometimes OBS virtual camera may return a completely black frame, restarting capture should fix it.
+        // Return empty frame here and let base VideoCaptureManager handle recreating the capture.
+        return {};
+    }
+
     return frame;
 }
 

@@ -351,4 +351,14 @@
 			<change>Restart virtual cam capture on completely black frame.</change>
 		</changelog>
 	</update>
+
+	<update version="1.3.5">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Better virtual camera reset on black frames.</change>
+		</changelog>
+	</update>
 </updates>

@@ -4,6 +4,7 @@
 #include "VirtualCamCapture.h"
 #include <chrono>
 #include <opencv2/imgproc.hpp>
+#include <thread>
 #define NOMINMAX
 #include <Windows.h>
 
@@ -28,11 +29,17 @@ static std::mutex onFrameCapturedListenersMutex;
 
 void setVideoCapture(int sourceIndex) {
     {
-        std::lock_guard guard(videoCaptureMutex);
+        std::unique_lock lock(videoCaptureMutex);
         if (currentVideoSourceIndex == sourceIndex) {
             // We may want to recreate the VirtualCamCapture if it fails, so we check for that.
-            if (sourceIndex < 0 || videoCapture->getUnsuccessfulFramesStreak() < 60)
+            if (sourceIndex >= 0 && videoCapture->getUnsuccessfulFramesStreak() >= 60) {
+                videoCapture = std::make_unique<NullCapture>();
+                lock.unlock();
+                std::this_thread::sleep_for(2s);  // Give the camera some "rest time" (idk if this helps).
+                lock.lock();
+            } else {
                 return;
+            }
         }
         currentVideoSourceIndex = sourceIndex;
         videoCapture = nullptr;  // destruct old capture before creating new one

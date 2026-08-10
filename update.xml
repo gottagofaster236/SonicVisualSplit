@@ -361,4 +361,29 @@
 			<change>Better virtual camera reset on black frames.</change>
 		</changelog>
 	</update>
+	
+	<update version="1.3.6">
+		<files>
+			<file path="Components/OpenCL.dll" status="added"/>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+			<file path="Components/jpeg62.dll" status="changed"/>
+			<file path="Components/liblzma.dll" status="changed"/>
+			<file path="Components/libpng16.dll" status="changed"/>
+			<file path="Components/libsharpyuv.dll" status="changed"/>
+			<file path="Components/libwebp.dll" status="changed"/>
+			<file path="Components/libwebpdecoder.dll" status="changed"/>
+			<file path="Components/libwebpdemux.dll" status="changed"/>
+			<file path="Components/libwebpmux.dll" status="changed"/>
+			<file path="Components/opencv_core4.dll" status="changed"/>
+			<file path="Components/opencv_imgcodecs4.dll" status="changed"/>
+			<file path="Components/opencv_imgproc4.dll" status="changed"/>
+			<file path="Components/opencv_videoio4.dll" status="changed"/>
+			<file path="Components/tiff.dll" status="changed"/>
+			<file path="Components/z.dll" status="added"/>
+		</files>
+		<changelog>
+			<change>Lower CPU usage by using GPU video acceleration.</change>
+		</changelog>
+	</update>
 </updates>

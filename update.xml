@@ -386,4 +386,14 @@
 			<change>Lower CPU usage by using GPU video acceleration.</change>
 		</changelog>
 	</update>
+
+	<update version="1.3.7">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Bring back "OBS Window Capture".</change>
+		</changelog>
+	</update>
 </updates>

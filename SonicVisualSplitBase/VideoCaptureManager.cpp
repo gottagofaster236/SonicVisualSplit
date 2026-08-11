@@ -1,6 +1,7 @@
 #include "VideoCaptureManager.h"
 #include "VideoCapture.h"
 #include "FairMutex.h"
+#include "ObsWindowCapture.h"
 #include "VirtualCamCapture.h"
 #include <chrono>
 #include <opencv2/imgproc.hpp>
@@ -45,6 +46,8 @@ void setVideoCapture(int sourceIndex) {
         videoCapture = nullptr;  // destruct old capture before creating new one
         if (sourceIndex >= 0)
             videoCapture = std::make_unique<VirtualCamCapture>(sourceIndex);
+        else if (sourceIndex == OBS_WINDOW_CAPTURE)
+            videoCapture = std::make_unique<ObsWindowCapture>();
         else  // NO_VIDEO_CAPTURE
             videoCapture = std::make_unique<NullCapture>();
     }
@@ -60,6 +63,12 @@ long long getCurrentTimeInMilliseconds() {
     long long currentTimeMs = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
     currentTimeMs += (long long)1e9;  // Make that sure that the epoch of this clock is far in the past.
     return currentTimeMs;
+}
+
+
+std::string getVideoDisconnectedReason() {
+    std::lock_guard guard(videoCaptureMutex);
+    return videoCapture->getVideoDisconnectedReason();
 }
 
 

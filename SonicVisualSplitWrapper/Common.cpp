@@ -50,6 +50,10 @@ Int64 VideoCaptureManager::GetCurrentTimeInMilliseconds() {
     return SonicVisualSplitBase::VideoCaptureManager::getCurrentTimeInMilliseconds();
 }
 
+String^ VideoCaptureManager::GetVideoDisconnectedReason() {
+    return gcnew String(SonicVisualSplitBase::VideoCaptureManager::getVideoDisconnectedReason().c_str());
+}
+
 
 List<String^>^ VirtualCamCapture::GetVideoDevicesList() {
     std::vector<std::wstring> devices = SonicVisualSplitBase::VirtualCamCapture::getVideoDevicesList();

@@ -13,9 +13,13 @@ constexpr int MAX_ACCEPTABLE_FRAME_HEIGHT = 640;
 void setVideoCapture(int sourceIndex);
 
 const int NO_VIDEO_CAPTURE = -1;  // No video capture is needed
+const int OBS_WINDOW_CAPTURE = -2;  // Capture the stream preview from currently opened OBS window.
 
 // Gets a time in milliseconds since a certain time point.
 long long getCurrentTimeInMilliseconds();
+
+// Returns the reason why the video is currently disconnected, or an empty string if not available.
+std::string getVideoDisconnectedReason();
 
 class OnSourceChangedListener {
 public:

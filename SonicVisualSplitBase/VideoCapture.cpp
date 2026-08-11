@@ -14,6 +14,11 @@ cv::UMat VideoCapture::captureFrame() {
 }
 
 
+std::string VideoCapture::getVideoDisconnectedReason() {
+    return std::string();
+}
+
+
 int VideoCapture::getUnsuccessfulFramesStreak() {
     return unsuccessfulFramesStreak;
 }

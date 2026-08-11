@@ -36,7 +36,9 @@ public:
 
     static System::Int64 GetCurrentTimeInMilliseconds();
 
-    literal int NO_VIDEO_CAPTURE = -1;
+    static System::String^ GetVideoDisconnectedReason();
+
+    literal int NO_VIDEO_CAPTURE = -1, OBS_WINDOW_CAPTURE = -2;
 };
 
 

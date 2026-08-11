@@ -37,7 +37,10 @@ and find SonicVisualSplit under the "Control" category.
      
   For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      
-  Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
+     Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
+   - If you're an OBS user, you have another option that is less intensive on the CPU. You can simply choose "OBS Window Capture" from the video sources dropdown list.
+     SonicVisualSplit will get the video by capturing screenshots of the opened OBS Studio window.
+     However, if your resize the OBS window, then you have to reset LiveSplit, and then reset the game (all while LiveSplit is reset) to repeat initialization.
  
   In order for SonicVisualSplit to recognize the time on screen correctly, you have to make sure
   that the **<ins>game capture takes at least 80% of the height</ins>** of your stream layout.

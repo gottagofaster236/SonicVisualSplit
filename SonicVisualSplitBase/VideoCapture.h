@@ -1,6 +1,7 @@
 #pragma once
 #include <opencv2/core.hpp>
 #include <chrono>
+#include <string>
 
 
 namespace SonicVisualSplitBase {
@@ -14,6 +15,8 @@ public:
 
     // Gets the duration of time to wait before capturing the next frame.
     virtual std::chrono::milliseconds getDelayAfterLastFrame() = 0;
+
+    virtual std::string getVideoDisconnectedReason();
 
     int getUnsuccessfulFramesStreak();
 

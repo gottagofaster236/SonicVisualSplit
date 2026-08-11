@@ -69,6 +69,21 @@
     <ClInclude Include="TemplateMatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="capture.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="composition.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="direct3d11.interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObsWindowCapture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowCapture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoCaptureManager.cpp">
@@ -96,6 +111,12 @@
       <Filter>Source Files\igt</Filter>
     </ClCompile>
     <ClCompile Include="TemplateMatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ObsWindowCapture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

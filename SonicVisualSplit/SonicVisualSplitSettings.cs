@@ -261,9 +261,18 @@ namespace SonicVisualSplit
 
                 if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.VIDEO_DISCONNECTED)
                 {
-                    resultText = "Video disconnected. Read more at this link.";
-                    linkArea.Start = resultText.Length - 10;
-                    linkArea.Length = 9;
+                    resultText = "Video disconnected. ";
+                    var videoDisconnectedReason = VideoCaptureManager.GetVideoDisconnectedReason();
+                    if (string.IsNullOrEmpty(videoDisconnectedReason))
+                    {
+                        resultText += "Read more at this link.";
+                        linkArea.Start = resultText.Length - 10;
+                        linkArea.Length = 9;
+                    }
+                    else
+                    {
+                        resultText += videoDisconnectedReason;
+                    }
                 }
                 else if (result.ErrorReason == SonicVisualSplitWrapper.IGT.ErrorReasonEnum.NO_TIME_ON_SCREEN)
                 {

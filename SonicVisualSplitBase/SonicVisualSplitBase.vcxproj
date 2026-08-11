@@ -12,11 +12,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnalysisSettings.h" />
+    <ClInclude Include="capture.interop.h" />
+    <ClInclude Include="composition.interop.h" />
+    <ClInclude Include="direct3d11.interop.h" />
     <ClInclude Include="FairMutex.h" />
     <ClInclude Include="igt\AnalysisResult.h" />
     <ClInclude Include="igt\FrameAnalyzer.h" />
     <ClInclude Include="igt\FrameStorage.h" />
     <ClInclude Include="igt\TimeRecognizer.h" />
+    <ClInclude Include="ObsWindowCapture.h" />
     <ClInclude Include="rta\AnalysisResult.h" />
     <ClInclude Include="rta\FrameAnalyzer.h" />
     <ClInclude Include="rta\ThreadPool.h" />
@@ -25,17 +29,20 @@
     <ClInclude Include="VideoCapture.h" />
     <ClInclude Include="VideoCaptureManager.h" />
     <ClInclude Include="VirtualCamCapture.h" />
+    <ClInclude Include="WindowCapture.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AnalysisSettings.cpp" />
     <ClCompile Include="igt\FrameAnalyzer.cpp" />
     <ClCompile Include="igt\FrameStorage.cpp" />
     <ClCompile Include="igt\TimeRecognizer.cpp" />
+    <ClCompile Include="ObsWindowCapture.cpp" />
     <ClCompile Include="rta\FrameAnalyzer.cpp" />
     <ClCompile Include="TemplateMatcher.cpp" />
     <ClCompile Include="VideoCapture.cpp" />
     <ClCompile Include="VideoCaptureManager.cpp" />
     <ClCompile Include="VirtualCamCapture.cpp" />
+    <ClCompile Include="WindowCapture.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

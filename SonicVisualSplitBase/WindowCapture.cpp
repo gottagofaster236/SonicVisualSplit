@@ -38,8 +38,9 @@ WindowCapture::WindowCapture(HWND hwnd) : hwnd(hwnd) {
         lastSize = item.Size();
         framePool = winrt::Direct3D11CaptureFramePool::Create(direct3DDevice, PIXEL_FORMAT, 2, lastSize);
         session = framePool.CreateCaptureSession(item);
-        session.IsBorderRequired(false);
-        session.IsCursorCaptureEnabled(false);
+        // Older Windows 10 versions are missing these WinRT functions
+        try { session.IsBorderRequired(false); } catch (...) {}
+        try { session.IsCursorCaptureEnabled(false); } catch (...) {}
         frameArrivedRevoker = framePool.FrameArrived(winrt::auto_revoke, {this, &WindowCapture::onFrameArrived});
         session.StartCapture();
     });

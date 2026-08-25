@@ -144,11 +144,11 @@ void TemplateMatcher::removeMatchesWithIncorrectYCoord(std::vector<Match>& match
 
 
 double TemplateMatcher::getMinSimilarity(const std::string& templateName, int splitIndex) const {
+    double baselineMinSimilarity = (settings.isComposite ? -8000 : -7000);
     if (templateName == TIME || templateName == SCORE) {
-        return -7000;
+        return baselineMinSimilarity;
     }
     else {
-        double baselineMinSimilarity = (settings.isComposite ? -8000 : -7000);
         /* If a multiplier is present, that means that the template tends to get false matches.
          * Therefore the minimum acceptable similarity is lowered. */
         double multiplier = getSimilarityMultiplier(templateName, splitIndex);

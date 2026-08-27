@@ -416,4 +416,14 @@
 			<change>Fix RTA-TB not splitting in Lab Zone with Composite</change>
 		</changelog>
 	</update>
+	
+	<update version="1.3.10">
+		<files>
+			<file path="Components/SonicVisualSplit.dll" status="changed"/>
+			<file path="Components/SonicVisualSplitWrapper.dll" status="changed"/>
+		</files>
+		<changelog>
+			<change>Fix no split in Green Hill with Composite</change>
+		</changelog>
+	</update>
 </updates>

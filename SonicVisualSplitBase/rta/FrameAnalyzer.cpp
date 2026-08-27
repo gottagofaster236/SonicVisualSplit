@@ -379,7 +379,7 @@ bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
         timeBonusString += match.templateName;
     }
 
-    const std::vector<std::string> allowedTimeBonuses = {"100000", "50000", "10000", "5000", "4000", "3000", "2000", "1000", "500", "0"};
+    const std::vector<std::string> allowedTimeBonuses = {"50000", "10000", "5000", "4000", "3000", "2000", "1000", "500", "0"};
     for (const std::string& possibleTimeBonus : allowedTimeBonuses) {
         if (timeBonusString.ends_with(possibleTimeBonus)) {
             TemplateMatcher::Match digitMatchToObserve = matches[timeBonusString.size() - possibleTimeBonus.size()];
@@ -398,9 +398,9 @@ bool FrameAnalyzer::getTimeBonusPoints(const cv::UMat& gameRect) {
 
 cv::UMat FrameAnalyzer::cropToDigitsRect(const cv::UMat& gameRect) const {
     if (settings.game == Game::Sonic1) {
-        return cropGameRectAndResize(gameRect, 382, 230, 102, 30, false);
+        return cropGameRectAndResize(gameRect, 398, 230, 86, 30, false);
     } else {
-        return cropGameRectAndResize(gameRect, 412, 222, 104, 30, false);
+        return cropGameRectAndResize(gameRect, 428, 222, 88, 30, false);
     }
 }
 

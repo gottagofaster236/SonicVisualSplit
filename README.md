@@ -81,22 +81,22 @@ This is fine, it'll recover soon after.
 ## Troubleshooting
 - If SVS prompts you to reset to SEGA screen repeatedly, check that you set the correct game. 
   Also, check if your capture video is too dark. If that's the case, adjust it via a filter in your streaming software.
-- If the component fails to read the digits too often,
-  check your settings.
-  Make sure you selected the correct video mode and the correct game.
-  Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB. Make sure the aspect ratio of the game is either exactly 4:3 or exactly 16:9 in your streaming software.<br>
-  Note that occasional incorrectly recognized frames are fine, thanks to error detection.
+- If the component fails to read the digits or to split, check your settings.
+  - Make sure you selected the correct video mode and the correct game. Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
+  - Make sure you don't have anything covering the game area on your stream layout, like some other text.
+  - Make sure the aspect ratio of the game is either exactly 4:3 or exactly 16:9 in your streaming software.
+  - Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
   make sure the camera stream isn't used by another program.
 - If you changed your stream layout and moved or resized the game, then reset the game, and reset LiveSplit as soon as you see the SEGA screen.
   You may have to try several times if LiveSplit starts itself up again.
 - If your capture card is outputting a dark image, you should apply a color correction filter as described [here](#setting-up-video-capture).
-- If you found a bug, please open an issue [here on GitHub](https://github.com/gottagofaster236/SonicVisualSplit/issues/new).
+- If you found a bug, please ask me [on Discord](https://discord.com/users/696394643134480405).
   If it's an issue with time recognizing incorrectly, a video or a screenshot of the game
   at the point where SVS fails would be appreciated.
 
 ## Questions / Suggestions
-If you couldn't solve your problem or have questions or suggestions, feel free to post them using [GitHub Discussions](https://github.com/gottagofaster236/SonicVisualSplit/discussions). You can also message me [on Discord](https://discordapp.com/users/gottagofaster#3355).
+If you couldn't solve your problem or have questions or suggestions, feel free to ask me [on Discord](https://discord.com/users/696394643134480405).
 
 ## For developers
 Contributions are welcome! You should probably read [BUILDING.md](BUILDING.md) on how to build the project.

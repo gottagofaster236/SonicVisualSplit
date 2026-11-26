@@ -33,8 +33,11 @@ and find SonicVisualSplit under the "Control" category.
 
 - If you **do want to share your runs**, then you'll have use OBS Studio (or alternative streaming software, such as Streamlabs).
   This is due to Windows not allowing two applications to use a webcam simultaneously.
-  If you're using OBS, click "Start Virtual Camera" in the bottom right before using SonicVisualSplit. Then select it in the video sources dropdown list in SonicVisualSplit settings.
-     
+  
+  In OBS, find the "Start Virtual Camera" button in the bottom right. Click on the gear icon besides it, change the "Output Type" to "Source," and choose your capture card source there.
+  
+  Click "Start Virtual Camera" before using SonicVisualSplit. Then select "OBS Virtual Camera" in the video sources dropdown list in SonicVisualSplit settings.
+
   For Streamlabs, you can read about Virtual Camera installation [here](https://blog.streamlabs.com/streamlabs-obs-now-supports-virtual-camera-9a4e464435c2).
      
      Thus, SonicVisualSplit will capture the virtual camera, while the actual capture card video will be recorded by your streaming software of choice.
@@ -57,7 +60,7 @@ So, click "yes" when LiveSplit will ask you whether you want to save the layout 
 
 ## RTA-TB
 
-If you're converting from manual RTA-TB: the component splits on fadeout, like emulator autosplitter.
+If you're converting from manual RTA-TB: the component splits on fadeout, like the emulator autosplitter.
 This is in contrast to manual RTA-TB, where you usually split when the time bonus starts ticking down.
 You can take your PB, add it as a video source to OBS, and play it back with LiveSplit running to get proper splits.
 
@@ -83,7 +86,7 @@ This is fine, it'll recover soon after.
   Also, check if your capture video is too dark. If that's the case, adjust it via a filter in your streaming software.
 - If the component fails to read the digits or to split, check your settings.
   - Make sure you selected the correct video mode and the correct game. Sometimes *Composite* may work better than *RGB*, even if your capture card is capturing in RGB.
-  - Make sure you don't have anything covering the game area on your stream layout, like some other text.
+  - Make sure you don't have anything covering the game area on your stream layout, like some other text. Otherwise, chose a "Source" output type in the gear icon besides the "Start Virtual Camera" button, not "Program".
   - Make sure the aspect ratio of the game is either exactly 4:3 or exactly 16:9 in your streaming software.
   - Note that occasional incorrectly recognized frames are fine, thanks to error detection.
 - If the game preview shows a blank image on the settings page,
